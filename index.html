@@ -441,7 +441,7 @@ const ART = (() => {
       <g fill="#ffd98a" opacity=".07">${stripes}</g>
       <rect x="110" y="160" width="270" height="600" fill="#0a0a0d" stroke="#040405" stroke-width="10"/>
       <rect x="146" y="196" width="198" height="250" fill="#2c2e36" opacity=".75"/>
-      <g transform="translate(245 0) scale(-1 1)" font-family="Special Elite, Courier New, monospace" text-anchor="middle" fill="#09090c" opacity=".8"><text x="0" y="300" font-size="26">HOMICIDE</text><text x="0" y="336" font-size="16">DET. J.W. ORDLE</text></g>
+      <g transform="translate(245 0) scale(-1 1)" font-family="Special Elite, Courier New, monospace" text-anchor="middle" fill="#09090c" opacity=".8"><text x="0" y="300" font-size="26">HOMICIDE</text><text x="0" y="336" font-size="16">DET. D. LEXINGTON</text></g>
       <circle cx="356" cy="470" r="9" fill="#26231d"/>
       ${figure(820, 236, 1.05, 'man')}
       <path d="M0,690 L1600,668 L1600,900 L0,900 Z" fill="#050507"/><path d="M0,690 L1600,668" stroke="#4a3b24" stroke-width="3" opacity=".7"/>
@@ -646,9 +646,9 @@ const ART = (() => {
 // ?flag / ?!flag / ?var>3 prefixes make a line conditional (stackable).
 
 const CAST = {
-  ORDLE:  { name: 'JOHN W. ORDLE', color: '#d9a441', bust: { hat: 'fedora', cig: true, coat: true } },
+  DASH:   { name: 'DASH LEXINGTON', color: '#d9a441', bust: { hat: 'fedora', cig: true, coat: true } },
   BRIGGS: { name: 'CAPTAIN BRIGGS', color: '#7f9cc7', bust: { hair: 'bald', build: 1.18, coat: true } },
-  VERA:   { name: 'VERA ORDLE', color: '#d97a90', bust: { hat: 'wide', hair: 'long' } },
+  VERA:   { name: 'VERA LEXINGTON', color: '#d97a90', bust: { hat: 'wide', hair: 'long' } },
   DOOLEY: { name: 'SGT. DOOLEY', color: '#7fb08a', bust: { hat: 'cap', build: 1.08 } },
   SAL:    { name: 'SAL', color: '#e0b25a', bust: { hair: 'bald', build: 1.25 } },
   ZERO:   { name: 'MADAME ZERO', color: '#b08be8', bust: { hat: 'scarf' } },
@@ -678,13 +678,13 @@ const INTROS = [
 @mood blue
 BRIGGS: Puzzle editor. Thirty years on the job. Never missed a deadline.
 BRIGGS: Tomorrow's crossword is finished. Every square filled in. Except one.
-ORDLE: Let me guess. Five across.
-BRIGGS: Five letters, Ordle. Somebody erased it clean. Didn't even leave a smudge.
+DASH: Let me guess. Five across.
+BRIGGS: Five letters, Lexington. Somebody erased it clean. Didn't even leave a smudge.
 > Nobody killed {victim} for his money. They killed him for a word.
 > And the word did what words do best in this town. It ran.
 ** A word doesn't run unless it's guilty.
 BRIGGS: The Gazette goes to press at six. If that square's empty, the whole city wakes up knowing we lost.
-!!@BRIGGS FIND IT, ORDLE.
+!!@BRIGGS FIND IT, LEXINGTON.
 ` },
 { id: 'singer', title: 'The Torch Singer', s: `
 ~rain heavy
@@ -693,14 +693,14 @@ BRIGGS: The Gazette goes to press at six. If that square's empty, the whole city
 @mood warm
 > The Last Word was the kind of club where the smoke had seniority over the customers.
 > {singer} sang there every night at eleven. Tonight she stopped halfway through the last chorus.
-SAL: She just quit, Ordle. Mouth open. Band still playing. The word she was reaching for was gone.
-ORDLE: Gone where?
+SAL: She just quit, Lexington. Mouth open. Band still playing. The word she was reaching for was gone.
+DASH: Gone where?
 SAL: Out the back door. Five letters, in a hurry. Took the end of the song with it.
 ~fade
 @set apartment!
 @mood blue
-FENN: Physically she's fine, John. But she won't sing another note until somebody brings that word home.
-ORDLE: Is that a diagnosis, Doc?
+FENN: Physically she's fine, Dash. But she won't sing another note until somebody brings that word home.
+DASH: Is that a diagnosis, Doc?
 FENN: It's grammar.
 ** A song with no ending is just a scream with a band behind it.
 > I put a dollar on the bar for the coffee I didn't drink and went out into the rain.
@@ -715,11 +715,11 @@ FENN: It's grammar.
 > Letters cut from newspapers. Glued crooked. A real artist.
 BRIGGS: Somebody grabbed {victim} outside the Paramount at nine. Bandleader. Half the city knows his trumpet.
 BRIGGS: The note says where to bring the money. Except the place is cut out. Five holes in the paper.
-ORDLE: So the note's missing a word.
+DASH: So the note's missing a word.
 BRIGGS: The note's missing _the_ word. The drop's at dawn. No word, no drop.
 ~heart
 > He didn't finish the sentence. In this business, nobody ever has to.
-!!@BRIGGS BRING HIM HOME, ORDLE.
+!!@BRIGGS BRING HIM HOME, LEXINGTON.
 ` },
 { id: 'dying', title: 'The Dying Clue', s: `
 ~rain light
@@ -732,12 +732,12 @@ BRIGGS: The note's missing _the_ word. The drop's at dawn. No word, no drop.
 @set precinct!
 @mood blue
 FENN: He scratched something into the floorboards before he went. With a cufflink.
-FENN: Five letters, John. Somebody sanded them down to nothing an hour later.
-ORDLE: Somebody who knew what they said.
+FENN: Five letters, Dash. Somebody sanded them down to nothing an hour later.
+DASH: Somebody who knew what they said.
 > A dying man doesn't waste his last breath on a grocery list. Those five letters were a name.
 ** He told us who did it. Then the word walked off.
 BRIGGS: The will gets read at six in the morning. You know what that means.
-ORDLE: It means somebody's in a hurry.
+DASH: It means somebody's in a hurry.
 ` },
 { id: 'witness', title: 'The Witness', s: `
 ~rain heavy
@@ -746,9 +746,9 @@ ORDLE: It means somebody's in a hurry.
 @mood noir
 > Every trial needs a witness. The Varga trial had exactly one, and it was a word.
 > It saw everything at the docks that night. It was going to say it all on the stand.
-DOOLEY: We had it in protective custody at the Hotel Grammatica. Two officers on the door, John.
+DOOLEY: We had it in protective custody at the Hotel Grammatica. Two officers on the door, Dash.
 DOOLEY: It went out the window. Five letters, down a drainpipe, in the rain.
-ORDLE: Words don't climb, Dooley.
+DASH: Words don't climb, Dooley.
 DOOLEY: This one did.
 ~fade
 @set street!
@@ -767,8 +767,8 @@ WORD: Catch me if you can, detective.
 ~sfx foghorn
 > Down at Pier {pier}, the Varga family keeps a vault behind a door with no lock.
 > Just a slot, and a man behind it who opens up if you say the right word.
-PETE: Whole town's buzzing, Ordle. The password's loose. Walked off when old Varga's bookkeeper went in the river.
-ORDLE: Who else knows?
+PETE: Whole town's buzzing, Lexington. The password's loose. Walked off when old Varga's bookkeeper went in the river.
+DASH: Who else knows?
 PETE: Everybody who matters. Nobody who'll tell you. It's five letters. That's all I got.
 > Whoever finds that word first owns the waterfront by breakfast.
 > If it's me, two hundred families get their life savings back. If it's Varga, they get nothing. Again.
@@ -780,11 +780,11 @@ PETE: Everybody who matters. Nobody who'll tell you. It's five letters. That's a
 @set office!
 @mood warm
 ~sfx telegraph
-> 11:52 PM. A telegram for Detective Ordle, from a man who'd been dead for an hour.
-~paper WESTERN WIRE · URGENT|ORDLE STOP I KNOW WHO STOP THE NAME IS _ _ _ _ _ STOP
+> 11:52 PM. A telegram for Detective Lexington, from a man who'd been dead for an hour.
+~paper WESTERN WIRE · URGENT|LEXINGTON STOP I KNOW WHO STOP THE NAME IS _ _ _ _ _ STOP
 > {victim}. My best informant. Fished out of the canal before the ink was dry.
 DOOLEY: Wire office says the line went dead mid-word. He paid for five letters. They never came through.
-ORDLE: So somewhere between his mouth and my desk, a word got off the train.
+DASH: So somewhere between his mouth and my desk, a word got off the train.
 > That's how it goes. A man dies, and his last sentence is missing the only part that mattered.
 ** He died spelling it for me.
 ` },
@@ -796,7 +796,7 @@ ORDLE: So somewhere between his mouth and my desk, a word got off the train.
 > City Hall, 11:30. A confession, typed on the Commissioner's own Underwood.
 > Every word of it was there except one. Five keys had been pried off the machine.
 BRIGGS: The keys that typed the name of whoever's running this city from the shadows.
-ORDLE: And the keys are where?
+DASH: And the keys are where?
 BRIGGS: Gone. Along with the word. The Commissioner wants it found before the papers wake up.
 > When somebody steals the letters right off the machine, they're not covering their tracks.
 > They're scared.
@@ -812,8 +812,8 @@ BRIGGS: Gone. Along with the word. The Commissioner wants it found before the pa
 > I was the only one in the room. He grabbed my collar and said it. One word. Five letters.
 > And for the first time in my life, I didn't catch it.
 VERA: You didn't hear him?
-ORDLE: The rain was loud. The siren was louder. And I was thinking about something else.
-VERA: You're always thinking about something else, John.
+DASH: The rain was loud. The siren was louder. And I was thinking about something else.
+VERA: You're always thinking about something else, Dash.
 ** The only man who heard it was me.
 > The word left that room before the doctor came in. I've been chasing it ever since.
 ` },
@@ -825,7 +825,7 @@ VERA: You're always thinking about something else, John.
 > The Central Library's big dictionary sits under glass. Two thousand pages. Never one missing.
 > Until tonight. Somebody razored out a single entry. Five letters. One word, gone.
 PROF: You don't understand, Detective. Without that entry, the word has no meaning. It's loose. Unaccounted for.
-ORDLE: And a word with no meaning?
+DASH: And a word with no meaning?
 PROF: Can mean anything it wants. It's the most dangerous thing in this city.
 > The Professor's hands were shaking. I'd seen men shake like that over a gun. Never over a dictionary.
 ** A word with no definition can be anyone.
@@ -836,8 +836,8 @@ PROF: Can mean anything it wants. It's the most dangerous thing in this city.
 @set office!
 @mood noir
 > She came in at 11:15 wearing red and trouble, in that order.
-LOLA: Detective Ordle? They say you can find anything.
-ORDLE: They say a lot of things. Who's missing?
+LOLA: Detective Lexington? They say you can find anything.
+DASH: They say a lot of things. Who's missing?
 LOLA: Not who. What. My husband's last word. He wrote it on a matchbook and then someone shot the light out.
 LOLA: When the lights came up, the matchbook was ash. And the word was gone.
 > She cried the way people cry in the movies. One tear, perfectly timed. I didn't trust her for a second.
@@ -851,9 +851,9 @@ LOLA: When the lights came up, the matchbook was ash. And the word was gone.
 ~sfx telegraph
 > Every night at 11:00, a station with no call sign broadcasts five letters into the dark.
 > Tonight it broadcast four, and a scream.
-DOOLEY: The transmitter's on the roof of the Merriwether Building. The operator's gone, John. So is the fifth letter.
+DOOLEY: The transmitter's on the roof of the Merriwether Building. The operator's gone, Dash. So is the fifth letter.
 DOOLEY: Except it wasn't just the fifth. When we played the tape back, all five were blank.
-ORDLE: A word that erases itself off a recording.
+DASH: A word that erases itself off a recording.
 > I'd heard about words like that. Smart ones. The kind that know you're listening.
 ** Somebody out there is sending a message. I intend to read it.
 ` }
@@ -873,8 +873,8 @@ const INTRO_TAIL = `
 @mood blue
 > The word has a ticket on the 6:00 AM train out of Union Station.
 > Six suspects. Six hours. After that, the trail goes cold. And so do I.
-%%JOHN W. ORDLE | ? ? ? ? ?
-!!@ORDLE SIX SUSPECTS. ONE NIGHT.
+%%DASH LEXINGTON | ? ? ? ? ?
+!!@DASH SIX SUSPECTS. ONE NIGHT.
 ## {time1} | The first suspect is waiting in the dark.
 `;
 
@@ -896,22 +896,22 @@ const CORES = {
 '1-0': [`
 @set precinct
 > First suspect. {GUESS}. I sat it down under the lamp and let it sweat.
-ORDLE: Where were you at eleven o'clock tonight?
+DASH: Where were you at eleven o'clock tonight?
 > Five letters. Five alibis. Every one of them clean as a choirboy's collar.
-BRIGGS: You brought in a nobody, Ordle.
-ORDLE: Nobody's a nobody, Captain. Now I know five letters that aren't in this.
+BRIGGS: You brought in a nobody, Lexington.
+DASH: Nobody's a nobody, Captain. Now I know five letters that aren't in this.
 > Cutting suspects is still progress. That's what I told myself. I'd been telling myself a lot of things lately.
 `, `
 @set street
 > {GUESS} didn't even look up when I said its name. Wrong word, wrong night, wrong detective.
 > Not one letter stuck. Five gray faces walking off into the rain.
-!!@ORDLE NOT EVEN CLOSE.
+!!@DASH NOT EVEN CLOSE.
 > Fine. A cold first lead is still a lead. It tells you where the word isn't.
 > The city was big. But tonight it was five letters smaller.
 `, `
 @set bar
 SAL: You look like a man who just struck out.
-ORDLE: {GUESS}. Every letter had an alibi.
+DASH: {GUESS}. Every letter had an alibi.
 SAL: First one's on the house, then.
 > He meant the coffee. I took it to mean the mistake.
 ~sfx ring
@@ -924,21 +924,21 @@ WORD: Cold, detective. Ice cold.
 @mood warm
 > I wrote {GUESS} on the chalkboard and drew a line through every letter.
 > Five alibis. Airtight. The kind of alibis you can't buy, because they're true.
-ORDLE: All right. You're not the word. But you've told me who it isn't.
+DASH: All right. You're not the word. But you've told me who it isn't.
 ** The night is young. So is the case.
 `],
 '1-1': [`
 @set precinct
 > {GUESS} sat there sweating. Mostly clean. But not all of it.
 > {HitsN} wouldn't look me in the eye. That's how you know.
-ORDLE: You know something. Your friends already told me.
+DASH: You know something. Your friends already told me.
 > A small crack in a big wall. In my line of work, you take the crack.
-!!@ORDLE GOT YOU.
+!!@DASH GOT YOU.
 `, `
 @set street
 > First suspect, and the street gave something back. {HitsN} in {GUESS} knew the word personally.
-DOOLEY: That's not nothing, John.
-ORDLE: It's not much, either.
+DOOLEY: That's not nothing, Dash.
+DASH: It's not much, either.
 DOOLEY: Most guys get nothing on the first knock.
 > He was right. I hated it when Dooley was right. It usually meant I was about to get lucky, and luck always sends a bill.
 `, `
@@ -948,7 +948,7 @@ DOOLEY: Most guys get nothing on the first knock.
 > A thread. You pull a thread long enough and somebody's coat comes apart.
 ~sfx ring
 WORD: Lucky guess, detective.
-ORDLE: I don't guess. I deduce.
+DASH: I don't guess. I deduce.
 WORD: Then deduce this. You've got {leftN} left.
 ~sfx hangup
 `],
@@ -958,7 +958,7 @@ WORD: Then deduce this. You've got {leftN} left.
 > {GUESS}. I knew it the second it sat down. Too calm. Too familiar.
 > {HitsN} lit up under the lamp. This suspect ran with the word. Maybe shared a cab with it.
 BRIGGS: First suspect and you're already this close? What, did you sleep with the dictionary?
-ORDLE: Wouldn't be the first night.
+DASH: Wouldn't be the first night.
 ** I could smell its cologne.
 `, `
 @set street
@@ -969,31 +969,31 @@ ORDLE: Wouldn't be the first night.
 ~fade
 @set phonebooth!
 ~sfx ring
-WORD: You're good, Ordle. I'll give you that.
-ORDLE: Give me the rest of your name while you're at it.
+WORD: You're good, Lexington. I'll give you that.
+DASH: Give me the rest of your name while you're at it.
 WORD: Where's the fun in that?
 ~sfx hangup
 `, `
 @set bar
-SAL: You're smiling, Ordle. It's unsettling.
-ORDLE: First suspect, Sal. {GUESS}. {HitsN} talked.
+SAL: You're smiling, Lexington. It's unsettling.
+DASH: First suspect, Sal. {GUESS}. {HitsN} talked.
 SAL: So the word's got friends.
-ORDLE: The word's got family. And family always gives you up eventually.
-!!@ORDLE I'M ON YOUR TRAIL.
+DASH: The word's got family. And family always gives you up eventually.
+!!@DASH I'M ON YOUR TRAIL.
 `],
 '1-3': [`
 @set precinct
 @mood red
 > {GUESS}. Every letter lit up. All five. And it still wasn't the one.
 > The right crowd, standing in the wrong places. Like the word's whole gang had swapped coats.
-ORDLE: You're wearing its letters. Where'd you get them?
+DASH: You're wearing its letters. Where'd you get them?
 ** All the right people. All the wrong chairs.
 `, `
 @set office
 > First suspect, and I had every piece of the puzzle on my desk.
 > Every letter of {GUESS} lit up under the lamp. Just not in the right order.
 ~sfx ring
-WORD: Close isn't caught, Ordle.
+WORD: Close isn't caught, Lexington.
 ~sfx hangup
 > It's never the letters that get you. It's the order you put them in.
 `],
@@ -1003,7 +1003,7 @@ WORD: Close isn't caught, Ordle.
 > Second suspect. {GUESS}. Five alibis again. Five more doors slammed in my face.
 > Two suspects in, and nothing to show for it but wet shoes.
 DOOLEY: Captain's asking about you.
-ORDLE: Tell him I'm narrowing it down.
+DASH: Tell him I'm narrowing it down.
 DOOLEY: Is that what we're calling this?
 > The alley smelled like garbage and rain. So did my case.
 `, `
@@ -1011,16 +1011,16 @@ DOOLEY: Is that what we're calling this?
 > I ordered a rye and stared at {GUESS} written on a napkin.
 > Not one letter. Not one. The kind of whiff that makes a man doubt his instincts.
 SAL: You want some advice?
-ORDLE: No.
+DASH: No.
 SAL: Try different letters.
 > He wasn't wrong. Sal is never wrong. That's what makes him unbearable.
 `, `
 @set office
 ~sfx ring
-VERA: John? It's {time}.
-ORDLE: I'm working, Vera.
+VERA: Dash? It's {time}.
+DASH: I'm working, Vera.
 VERA: You're always working. Did you even find anything?
-ORDLE: I found out what it isn't.
+DASH: I found out what it isn't.
 VERA: That's what you always say.
 ~sfx hangup
 > She was right about that too. Everybody was right tonight except me.
@@ -1028,7 +1028,7 @@ VERA: That's what you always say.
 '2-1': [`
 @set precinct
 > {GUESS} gave me {hitsN}. Not a confession. More like a nervous cough.
-ORDLE: You're going to tell me where your friends are standing.
+DASH: You're going to tell me where your friends are standing.
 > It didn't say a word. It didn't have to. I wrote down what it gave me and sent it home.
 > Two suspects down. The picture was coming in like a radio in a thunderstorm.
 `, `
@@ -1041,11 +1041,11 @@ ORDLE: You're going to tell me where your friends are standing.
 `, `
 @set docks
 PETE: Heard you brought in {GUESS}.
-ORDLE: News travels fast.
+DASH: News travels fast.
 PETE: Bad news travels faster. How'd it go?
-ORDLE: {HitsN} came clean. The rest walked.
+DASH: {HitsN} came clean. The rest walked.
 PETE: Could be worse.
-ORDLE: It's {time}, Pete. Give it an hour.
+DASH: It's {time}, Pete. Give it an hour.
 `],
 '2-2': [`
 @set precinct
@@ -1053,8 +1053,8 @@ ORDLE: It's {time}, Pete. Give it an hour.
 > Second suspect, {GUESS}, and the lamp lit up like the Fourth of July.
 > {HitsN}. The word's whole neighborhood, in one interrogation room.
 BRIGGS: Well, I'll be damned.
-ORDLE: Probably, Captain. But not tonight.
-!!@ORDLE CLOSING IN.
+DASH: Probably, Captain. But not tonight.
+!!@DASH CLOSING IN.
 `, `
 @set rooftop
 > The city spread out below like a crossword nobody finished.
@@ -1063,10 +1063,10 @@ ORDLE: Probably, Captain. But not tonight.
 `, `
 @set bar
 SAL: The look on your face. You got something.
-ORDLE: {GUESS}. {HitsN} sang like canaries.
-?greens>0 ORDLE: And {greensN} right where they belong.
+DASH: {GUESS}. {HitsN} sang like canaries.
+?greens>0 DASH: And {greensN} right where they belong.
 SAL: So you're close.
-ORDLE: Close is where most of my cases go to die, Sal.
+DASH: Close is where most of my cases go to die, Sal.
 `],
 '2-3': [`
 @set precinct
@@ -1074,7 +1074,7 @@ ORDLE: Close is where most of my cases go to die, Sal.
 > {GUESS}. All five letters, guilty as sin. And somehow, still not the word.
 > They were all in the room. They'd just been sitting in each other's seats.
 ** Right letters. Wrong order.
-ORDLE: Somebody's rearranging the furniture.
+DASH: Somebody's rearranging the furniture.
 `, `
 @set office
 > I spread the letters of {GUESS} across the desk like a deck of marked cards.
@@ -1086,10 +1086,10 @@ WORD: Shuffle all you like, detective. The house always wins.
 '3-0': [`
 @set precinct
 @mood red
-BRIGGS: Three suspects, Ordle. And the last one didn't even know the word existed.
-ORDLE: It's a process, Captain.
+BRIGGS: Three suspects, Lexington. And the last one didn't even know the word existed.
+DASH: It's a process, Captain.
 BRIGGS: The Commissioner calls every hour. You know what I tell him?
-ORDLE: That I'm the best you've got.
+DASH: That I'm the best you've got.
 BRIGGS: I tell him I'm looking for someone better.
 ~stamp FINAL WARNING
 ~flag warned
@@ -1099,8 +1099,8 @@ BRIGGS: I tell him I'm looking for someone better.
 @mood blue
 > I went home for a clean shirt. Vera was waiting up. That's never good.
 VERA: You look like hell.
-ORDLE: {GUESS}. Five letters, five alibis.
-VERA: I don't care about the letters, John. I care that it's {time} and I'm alone again.
+DASH: {GUESS}. Five letters, five alibis.
+VERA: I don't care about the letters, Dash. I care that it's {time} and I'm alone again.
 > The door didn't slam when I left. That was worse. Slams mean somebody still cares.
 ~flag vera_upset
 `, `
@@ -1116,14 +1116,14 @@ VERA: I don't care about the letters, John. I care that it's {time} and I'm alon
 @set bar
 > Halfway through the night. {GUESS} gave me {hitsN}, and I'd take it.
 DOOLEY: Three in. What've we got?
-ORDLE: Letters. A few. Pieces of a face.
+DASH: Letters. A few. Pieces of a face.
 DOOLEY: And the rest?
-ORDLE: The rest is out there in the rain, laughing at us.
+DASH: The rest is out there in the rain, laughing at us.
 `, `
 @set phonebooth
 ~sfx ring
 WORD: Halfway there, detective. Or halfway to nowhere.
-ORDLE: {GUESS} gave you up. {HitsN}.
+DASH: {GUESS} gave you up. {HitsN}.
 WORD: Did it? Or did I let it?
 ~sfx hangup
 > A word that plays games is a word that thinks it can't lose. That's the kind that always slips.
@@ -1131,7 +1131,7 @@ WORD: Did it? Or did I let it?
 @set precinct
 > Third suspect. {GUESS}. It gave up {hitsN} and asked for a lawyer.
 > I gave it a cigarette and a long look. It didn't give me anything else.
-BRIGGS: Three hours, Ordle. Three.
+BRIGGS: Three hours, Lexington. Three.
 > He held up three fingers like I couldn't count. In fairness, I was struggling with five.
 `],
 '3-2': [`
@@ -1139,9 +1139,9 @@ BRIGGS: Three hours, Ordle. Three.
 @mood gold
 > {GUESS} cracked under the lamp. {HitsN}, singing in harmony.
 BRIGGS: That's more like it.
-ORDLE: It's close, Captain. I can feel it in my teeth.
+DASH: It's close, Captain. I can feel it in my teeth.
 BRIGGS: Your teeth don't make arrests.
-!!@ORDLE ALMOST.
+!!@DASH ALMOST.
 `, `
 @set rooftop
 @mood blue
@@ -1152,8 +1152,8 @@ BRIGGS: Your teeth don't make arrests.
 `, `
 @set bar
 VERA: Sal said I'd find you here.
-ORDLE: {GUESS}. {HitsN}, Vera. I'm close.
-VERA: You've been close for eleven years, John.
+DASH: {GUESS}. {HitsN}, Vera. I'm close.
+VERA: You've been close for eleven years, Dash.
 > She took my cigarette and finished it. She always did that right before she forgave me.
 ~flag vera_soft
 `],
@@ -1161,14 +1161,14 @@ VERA: You've been close for eleven years, John.
 @set precinct
 @mood red
 > Every letter in {GUESS} is guilty. And not one of them will tell me the order.
-ORDLE: It's in here. The whole word is in this room.
+DASH: It's in here. The whole word is in this room.
 ~heart
 ** I'm looking right at it.
 `, `
 @set office
 ~sfx ring
-WORD: You have all of me now, Ordle. Every letter.
-ORDLE: Then stand still.
+WORD: You have all of me now, Lexington. Every letter.
+DASH: Then stand still.
 WORD: Make me.
 ~sfx hangup
 `],
@@ -1176,8 +1176,8 @@ WORD: Make me.
 @set precinct
 @mood red
 ~tight
-BRIGGS: Four suspects. Four nobodies. Badge, Ordle.
-ORDLE: Captain...
+BRIGGS: Four suspects. Four nobodies. Badge, Lexington.
+DASH: Captain...
 BRIGGS: Badge. On the desk.
 > I put it down. It sounded heavier than it was.
 ~stamp SUSPENDED
@@ -1190,7 +1190,7 @@ BRIGGS: Badge. On the desk.
 @mood blue
 > The apartment was quiet. Too quiet. Her coat was gone from the hook.
 > There was a note on the table. Five words. Those, I could read just fine.
-~paper NOTE ON THE KITCHEN TABLE|I'M DONE WAITING UP, JOHN.
+~paper NOTE ON THE KITCHEN TABLE|I'M DONE WAITING UP, DASH.
 ~flag vera_gone
 > {GUESS} didn't have a single letter. Neither did my marriage, apparently.
 ** She left the light on. That was the cruelest part.
@@ -1198,8 +1198,8 @@ BRIGGS: Badge. On the desk.
 @set apartment!
 @mood sick
 > Mrs. Kowalski was waiting at my apartment door with a key and a look.
-KOW: Three months, Mr. Ordle. Three months of rent.
-ORDLE: I'm in the middle of something.
+KOW: Three months, Mr. Lexington. Three months of rent.
+DASH: I'm in the middle of something.
 KOW: You are always in the middle of something. Out.
 ~stamp EVICTED
 ~flag evicted
@@ -1210,21 +1210,21 @@ KOW: You are always in the middle of something. Out.
 @mood blue
 > {GUESS}. {HitsN}. Crumbs, at {time}.
 > I was running out of night, and the night was running out of patience.
-DOOLEY: John. Go home.
-ORDLE: Home is where the word isn't.
+DOOLEY: Dash. Go home.
+DASH: Home is where the word isn't.
 DOOLEY: That's not how the saying goes.
-ORDLE: It's how mine goes.
+DASH: It's how mine goes.
 `, `
 @set bar
 SAL: You look like a man with two bullets left.
-ORDLE: {GUESS} gave me {hitsN}. It's not enough.
+DASH: {GUESS} gave me {hitsN}. It's not enough.
 SAL: Then make the last two count.
 > He poured. I didn't drink it. Some nights you need your hands steadier than your nerves.
 `, `
 @set precinct
 @mood red
-BRIGGS: Four down. You're running on fumes, Ordle.
-ORDLE: I've got {hitsN} out of {GUESS}. I'm building a face.
+BRIGGS: Four down. You're running on fumes, Lexington.
+DASH: I've got {hitsN} out of {GUESS}. I'm building a face.
 BRIGGS: Build faster. If that train leaves, the Commissioner wants your badge on his desk by six.
 ~heart
 ~flag warned
@@ -1237,16 +1237,16 @@ BRIGGS: Build faster. If that train leaves, the Commissioner wants your badge on
 @set phonebooth!
 ~sfx ring
 WORD: You're getting warm, detective.
-ORDLE: I'm getting close.
+DASH: I'm getting close.
 WORD: Warm and close aren't the same thing. Ask anyone who's stood too near a fire.
 ~sfx hangup
 `, `
 @set precinct
 > {GUESS} gave up {hitsN} before I even took my coat off.
 BRIGGS: Two suspects left, and you've got it boxed in?
-ORDLE: Boxed. Taped. Ready to mail.
-BRIGGS: Then mail it, Ordle. Before dawn.
-!!@ORDLE TWO MORE.
+DASH: Boxed. Taped. Ready to mail.
+BRIGGS: Then mail it, Lexington. Before dawn.
+!!@DASH TWO MORE.
 `, `
 @set rooftop
 @mood blue
@@ -1258,7 +1258,7 @@ BRIGGS: Then mail it, Ordle. Before dawn.
 @set precinct
 @mood red
 > {GUESS}. All five letters, all guilty. All in the wrong seats.
-ORDLE: Two chances left to put you in order.
+DASH: Two chances left to put you in order.
 ~heart
 ** I have you. I just can't hold you.
 `, `
@@ -1284,10 +1284,10 @@ WORD: Tick tock, detective.
 ~loose
 `, `
 @set bar
-SAL: We're closed, Ordle.
-ORDLE: Pour me one anyway.
+SAL: We're closed, Lexington.
+DASH: Pour me one anyway.
 SAL: You've taken five swings and missed every one.
-ORDLE: Then I'll make the sixth one count.
+DASH: Then I'll make the sixth one count.
 SAL: That's what they all say at five in the morning.
 > He poured coffee instead. Black. Like everything else tonight.
 `, `
@@ -1297,7 +1297,7 @@ SAL: That's what they all say at five in the morning.
 ?vera_gone > Her side of the closet was empty. The hangers clicked together like teeth.
 ?!vera_gone > Vera was asleep. Or pretending. I couldn't tell anymore, and that scared me more than the word.
 > One more. One last suspect before the 6:00 train.
-** Make it count, John.
+** Make it count, Dash.
 `],
 '5-1': [`
 @set street
@@ -1305,14 +1305,14 @@ SAL: That's what they all say at five in the morning.
 > {GUESS} gave up {hitsN} and nothing else.
 > One suspect left. The whole night comes down to one name, said out loud in an empty street.
 DOOLEY: Whatever you pick, I'm with you.
-ORDLE: Even if I'm wrong?
+DASH: Even if I'm wrong?
 DOOLEY: Especially if you're wrong. Somebody's got to carry you home.
 `, `
 @set precinct
 @mood red
 ~tight
-BRIGGS: Last chance, Ordle. I mean it this time.
-ORDLE: {HitsN} from {GUESS}, Captain. It's in there.
+BRIGGS: Last chance, Lexington. I mean it this time.
+DASH: {HitsN} from {GUESS}, Captain. It's in there.
 BRIGGS: It's five in the morning, and "in there" doesn't make the papers.
 ~heart
 ** One name. One shot.
@@ -1331,15 +1331,15 @@ BRIGGS: It's five in the morning, and "in there" doesn't make the papers.
 ~sfx whistle
 ~sfx ring
 WORD: Last call, detective.
-ORDLE: Last call's for amateurs. I'm a professional.
+DASH: Last call's for amateurs. I'm a professional.
 ~sfx hangup
-!!@ORDLE ONE MORE. THAT'S ALL I NEED.
+!!@DASH ONE MORE. THAT'S ALL I NEED.
 `, `
 @set precinct
 BRIGGS: Well?
-ORDLE: {HitsN} out of {GUESS}. I know its face, Captain. I just need its name.
-BRIGGS: Then say it. And Ordle?
-ORDLE: Yeah?
+DASH: {HitsN} out of {GUESS}. I know its face, Captain. I just need its name.
+BRIGGS: Then say it. And Lexington?
+DASH: Yeah?
 BRIGGS: Say it right.
 `, `
 @set rooftop
@@ -1360,9 +1360,9 @@ BRIGGS: Say it right.
 `, `
 @set office
 ~sfx ring
-WORD: You have all my letters, Ordle. And one guess left.
+WORD: You have all my letters, Lexington. And one guess left.
 WORD: Most men would crack.
-ORDLE: I'm not most men.
+DASH: I'm not most men.
 WORD: No. You're tired.
 ~sfx hangup
 `]
@@ -1374,16 +1374,16 @@ const INFORMANTS = [
 ~fade
 @set street!
 ~rain light
-PETE: Psst. Ordle. Over here, by the newsstand.
+PETE: Psst. Lexington. Over here, by the newsstand.
 > Lucky Pete. He sells newspapers for a nickel and other people's secrets for a dollar.
 PETE: I been doing arithmetic, see. Every word in town that fits what you got so far.
 ~clue
-?n=1 PETE: Just the one, Ordle. You've met it. You just don't know it yet.
+?n=1 PETE: Just the one, Lexington. You've met it. You just don't know it yet.
 ?n>1?n<=6 PETE: That's a short line-up. Don't fumble it.
 ?n>6?n<=40 PETE: Thinning out. Ask the right questions and they'll start tripping over each other.
 ?n>40 PETE: That's a lot of doors to knock on. Better knock smart.
-ORDLE: Put it on my tab, Pete.
-PETE: You don't got a tab, Ordle. You got a debt.
+DASH: Put it on my tab, Pete.
+PETE: You don't got a tab, Lexington. You got a debt.
 ` },
 { id: 'zero', type: 'top', who: 'ZERO', s: `
 ~fade
@@ -1395,7 +1395,7 @@ ZERO: There is a letter that hangs over your case like smoke. {topL}.
 ~clue
 ?topPct=100 ZERO: It is certain, darling. The cards do not lie. Neither do I. Usually.
 ?topPct<100 ZERO: {topPct} chances in a hundred, the cards say. The rest is up to you.
-ORDLE: What do I owe you?
+DASH: What do I owe you?
 ZERO: Your soul. But I'll take a dollar.
 ` },
 { id: 'prof', type: 'pos', who: 'PROF', s: `
@@ -1407,30 +1407,30 @@ PROF: I took every word in my dictionary and held it up against your evidence.
 PROF: The {posOrd} letter. It is {posL}, more often than not.
 ~clue
 ?posPct=100 PROF: In every single case. Without exception. I'd stake my tenure on it.
-?posPct<100 ORDLE: More often than not isn't a sure thing, Professor.
+?posPct<100 DASH: More often than not isn't a sure thing, Professor.
 ?posPct<100 PROF: Nothing in language is a sure thing. That's what makes it beautiful.
 ` },
 { id: 'dooley', type: 'dbl', who: 'DOOLEY', s: `
 ~fade
 @set precinct!
-DOOLEY: John. I ran every candidate through Records. Thought you'd want to see this.
+DOOLEY: Dash. I ran every candidate through Records. Thought you'd want to see this.
 ~clue
 ?dblPct>=50 DOOLEY: Better than even odds this word's got a twin in it. Same letter, twice.
 ?dblPct<50?dblPct>0 DOOLEY: Odds are every letter's different. But I wouldn't bet the pension on it.
-?dblPct=0 DOOLEY: No twins, John. Every letter in it is an only child.
-ORDLE: You're a good cop, Dooley.
+?dblPct=0 DOOLEY: No twins, Dash. Every letter in it is an only child.
+DASH: You're a good cop, Dooley.
 DOOLEY: I'm a tired cop. Go get it.
 ` },
 { id: 'sal', type: 'top', who: 'SAL', s: `
 ~fade
 @set bar!
-SAL: Ordle. Got a minute? I got something for you.
+SAL: Lexington. Got a minute? I got something for you.
 SAL: The back room's been running a book on your case all night. Odds on every letter.
 SAL: Smart money's on {topL}.
 ~clue
 ?topPct=100 SAL: Nobody's taking the other side of that bet. Nobody.
 ?topPct<100 SAL: {topPct} to a hundred. I'm not saying bet the farm. I'm saying look at the farm.
-ORDLE: Since when do you run numbers, Sal?
+DASH: Since when do you run numbers, Sal?
 SAL: Since never. Drink your coffee.
 ` },
 { id: 'nickel', type: 'pos', who: 'NICKEL', s: `
@@ -1439,7 +1439,7 @@ SAL: Since never. Drink your coffee.
 NICKEL: Shine, mister? I'll throw in a tip. Free of charge.
 NICKEL: Heard two hoods talking by the hydrant. Said your word's got {posArt} {posL} in the {posOrd} spot.
 ~clue
-ORDLE: They sure about that?
+DASH: They sure about that?
 ?posPct=100 NICKEL: Sure as Sunday, mister.
 ?posPct<100 NICKEL: {posPct} cents on the dollar, mister. That's what they said.
 > I gave the kid a quarter. He'd earned it. The shine was terrible.
@@ -1457,10 +1457,10 @@ ORDLE: They sure about that?
 ~fade
 @set precinct!
 @mood blue
-FENN: John. Coroner's office. I count bodies all day. Tonight I counted words.
+FENN: Dash. Coroner's office. I count bodies all day. Tonight I counted words.
 FENN: I measured every word in the city against your evidence. Like fitting a coat.
 ~clue
-?n=1 FENN: One coat fits, John. Go put it on its owner.
+?n=1 FENN: One coat fits, Dash. Go put it on its owner.
 ?n>1?n<=10 FENN: A handful. You could fit them all in one elevator.
 ?n>10 FENN: Still a crowd. But crowds thin out. They always do.
 ` },
@@ -1471,7 +1471,7 @@ FENN: I measured every word in the city against your evidence. Like fitting a co
 LOLA: Detective. Don't look at me like that. I'm here to help.
 LOLA: My husband used to doodle one letter on every napkin. {topL}. Over and over. I never knew why.
 ~clue
-ORDLE: You expect me to trust you?
+DASH: You expect me to trust you?
 LOLA: I expect you to need me. That's better than trust.
 ` }
 ];
@@ -1482,21 +1482,21 @@ const WIN_CLIMAX = [`
 ~sfx whistle
 > {time}. Union Station. The 6:00 was taking on steam and the platform was full of people pretending not to see me.
 > And there it was. Collar up. Hat low. Five letters, trying to look like four.
-ORDLE: {ANSWER}.
+DASH: {ANSWER}.
 ~heart
 > It stopped. Every letter of it stopped.
-%%JOHN W. ORDLE | {ANSWER}
+%%DASH LEXINGTON | {ANSWER}
 ** {ANSWER}. You're under arrest.
 ~gstamp CASE CLOSED
 `, `
 @set precinct!
 @mood gold
 > I didn't shout it. I didn't have to. I just said it, quiet, the way you say a name you've known all along.
-ORDLE: {ANSWER}.
+DASH: {ANSWER}.
 ~heart
 > Every light in the precinct seemed to come on at once.
-%%JOHN W. ORDLE | {ANSWER}
-!!@ORDLE GOT YOU.
+%%DASH LEXINGTON | {ANSWER}
+!!@DASH GOT YOU.
 ** {ANSWER}. The word that got away. Not tonight.
 ~gstamp CASE CLOSED
 `];
@@ -1506,15 +1506,15 @@ const WIN_EPI = {
 @set precinct!
 @mood warm
 BRIGGS: First suspect. _First._ You walked in and said its name like you'd known it all your life.
-ORDLE: Maybe I have.
-BRIGGS: Internal Affairs is going to want a word, Ordle.
-ORDLE: Tell them I've got one. Five letters.
+DASH: Maybe I have.
+BRIGGS: Internal Affairs is going to want a word, Lexington.
+DASH: Tell them I've got one. Five letters.
 ## LEGEND | Solved on the first suspect. Nobody believes it. Nobody ever will.
 `, `
 @set bar!
 @mood warm
 SAL: One suspect. One. The fellas in the back are saying you made a deal with the devil.
-ORDLE: The devil doesn't deal in words, Sal. Just in time.
+DASH: The devil doesn't deal in words, Sal. Just in time.
 ** Some nights the city just hands it to you.
 ## LEGEND | Solved on the first suspect. Don't expect it twice.
 `],
@@ -1522,7 +1522,7 @@ ORDLE: The devil doesn't deal in words, Sal. Just in time.
 @set bar!
 @mood warm
 SAL: Two suspects. Two. The fellas in here are calling you a psychic.
-ORDLE: I'm not psychic, Sal. I just pay attention.
+DASH: I'm not psychic, Sal. I just pay attention.
 SAL: Same thing, in this town.
 ## BRILLIANT | Solved on the second suspect. The papers will spell your name right, for once.
 `, `
@@ -1536,15 +1536,15 @@ SAL: Same thing, in this town.
 @set apartment!
 @mood warm
 VERA: You're home before sunrise. Who are you and what did you do with my husband?
-ORDLE: Closed the case, Vera. Three suspects. Clean.
+DASH: Closed the case, Vera. Three suspects. Clean.
 VERA: Then take off your shoes and stay a while.
 > For once, I did.
 ## SHARP WORK | Solved on the third suspect. Home before the milkman.
 `, `
 @set precinct!
 @mood warm
-BRIGGS: Three suspects. That's textbook, Ordle.
-ORDLE: I don't read textbooks, Captain. I write them.
+BRIGGS: Three suspects. That's textbook, Lexington.
+DASH: I don't read textbooks, Captain. I write them.
 BRIGGS: Go home before I change my mind about liking you.
 ## SHARP WORK | Solved on the third suspect.
 `],
@@ -1552,15 +1552,15 @@ BRIGGS: Go home before I change my mind about liking you.
 @set precinct!
 @mood warm
 BRIGGS: Four suspects. Not pretty, but it'll play.
-ORDLE: Pretty doesn't make arrests, Captain.
-BRIGGS: Go home, Ordle. That's an order. The first good one I've given all night.
+DASH: Pretty doesn't make arrests, Captain.
+BRIGGS: Go home, Lexington. That's an order. The first good one I've given all night.
 ## SOLID | Solved on the fourth suspect. A good night's work.
 `, `
 @set street!
 @mood blue
 ~rain light
-DOOLEY: Four, John. Hairy for a minute there.
-ORDLE: Hair grows back, Dooley.
+DOOLEY: Four, Dash. Hairy for a minute there.
+DASH: Hair grows back, Dooley.
 DOOLEY: Not on you, it won't.
 ## SOLID | Solved on the fourth suspect.
 `],
@@ -1570,15 +1570,15 @@ DOOLEY: Not on you, it won't.
 ~rain off
 > The rain stopped. First time in three days.
 ?suspended BRIGGS: Here. Your badge. Don't make me regret it.
-?suspended ORDLE: You always regret it, Captain.
-?!suspended DOOLEY: Five suspects, John. That was too close.
-?!suspended ORDLE: Close is still caught, Dooley.
+?suspended DASH: You always regret it, Captain.
+?!suspended DOOLEY: Five suspects, Dash. That was too close.
+?!suspended DASH: Close is still caught, Dooley.
 ## CLOSE CALL | Solved on the fifth suspect. Your hands didn't stop shaking until noon.
 `, `
 @set bar!
 @mood warm
-SAL: Five. My heart can't take you, Ordle.
-ORDLE: Your heart's fine. It's your coffee that's killing people.
+SAL: Five. My heart can't take you, Lexington.
+DASH: Your heart's fine. It's your coffee that's killing people.
 ?evicted SAL: There's a cot in the back. Until you find a new place.
 ## CLOSE CALL | Solved on the fifth suspect.
 `],
@@ -1589,7 +1589,7 @@ ORDLE: Your heart's fine. It's your coffee that's killing people.
 > The doors were closing. The conductor's hand was on the lever. I said the name with my last breath of night air.
 ** By a thread.
 ?vera_gone VERA: I heard it on the radio. I came back for my good scarf.
-?vera_gone ORDLE: Your scarf's on the hook, Vera. Where it always is.
+?vera_gone DASH: Your scarf's on the hook, Vera. Where it always is.
 ?vera_gone > She didn't take the scarf. She took my arm instead.
 ?!vera_gone > Dawn came up over the bay like it was apologizing for the night.
 ## BY A THREAD | Solved on the last suspect, as the doors were closing.
@@ -1597,10 +1597,10 @@ ORDLE: Your heart's fine. It's your coffee that's killing people.
 @set street!
 @mood gold
 ~rain off
-?suspended BRIGGS: Six suspects and a suspension, Ordle. And you still got it.
+?suspended BRIGGS: Six suspects and a suspension, Lexington. And you still got it.
 ?suspended BRIGGS: Badge. Take it before I come to my senses.
-?!suspended BRIGGS: Six. You took it to the wire, Ordle.
-?!suspended ORDLE: The wire's where I live, Captain.
+?!suspended BRIGGS: Six. You took it to the wire, Lexington.
+?!suspended DASH: The wire's where I live, Captain.
 > The sun came up. I'd never been so glad to see it.
 ## BY A THREAD | Solved on the last suspect.
 `]
@@ -1616,7 +1616,7 @@ const LOSS_CLIMAX = [`
 @mood red
 ~tight
 ** It was {ANSWER}.
-%%JOHN W. ORDLE | {ANSWER}
+%%DASH LEXINGTON | {ANSWER}
 > The word was gone, carrying its meaning to some other city that would never know what it was worth.
 ~stamp COLD CASE
 ~loose
@@ -1629,13 +1629,13 @@ const LOSS_CLIMAX = [`
 ~sfx ring
 > The payphone on the platform rang. I knew who it was before I picked up.
 WORD: Goodbye, detective.
-ORDLE: Tell me your name.
+DASH: Tell me your name.
 WORD: You know it now. You'll know it for the rest of your life.
 ~sfx hangup
 @mood red
 ~tight
 ** {ANSWER}.
-%%JOHN W. ORDLE | {ANSWER}
+%%DASH LEXINGTON | {ANSWER}
 ~stamp COLD CASE
 ~loose
 `];
@@ -1645,7 +1645,7 @@ const LOSS_EPI = {
 @set street!
 @mood noir
 ?suspended > No badge. No case. Just a long walk home in the rain.
-?!suspended BRIGGS: Badge, Ordle. For real this time.
+?!suspended BRIGGS: Badge, Lexington. For real this time.
 ?!suspended ~stamp SUSPENDED
 ?vera_gone > The apartment was dark. I left the light off. It seemed fair.
 ?!vera_gone > Vera didn't ask how it went. She didn't have to.
@@ -1662,11 +1662,11 @@ const LOSS_EPI = {
 1: [`
 @set bar!
 @mood blue
-SAL: You were close, Ordle.
-ORDLE: I was nowhere, Sal. Close is a place they put you when they feel sorry for you.
+SAL: You were close, Lexington.
+DASH: I was nowhere, Sal. Close is a place they put you when they feel sorry for you.
 > They moved me to a desk in Records. Filing other men's solved cases.
 ** I had pieces. Never the whole.
-## COLD CASE | {ANSWER} got away. They say Ordle still checks the train schedules.
+## COLD CASE | {ANSWER} got away. They say Lexington still checks the train schedules.
 `, `
 @set office!
 @mood blue
@@ -1680,12 +1680,12 @@ ORDLE: I was nowhere, Sal. Close is a place they put you when they feel sorry fo
 > I knew its shape. I'd had half its letters in my hand.
 > That's the thing about almost. It weighs exactly as much as nothing.
 ** One more hour. That's all I needed.
-## SO CLOSE | {ANSWER} slipped through. Ordle can still spell every letter but the last one.
+## SO CLOSE | {ANSWER} slipped through. Lexington can still spell every letter but the last one.
 `, `
 @set bar!
 @mood blue
 SAL: Close, huh?
-ORDLE: Close enough to smell its cologne, Sal. Not close enough to put the cuffs on.
+DASH: Close enough to smell its cologne, Sal. Not close enough to put the cuffs on.
 ** Almost is just a fancy word for lost.
 ## SO CLOSE | {ANSWER} walked.
 `],
@@ -1944,7 +1944,7 @@ async function versus(arg) {
   const [l, r] = arg.split('|').map(s => s.trim());
   await lit(); hideText();
   const el = document.createElement('div'); el.className = 'versus';
-  el.innerHTML = `<div class="vs-half vs-l">${ART.bust(Object.assign({ color: '#7fb2ff' }, CAST.ORDLE.bust))}<div class="vs-name"><span class="vs-tag">THE DETECTIVE</span></div></div>
+  el.innerHTML = `<div class="vs-half vs-l">${ART.bust(Object.assign({ color: '#7fb2ff' }, CAST.DASH.bust))}<div class="vs-name"><span class="vs-tag">THE DETECTIVE</span></div></div>
     <div class="vs-half vs-r">${ART.bust(Object.assign({ color: '#ff2a35' }, CAST.WORD.bust))}<div class="vs-name"><span class="vs-tag">THE WORD</span></div></div><svg class="vs-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="58" y1="-2" x2="42" y2="102" stroke="#fff" stroke-width="5" vector-effect="non-scaling-stroke"/></svg>`;
   el.querySelector('.vs-l .vs-name').append(l); el.querySelector('.vs-r .vs-name').append(r);
   C.fx.appendChild(el); await sleep(40); el.classList.add('in'); AU.sting(); await sleep(500); flashFx(.8); AU.thunder(); shake();
@@ -2181,7 +2181,7 @@ function verdictLine(fb) {
 }
 
 async function submit() {
-  if (S.cur.length < 5) { shakeRow(); toast('Five letters, Ordle. Count them.'); return; }
+  if (S.cur.length < 5) { shakeRow(); toast('Five letters, Lexington. Count them.'); return; }
   if (!ALLOWED.has(S.cur)) { shakeRow(); toast(`No record of ${S.cur.toUpperCase()} in this city.`); return; }
   S.busy = true; $('#newBtn').disabled = true;
   const guess = S.cur, fb = score(guess, S.answer); S.cur = ''; S.guesses.push(guess); S.fb.push(fb);
