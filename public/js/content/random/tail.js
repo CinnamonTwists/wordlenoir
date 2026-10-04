@@ -1,6 +1,6 @@
 // Plays after every intro: the rules briefing and first title card.
 
-export const INTRO_TAIL = `
+export const TAIL = { id: 'rnd.tail', chapter: 0, s: `
 ~fade
 @set office!
 @mood warm
@@ -17,4 +17,4 @@ export const INTRO_TAIL = `
 %%DASH LEXINGTON | ? ? ? ? ?
 !!@DASH SIX SUSPECTS. ONE NIGHT.
 ## {time1} | The first suspect is waiting in the dark.
-`;
+` };

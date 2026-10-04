@@ -7,13 +7,14 @@ import { play } from './cinema/player.js';
 import { parseScript, MISSING } from './script/parser.js';
 import { S, DEBUG } from './game/state.js';
 import { WORDS, loadWords } from './game/words.js';
+import { loadPack, getPack, sceneById } from './content/registry.js';
 import { score, stats } from './game/scoring.js';
 import { board, toast } from './game/board.js';
 import { press, attachKeyboard, newCase } from './game/game.js';
 
 // Entry point: title screen, top-bar buttons, and the NOIR console hook.
 
-const wordsReady = loadWords();
+const wordsReady = Promise.all([loadWords(), loadPack('random')]);
 wordsReady.catch(() => {});   // handled when the player clicks start
 
 startRain(); startGrain(); attachKeyboard();
@@ -39,6 +40,7 @@ window.NOIR = {
   get forceAnswer() { return DEBUG.forceAnswer; }, set forceAnswer(v) { DEBUG.forceAnswer = v; },
   get forceInf() { return DEBUG.forceInf; }, set forceInf(v) { DEBUG.forceInf = v; },
   press, play, score, parseScript,
+  get pack() { return getPack('random'); }, scene: sceneById,   // e.g. NOIR.play(NOIR.scene('rnd.core.1-0.02').s, { vars: {}, flags: {} })
   get ANSWERS() { return WORDS.answers; }, get ALLOWED() { return WORDS.allowed; },
   stats: () => stats(WORDS.answers, S.guesses, S.fb)
 };

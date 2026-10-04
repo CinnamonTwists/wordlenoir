@@ -1,8 +1,13 @@
 # Scene script reference
 
-Every cutscene in Wordle Noir is a plain-text script inside a JavaScript template string
-(see `public/js/content/scenes/`). The engine (`public/js/cinema/player.js`) runs it one line at a time.
+Every cutscene in Wordle Noir is a plain-text script in the `s` field of a scene object, `{ id, chapter, s: \`...\` }`,
+inside a **scene pack**: `public/js/content/random/` for Random Case (chapter 0), and later `public/js/content/chapters/cNN/` for story chapters.
+The engine (`public/js/cinema/player.js`) runs it one line at a time.
 Blank lines and lines starting with `//` are ignored. Run `npm run check` after editing to catch typos.
+
+**Scene IDs are permanent.** Save data records scenes by ID, so never renumber, rename or reuse one. A new scene takes the next free number
+or letter in its pool (e.g. after `rnd.core.2-1.03` comes `rnd.core.2-1.04`). The full scheme is in [DEVELOPMENT.md §1.5](DEVELOPMENT.md).
+The same text can't appear in two packs: story chapters are written fresh.
 
 ## Lines
 
@@ -70,9 +75,14 @@ Write `{name}` anywhere in a line. Which ones exist depends on where the script 
 
 ## How scenes are chosen
 
-1. **Intro**: one of `INTROS` (never repeats until all have played), then `INTRO_TAIL`.
-2. **After each wrong guess** `g` (1–5): a scene from `CORES['g-bucket']`, where bucket is
+Pools are fields of the pack (file in `content/random/` in brackets):
+
+1. **Intro**: one of `intros` (`intros.js`; never repeats until all have played), then `tail` (`tail.js`).
+2. **After each wrong guess** `g` (1–5): a scene from `cores['g-bucket']` (`cores/suspect-g.js`), where bucket is
    0 = no hits, 1 = 1–2 hits, 2 = 3–4 hits, 3 = all five letters in the wrong order.
-   Then maybe an informant, then a title card with a line from `CLOSERS`.
-3. **Win**: one `WIN_CLIMAX` + one `WIN_EPI[guesses used]`.
-4. **Loss**: one `LOSS_CLIMAX` + one `LOSS_EPI[bucket of the last guess]`.
+   Then maybe one of `informants`, then a title card with a line from `closers`.
+3. **Win**: one `win.climax` + one `win.epi[guesses used]` (`win.js`).
+4. **Loss**: one `loss.climax` + one `loss.epi[bucket of the last guess]` (`loss.js`).
+
+To preview a single scene, start a case and run `NOIR.play(NOIR.scene('rnd.core.1-0.02').s, { vars: {}, flags: {} })` in the console.
+`npm run check -- --coverage` shows how many scenes each pool has.

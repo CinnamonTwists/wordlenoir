@@ -1,6 +1,6 @@
 // Informants: type n (candidate count) | top (letter odds) | pos (letter at position) | dbl (double letters)
 export const INFORMANTS = [
-{ id: 'pete', type: 'n', who: 'PETE', s: `
+{ id: 'rnd.inf.pete', chapter: 0, type: 'n', who: 'PETE', s: `
 ~fade
 @set street!
 ~rain light
@@ -15,7 +15,7 @@ PETE: I been doing arithmetic, see. Every word in town that fits what you got so
 DASH: Put it on my tab, Pete.
 PETE: You don't got a tab, Lexington. You got a debt.
 ` },
-{ id: 'zero', type: 'top', who: 'ZERO', s: `
+{ id: 'rnd.inf.zero', chapter: 0, type: 'top', who: 'ZERO', s: `
 ~fade
 @set alley!
 @mood violet
@@ -28,7 +28,7 @@ ZERO: There is a letter that hangs over your case like smoke. {topL}.
 DASH: What do I owe you?
 ZERO: Your soul. But I'll take a dollar.
 ` },
-{ id: 'prof', type: 'pos', who: 'PROF', s: `
+{ id: 'rnd.inf.prof', chapter: 0, type: 'pos', who: 'PROF', s: `
 ~fade
 @set office!
 @mood warm
@@ -40,7 +40,7 @@ PROF: The {posOrd} letter. It is {posL}, more often than not.
 ?posPct<100 DASH: More often than not isn't a sure thing, Professor.
 ?posPct<100 PROF: Nothing in language is a sure thing. That's what makes it beautiful.
 ` },
-{ id: 'dooley', type: 'dbl', who: 'DOOLEY', s: `
+{ id: 'rnd.inf.dooley', chapter: 0, type: 'dbl', who: 'DOOLEY', s: `
 ~fade
 @set precinct!
 DOOLEY: Dash. I ran every candidate through Records. Thought you'd want to see this.
@@ -51,7 +51,7 @@ DOOLEY: Dash. I ran every candidate through Records. Thought you'd want to see t
 DASH: You're a good cop, Dooley.
 DOOLEY: I'm a tired cop. Go get it.
 ` },
-{ id: 'sal', type: 'top', who: 'SAL', s: `
+{ id: 'rnd.inf.sal', chapter: 0, type: 'top', who: 'SAL', s: `
 ~fade
 @set bar!
 SAL: Lexington. Got a minute? I got something for you.
@@ -63,7 +63,7 @@ SAL: Smart money's on {topL}.
 DASH: Since when do you run numbers, Sal?
 SAL: Since never. Drink your coffee.
 ` },
-{ id: 'nickel', type: 'pos', who: 'NICKEL', s: `
+{ id: 'rnd.inf.nickel', chapter: 0, type: 'pos', who: 'NICKEL', s: `
 ~fade
 @set street!
 NICKEL: Shine, mister? I'll throw in a tip. Free of charge.
@@ -74,7 +74,7 @@ DASH: They sure about that?
 ?posPct<100 NICKEL: {posPct} cents on the dollar, mister. That's what they said.
 > I gave the kid a quarter. He'd earned it. The shine was terrible.
 ` },
-{ id: 'telegram', type: 'n', who: null, s: `
+{ id: 'rnd.inf.telegram', chapter: 0, type: 'n', who: null, s: `
 ~fade
 @set office!
 ~sfx telegraph
@@ -83,7 +83,7 @@ DASH: They sure about that?
 ?n=1 > One word. Somebody out there wanted me to win. That worried me more than losing.
 ?n>1 > Somebody out there was rooting for me. In this city, that's a reason to check behind you.
 ` },
-{ id: 'fenn', type: 'n', who: 'FENN', s: `
+{ id: 'rnd.inf.fenn', chapter: 0, type: 'n', who: 'FENN', s: `
 ~fade
 @set precinct!
 @mood blue
@@ -94,7 +94,7 @@ FENN: I measured every word in the city against your evidence. Like fitting a co
 ?n>1?n<=10 FENN: A handful. You could fit them all in one elevator.
 ?n>10 FENN: Still a crowd. But crowds thin out. They always do.
 ` },
-{ id: 'lola', type: 'top', who: 'LOLA', s: `
+{ id: 'rnd.inf.lola', chapter: 0, type: 'top', who: 'LOLA', s: `
 ~fade
 @set street!
 @mood noir

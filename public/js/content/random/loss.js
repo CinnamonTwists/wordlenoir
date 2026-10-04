@@ -1,6 +1,8 @@
-// LOSS_CLIMAX plays first, then a LOSS_EPI keyed by the last guess's bucket (0-3).
+// LOSS.climax plays first, then a LOSS.epi scene keyed by the last guess's bucket.
 
-export const LOSS_CLIMAX = [`
+export const LOSS = {
+climax: [
+{ id: 'rnd.loss.climax.a', chapter: 0, s: `
 @set station!
 @mood blue
 ~rain heavy
@@ -14,7 +16,8 @@ export const LOSS_CLIMAX = [`
 > The word was gone, carrying its meaning to some other city that would never know what it was worth.
 ~stamp COLD CASE
 ~loose
-`, `
+` },
+{ id: 'rnd.loss.climax.b', chapter: 0, s: `
 @set station!
 @mood blue
 ~rain heavy
@@ -32,10 +35,11 @@ WORD: You know it now. You'll know it for the rest of your life.
 %%DASH LEXINGTON | {ANSWER}
 ~stamp COLD CASE
 ~loose
-`];
-
-export const LOSS_EPI = {
-0: [`
+` }
+],
+epi: {
+0: [
+{ id: 'rnd.loss.epi.0.a', chapter: 0, s: `
 @set street!
 @mood noir
 ?suspended > No badge. No case. Just a long walk home in the rain.
@@ -45,15 +49,18 @@ export const LOSS_EPI = {
 ?!vera_gone > Vera didn't ask how it went. She didn't have to.
 ** The city forgets its detectives faster than its crimes.
 ## THE TRAIL WENT COLD | Six suspects, and none of them close. {ANSWER} is still out there.
-`, `
+` },
+{ id: 'rnd.loss.epi.0.b', chapter: 0, s: `
 @set void!
 @mood noir
 > I stood in the middle of the empty platform until the sweepers came.
 > Six suspects. Not one of them knew the word. Maybe I never did either.
 ** Some words don't want to be found.
 ## THE TRAIL WENT COLD | {ANSWER} rode the 6:00 out of town.
-`],
-1: [`
+` }
+],
+1: [
+{ id: 'rnd.loss.epi.1.a', chapter: 0, s: `
 @set bar!
 @mood blue
 SAL: You were close, Lexington.
@@ -61,34 +68,42 @@ DASH: I was nowhere, Sal. Close is a place they put you when they feel sorry for
 > They moved me to a desk in Records. Filing other men's solved cases.
 ** I had pieces. Never the whole.
 ## COLD CASE | {ANSWER} got away. They say Lexington still checks the train schedules.
-`, `
+` },
+{ id: 'rnd.loss.epi.1.b', chapter: 0, s: `
 @set office!
 @mood blue
 > I pinned the scraps to the wall. A letter here. A letter there. Like a face drawn by a witness who only saw the hat.
 ** Pieces of a stranger.
 ## COLD CASE | {ANSWER} got away.
-`],
-2: [`
+` }
+],
+2: [
+{ id: 'rnd.loss.epi.2.a', chapter: 0, s: `
 @set rooftop!
 @mood blue
 > I knew its shape. I'd had half its letters in my hand.
 > That's the thing about almost. It weighs exactly as much as nothing.
 ** One more hour. That's all I needed.
 ## SO CLOSE | {ANSWER} slipped through. Lexington can still spell every letter but the last one.
-`, `
+` },
+{ id: 'rnd.loss.epi.2.b', chapter: 0, s: `
 @set bar!
 @mood blue
 SAL: Close, huh?
 DASH: Close enough to smell its cologne, Sal. Not close enough to put the cuffs on.
 ** Almost is just a fancy word for lost.
 ## SO CLOSE | {ANSWER} walked.
-`],
-3: [`
+` }
+],
+3: [
+{ id: 'rnd.loss.epi.3.a', chapter: 0, s: `
 @set office!
 @mood red
 > I had every letter. Every single one. They were sitting right there on my desk.
 > I just couldn't make them stand in line.
 ** The right letters in the wrong order is still the wrong answer.
 ## THE ONE THAT GOT AWAY | Every letter of {ANSWER} was in his hand. In the wrong order.
-`]
+` }
+]
+}
 };

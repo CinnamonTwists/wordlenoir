@@ -3,8 +3,7 @@ import { sleep } from '../core/timing.js';
 import { $ } from '../core/dom.js';
 import { AU } from '../audio/audio.js';
 import { play } from '../cinema/player.js';
-import { INTRO_TAIL, OPENERS, CORES, WIN_CLIMAX, WIN_EPI, LOSS_CLIMAX, LOSS_EPI, CLOSERS } from '../content/scenes/index.js';
-import { S, setState, used, DEBUG } from './state.js';
+import { S, setState, used, DEBUG, pack } from './state.js';
 import { WORDS } from './words.js';
 import { score, candidates, bucketOf } from './scoring.js';
 import { board, buildGrid, buildKB, updateKB, renderRow, updateStatus, setMemo, toast, shakeRow, revealRow, verdictLine } from './board.js';
@@ -31,7 +30,7 @@ export function attachKeyboard() {
 }
 
 function withOpener(core) {
-  return core.replace(/^@set (\w+)\s*$/m, (m, name) => { const o = OPENERS[name]; return o ? `${m}\n${pick(o)}` : m; });
+  return core.replace(/^@set (\w+)\s*$/m, (m, name) => { const o = pack().openers[name]; return o ? `${m}\n${pick(o)}` : m; });
 }
 
 async function submit() {
@@ -48,16 +47,16 @@ async function submit() {
   const ctx = { vars: guessVars(g, guess, fb), flags: S.flags, clue: null };
   if (win) {
     S.over = true; S.won = true; ctx.vars.clockH = S.times[g][0]; ctx.vars.clockM = S.times[g][1];
-    AU.riff(); await playScene(pick(WIN_CLIMAX) + pick(WIN_EPI[g]), ctx); updateStatus(); showReport(newCase); return;
+    const W = pack().win; AU.riff(); await playScene(pick(W.climax).s + pick(W.epi[g]).s, ctx); updateStatus(); showReport(newCase); return;
   }
   if (g === 6) {
     S.over = true; S.won = false; ctx.vars.clockH = 6; ctx.vars.clockM = 0;
-    await playScene(pick(LOSS_CLIMAX) + pick(LOSS_EPI[b]), ctx); AU.piano([311.13, 293.66, 261.63, 196], .7); updateStatus(); showReport(newCase); return;
+    const L = pack().loss; await playScene(pick(L.climax).s + pick(L.epi[b]).s, ctx); AU.piano([311.13, 293.66, 261.63, 196], .7); updateStatus(); showReport(newCase); return;
   }
-  const core = pickUnused(CORES[`${g}-${b}`], used.core, x => x);
-  let script = withOpener(core);
+  const core = pickUnused(pack().cores[`${g}-${b}`], used.core, x => x.id);
+  let script = withOpener(core.s);
   script += '\n' + informant(g, b, ctx);
-  script += `\n## {nextTime} | ${pick(CLOSERS[6 - g])}`;
+  script += `\n## {nextTime} | ${pick(pack().closers[6 - g])}`;
   S.g = g; updateStatus();
   await playScene(script, ctx);
   S.busy = false; $('#newBtn').disabled = false;
@@ -73,7 +72,7 @@ export async function newCase() {
   $('#newBtn').disabled = true;
   const ctx = { vars: baseVars(), flags: S.flags };
   ctx.vars.time = ctx.vars.time0;
-  await playScene(cs.intro.s + '\n' + INTRO_TAIL, ctx);
+  await playScene(cs.intro.s + '\n' + pack().tail.s, ctx);
   S.busy = false; $('#newBtn').disabled = false;
   setMemo('Suspect 1 of 6. Type a five-letter name. ENTER brings it in.');
 }

@@ -107,7 +107,8 @@ const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
 
 test('title → first case, invalid word is refused', async () => {
-  await until('window.NOIR && NOIR.ANSWERS.length > 0', 'the word lists to load');
+  await until('window.NOIR && NOIR.ANSWERS.length > 0 && NOIR.pack', 'the word lists and the Random Case pack to load');
+  if (!await ev(`NOIR.pack.id === 'rnd' && NOIR.scene('rnd.tail') === NOIR.pack.tail`)) throw new Error('scene registry: rnd pack or id lookup is wrong');
   const answer = (await randomWords(1, ''))[0];
   await openCase(answer, undefined, true);
   await until(READY, 'the intro to finish');

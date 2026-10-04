@@ -1,6 +1,7 @@
-// Validates every scene script and word list without opening a browser: `npm run check`.
-// Catches typos that would otherwise only show up mid-scene: unknown locations, moods, speakers,
-// sound effects, {vars} that a scene can't see, malformed conditions, and missing scene pools.
+// Validates every scene pack and word list without opening a browser: `npm run check` (add `-- --coverage` for slot counts).
+// Catches typos that would otherwise only show up mid-scene: unknown locations, moods, speakers, sound effects,
+// {vars} that a scene can't see, malformed conditions, and missing scene pools. Also enforces the pack rules (roadmap T1):
+// every scene has an id in its pack's scheme and a `chapter` matching its pack, ids are unique, and no text is reused across packs.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,9 +11,10 @@ import { MOOD_MUSIC } from '../public/js/cinema/moods.js';
 import { AU, STINGS } from '../public/js/audio/audio.js';
 import { CAST } from '../public/js/content/cast.js';
 import { parseWordList } from '../public/js/game/words.js';
-import * as SC from '../public/js/content/scenes/index.js';
+import { loadPack, packId, scenesOf } from '../public/js/content/registry.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const COVERAGE = process.argv.includes('--coverage');
 const errors = [], warnings = [];
 const err = (where, msg) => errors.push(`${where}: ${msg}`);
 
@@ -22,59 +24,116 @@ const GUESS = ['guess', 'GUESS', 'g', 'left', 'greens', 'yellows', 'grays', 'hit
   'HitsN', 'GreensN', 'YellowsN', 'GraysN', 'LeftN', 'LeftW', 'nextTime', 'ANSWER', 'clockH', 'clockM'];
 const INFO = ['n', 'nN', 'NWORDS', 'FIT', 'dblPct', 'topL', 'topPct', 'posL', 'posPct', 'posOrd', 'POSORD', 'posArt'];
 const SCOPE = { intro: new Set(BASE), round: new Set([...BASE, ...GUESS]), informant: new Set([...BASE, ...GUESS, ...INFO]) };
+const SLOT_SCOPE = { intro: 'intro', tail: 'intro', inf: 'informant' };   // everything else (cores, endings, beats) is a round scene
 
 const TILDE = new Set(['fade', 'black', 'shake', 'flash', 'lightning', 'heart', 'rain', 'sfx', 'wait', 'flag', 'stamp', 'gstamp', 'paper', 'clue', 'legend', 'tight', 'loose', 'push']);
 const RAIN = new Set(['off', 'window', 'light', 'heavy']);
 
+// ---------- load packs: Random Case + every chapters/cNN/ that exists ----------
+const CH_DIR = path.join(ROOT, 'public/js/content/chapters');
+const chapterNos = fs.existsSync(CH_DIR) ? fs.readdirSync(CH_DIR).filter(d => /^c\d\d$/.test(d) && fs.existsSync(path.join(CH_DIR, d, 'index.js'))).map(d => +d.slice(1)) : [];
+const PACKS = [];
+for (const ch of ['random', ...chapterNos]) {
+  try { PACKS.push(await loadPack(ch)); } catch (e) { err(`pack ${packId(ch)}`, `failed to load: ${e.message}`); }
+}
+
 // Flags are whatever any script sets with ~flag; conditions may test flags or vars.
 const allScripts = [];
-const add = (where, src, scope) => allScripts.push({ where, src, scope });
+const add = (where, src, scope, pack, isScene) => allScripts.push({ where, src, scope, pack, isScene });
 const FLAGS = new Set();
 
-// ---------- collect ----------
-const ids = new Set();
-SC.INTROS.forEach((x, i) => {
-  if (!x.id || !x.title || typeof x.s !== 'string') err(`INTROS[${i}]`, 'needs id, title and s');
-  if (ids.has(x.id)) err(`INTROS[${i}]`, `duplicate id "${x.id}"`); ids.add(x.id);
-  add(`intro "${x.id}"`, x.s, 'intro');
-});
-add('INTRO_TAIL', SC.INTRO_TAIL, 'intro');
-for (const [set, lines] of Object.entries(SC.OPENERS)) {
-  if (!SETS[set]) err(`OPENERS.${set}`, 'not a known set');
-  lines.forEach((l, i) => add(`OPENERS.${set}[${i}]`, l, 'round'));
+// ---------- collect and check each pack's structure ----------
+const ids = new Map();   // id → pack id
+for (const P of PACKS) {
+  const pid = packId(P.chapter), at = `pack ${pid}`;
+  if (P.id !== pid) err(at, `id "${P.id}" should be "${pid}" for chapter ${P.chapter}`);
+  if (!P.title) err(at, 'needs a title');
+  const ID_RE = new RegExp(`^${pid}\\.[a-z]+(\\.[a-z0-9-]+)*$`);
+  for (const { slot, key, scene: x } of scenesOf(P)) {
+    const where = x?.id ? `"${x.id}"` : `${pid} ${slot}${key !== undefined ? `[${key}]` : ''}`;
+    if (!x || typeof x !== 'object' || typeof x.s !== 'string' || !x.s.trim()) { err(where, 'needs { id, chapter, s }'); continue; }
+    if (!ID_RE.test(x.id || '')) err(where, `id must look like ${pid}.<slot>.<...> (lowercase, dots)`);
+    if (ids.has(x.id)) err(where, `duplicate id (also in ${ids.get(x.id)})`); ids.set(x.id, pid);
+    if (x.chapter !== P.chapter) err(where, `chapter is ${x.chapter}, but it is in pack ${pid} (chapter ${P.chapter})`);
+    if (slot === 'intro' && !x.title) err(where, 'intro needs a title');
+    if (slot === 'inf') {
+      if (!['n', 'top', 'pos', 'dbl'].includes(x.type)) err(where, `unknown informant type "${x.type}"`);
+      if (x.who !== null && !CAST[x.who]) err(where, `who "${x.who}" is not in CAST`);
+    }
+    add(where, x.s, SLOT_SCOPE[slot] || 'round', pid, true);
+  }
+  // every pool the game draws from must exist
+  if (!P.intros?.length) err(at, 'intros missing or empty');
+  if (!P.tail) err(at, 'tail missing');
+  for (let g = 1; g <= 5; g++) for (let b = 0; b <= 3; b++) if (!P.cores?.[`${g}-${b}`]?.length) err(at, `cores['${g}-${b}'] missing or empty`);
+  if (!P.informants?.length) warnings.push(`${at}: no informants`);
+  for (const [end, keys] of [['win', [1, 2, 3, 4, 5, 6]], ['loss', [0, 1, 2, 3]]]) {
+    if (!P[end]?.climax?.length) err(at, `${end}.climax missing or empty`);
+    for (const k of keys) if (!P[end]?.epi?.[k]?.length) err(at, `${end}.epi[${k}] missing or empty`);
+  }
+  for (let n = 1; n <= 5; n++) if (!P.closers?.[n]?.length) err(at, `closers[${n}] missing or empty`);
+  for (const [set, lines] of Object.entries(P.openers || {})) {
+    if (!SETS[set]) err(`${at} openers.${set}`, 'not a known set');
+    lines.forEach((l, i) => add(`${pid} openers.${set}[${i}]`, l, 'round', pid, false));
+  }
 }
-for (let g = 1; g <= 5; g++) for (let b = 0; b <= 3; b++) {
-  const k = `${g}-${b}`, list = SC.CORES[k];
-  if (!Array.isArray(list) || !list.length) { err(`CORES['${k}']`, 'missing or empty'); continue; }
-  list.forEach((s, i) => add(`CORES['${k}'][${i}]`, s, 'round'));
-}
-const infIds = new Set();
-SC.INFORMANTS.forEach((x, i) => {
-  if (infIds.has(x.id)) err(`INFORMANTS[${i}]`, `duplicate id "${x.id}"`); infIds.add(x.id);
-  if (!['n', 'top', 'pos', 'dbl'].includes(x.type)) err(`informant "${x.id}"`, `unknown type "${x.type}"`);
-  if (x.who !== null && !CAST[x.who]) err(`informant "${x.id}"`, `who "${x.who}" is not in CAST`);
-  add(`informant "${x.id}"`, x.s, 'informant');
-});
-SC.WIN_CLIMAX.forEach((s, i) => add(`WIN_CLIMAX[${i}]`, s, 'round'));
-SC.LOSS_CLIMAX.forEach((s, i) => add(`LOSS_CLIMAX[${i}]`, s, 'round'));
-for (let g = 1; g <= 6; g++) (SC.WIN_EPI[g] || err(`WIN_EPI[${g}]`, 'missing') || []).forEach((s, i) => add(`WIN_EPI[${g}][${i}]`, s, 'round'));
-for (let b = 0; b <= 3; b++) (SC.LOSS_EPI[b] || err(`LOSS_EPI[${b}]`, 'missing') || []).forEach((s, i) => add(`LOSS_EPI[${b}][${i}]`, s, 'round'));
-for (let n = 1; n <= 5; n++) if (!SC.CLOSERS[n]?.length) err(`CLOSERS[${n}]`, 'missing or empty');
 
 for (const { src } of allScripts) for (const { line } of parseScript(src)) { const m = line.match(/^~flag\s+(\w+)/); if (m) FLAGS.add(m[1]); }
 
 for (const [k, v] of Object.entries(CAST)) if (v.sting !== undefined && !STINGS[v.sting]) err(`CAST.${k}`, `unknown sting "${v.sting}"`);
 
-// ---------- cut-in budget (roadmap T8/T10): at most one !! per scene, and !! in at most ~20% of scenes ----------
-const scenes = allScripts.filter(x => !x.where.startsWith('OPENERS'));
-let withCutin = 0;
-for (const { where, src } of scenes) {
-  const n = parseScript(src).filter(({ line }) => line.startsWith('!!')).length;
-  if (n) withCutin++;
+// ---------- text reuse (roadmap T1): no scene is reused across packs; long prose lines shouldn't be either ----------
+const norm = s => s.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('//')).join('\n').toLowerCase().replace(/\s+/g, ' ');
+const seenText = new Map(), seenLine = new Map();
+for (const { where, src, pack, isScene } of allScripts) {
+  if (!isScene) continue;
+  const k = norm(src), prev = seenText.get(k);
+  if (prev) (prev.pack === pack ? warnings : errors).push(`${where}: same text as ${prev.where}${prev.pack === pack ? '' : ' (no reuse across packs)'}`);
+  else seenText.set(k, { where, pack });
+  for (const { line } of parseScript(src)) {
+    if (!/^(>|\*\*|!!|[A-Z]+:)/.test(line)) continue;
+    const l = norm(line.replace(/^(>|\*\*|!!(@\w+)?|[A-Z]+:)\s*/, ''));
+    if (l.length < 40) continue;
+    const p = seenLine.get(l);
+    if (p && p.pack !== pack) warnings.push(`${where}: reuses a line from ${p.where}: "${line.slice(0, 60)}..."`);
+    else if (!p) seenLine.set(l, { where, pack });
+  }
+}
+
+// ---------- cut-in budget (roadmap T8/T10), per pack: at most one !! per scene, and !! in at most ~20% of scenes ----------
+const cutins = {};
+for (const { where, src, pack, isScene } of allScripts) {
+  if (!isScene) continue;
+  const c = cutins[pack] ||= { n: 0, with: 0 }, n = parseScript(src).filter(({ line }) => line.startsWith('!!')).length;
+  c.n++; if (n) c.with++;
   if (n > 1) warnings.push(`${where}: ${n} cut-ins (budget is 1 per scene)`);
 }
-const cutinPct = Math.round(100 * withCutin / scenes.length);
-if (cutinPct > 20) warnings.push(`cut-ins in ${cutinPct}% of scenes (budget is about 20%)`);
+for (const [pack, c] of Object.entries(cutins)) { c.pct = Math.round(100 * c.with / c.n); if (c.pct > 20) warnings.push(`pack ${pack}: cut-ins in ${c.pct}% of scenes (budget is about 20%)`); }
+
+// ---------- coverage (roadmap T8 per-chapter budget) ----------
+if (COVERAGE) {
+  const T = { intros: 3, tail: 1, core: [5, 6, 6, 3], informants: 12, climax: 3, winEpi: 2, lossEpi: 2, beats: 4, lines: 20 };
+  const len = x => x?.length || 0, lines = o => Object.values(o || {}).flat().length;
+  const rows = [
+    ['openings (intros)', P => len(P.intros), T.intros],
+    ['briefing tail', P => P.tail ? 1 : 0, T.tail],
+    ...[1, 2, 3, 4, 5].map(g => [`cores ${g}-0/1/2/3`, P => [0, 1, 2, 3].map(b => len(P.cores?.[`${g}-${b}`])), T.core]),
+    ['informants', P => len(P.informants), T.informants],
+    ['win climax', P => len(P.win?.climax), T.climax],
+    ['win epi 1..6', P => [1, 2, 3, 4, 5, 6].map(k => len(P.win?.epi?.[k])), Array(6).fill(T.winEpi)],
+    ['loss climax', P => len(P.loss?.climax), T.climax],
+    ['loss epi 0..3', P => [0, 1, 2, 3].map(k => len(P.loss?.epi?.[k])), Array(4).fill(T.lossEpi)],
+    ['outro beats', P => lines(P.beats), T.beats],
+    ['openers (lines)', P => lines(P.openers), T.lines],
+    ['closers (lines)', P => lines(P.closers), T.lines],
+    ['TOTAL scenes', P => scenesOf(P).length, 146]
+  ];
+  const fmt = (v, t, story) => { const a = [].concat(v), b = [].concat(t); const s = a.join('/'); return story && a.some((x, i) => x < b[i]) ? s + ' !' : s; };
+  const cols = PACKS.map(P => packId(P.chapter)), W = 22;
+  console.log(`\nCoverage (target = T8 per-chapter budget; "!" = a story chapter below target; rnd has no target)`);
+  console.log('slot'.padEnd(W) + 'target'.padEnd(14) + cols.map(c => c.padEnd(14)).join(''));
+  for (const [name, f, t] of rows) console.log(name.padEnd(W) + [].concat(t).join('/').padEnd(14) + PACKS.map(P => fmt(f(P), t, P.chapter > 0).padEnd(14)).join(''));
+}
 
 // ---------- validate each line ----------
 for (const { where, src, scope } of allScripts) {
@@ -117,7 +176,7 @@ if (overlap) warnings.push(`allowed.txt repeats ${overlap} word(s) already in an
 // ---------- report ----------
 warnings.forEach(w => console.warn('warn ', w));
 errors.forEach(e => console.error('error', e));
-console.log(`\nCut-ins in ${withCutin}/${scenes.length} scenes (${cutinPct}%).`);
-console.log(`Checked ${allScripts.length} scripts, ${Object.keys(SETS).length} sets, ${Object.keys(CAST).length} characters, ${words.answers.length} answers, ${words.allowed.length} extra guesses.`);
+console.log('\n' + PACKS.map(P => { const id = packId(P.chapter), c = cutins[id] || { n: 0, with: 0, pct: 0 }; return `${id}: ${c.n} scenes, cut-ins in ${c.with} (${c.pct}%)`; }).join(' · '));
+console.log(`Checked ${PACKS.length} pack(s), ${allScripts.length} scripts, ${Object.keys(SETS).length} sets, ${Object.keys(CAST).length} characters, ${words.answers.length} answers, ${words.allowed.length} extra guesses.`);
 if (errors.length) { console.error(`${errors.length} error(s).`); process.exit(1); }
 console.log('All good.');

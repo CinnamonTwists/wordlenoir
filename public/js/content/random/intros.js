@@ -1,8 +1,9 @@
 // Case openings. One is picked per case (never repeating until all have played).
 // Available vars: {caseNo} {date} {victim} {singer} {pier} {caseTitle} {time0}..{time6} {time}
+// victimF: the case needs a woman's name for {victim}.
 
 export const INTROS = [
-{ id: 'crossword', title: 'The Crossword Killing', s: `
+{ id: 'rnd.intro.crossword', chapter: 0, title: 'The Crossword Killing', s: `
 ~rain heavy
 ## THE CROSSWORD KILLING | Case No. {caseNo} · {date}
 @set street!
@@ -23,7 +24,7 @@ BRIGGS: Five letters, Lexington. Somebody erased it clean. Didn't even leave a s
 BRIGGS: The Gazette goes to press at six. If that square's empty, the whole city wakes up knowing we lost.
 !!@BRIGGS FIND IT, LEXINGTON.
 ` },
-{ id: 'singer', title: 'The Torch Singer', s: `
+{ id: 'rnd.intro.singer', chapter: 0, title: 'The Torch Singer', victimF: true, s: `
 ~rain heavy
 ## THE TORCH SINGER | Case No. {caseNo} · {date}
 @set bar!
@@ -42,7 +43,7 @@ FENN: It's grammar.
 ** A song with no ending is just a scream with a band behind it.
 > I put a dollar on the bar for the coffee I didn't drink and went out into the rain.
 ` },
-{ id: 'ransom', title: 'The Ransom Note', s: `
+{ id: 'rnd.intro.ransom', chapter: 0, title: 'The Ransom Note', s: `
 ~rain heavy
 ## THE RANSOM NOTE | Case No. {caseNo} · {date}
 @set precinct!
@@ -58,7 +59,7 @@ BRIGGS: The note's missing _the_ word. The drop's at dawn. No word, no drop.
 > He didn't finish the sentence. In this business, nobody ever has to.
 !!@BRIGGS BRING HIM HOME, LEXINGTON.
 ` },
-{ id: 'dying', title: 'The Dying Clue', s: `
+{ id: 'rnd.intro.dying', chapter: 0, title: 'The Dying Clue', s: `
 ~rain light
 ## THE DYING CLUE | Case No. {caseNo} · {date}
 @set void!
@@ -76,7 +77,7 @@ DASH: Somebody who knew what they said.
 BRIGGS: The will gets read at six in the morning. You know what that means.
 DASH: It means somebody's in a hurry.
 ` },
-{ id: 'witness', title: 'The Witness', s: `
+{ id: 'rnd.intro.witness', chapter: 0, title: 'The Witness', s: `
 ~rain heavy
 ## THE WITNESS | Case No. {caseNo} · {date}
 @set precinct!
@@ -96,7 +97,7 @@ DOOLEY: This one did.
 WORD: Catch me if you can, detective.
 ~sfx hangup
 ` },
-{ id: 'password', title: 'The Password', s: `
+{ id: 'rnd.intro.password', chapter: 0, title: 'The Password', s: `
 ~rain light
 ## THE PASSWORD | Case No. {caseNo} · {date}
 @set docks!
@@ -111,7 +112,7 @@ PETE: Everybody who matters. Nobody who'll tell you. It's five letters. That's a
 > If it's me, two hundred families get their life savings back. If it's Varga, they get nothing. Again.
 ** This city belongs to whoever can spell it.
 ` },
-{ id: 'telegram', title: 'The Telegram', s: `
+{ id: 'rnd.intro.telegram', chapter: 0, title: 'The Telegram', s: `
 ~rain heavy
 ## THE TELEGRAM | Case No. {caseNo} · {date}
 @set office!
@@ -125,7 +126,7 @@ DASH: So somewhere between his mouth and my desk, a word got off the train.
 > That's how it goes. A man dies, and his last sentence is missing the only part that mattered.
 ** He died spelling it for me.
 ` },
-{ id: 'typewriter', title: 'The Typewriter', s: `
+{ id: 'rnd.intro.typewriter', chapter: 0, title: 'The Typewriter', s: `
 ~rain light
 ## THE TYPEWRITER | Case No. {caseNo} · {date}
 @set office!
@@ -139,7 +140,7 @@ BRIGGS: Gone. Along with the word. The Commissioner wants it found before the pa
 > They're scared.
 ** Somebody in this city is afraid of five letters.
 ` },
-{ id: 'lastwords', title: 'Last Words', s: `
+{ id: 'rnd.intro.lastwords', chapter: 0, title: 'Last Words', s: `
 ~rain heavy
 ## LAST WORDS | Case No. {caseNo} · {date}
 @set apartment!
@@ -154,7 +155,7 @@ VERA: You're always thinking about something else, Dash.
 ** The only man who heard it was me.
 > The word left that room before the doctor came in. I've been chasing it ever since.
 ` },
-{ id: 'dictionary', title: 'The Missing Page', s: `
+{ id: 'rnd.intro.dictionary', chapter: 0, title: 'The Missing Page', s: `
 ~rain light
 ## THE MISSING PAGE | Case No. {caseNo} · {date}
 @set office!
@@ -167,7 +168,7 @@ PROF: Can mean anything it wants. It's the most dangerous thing in this city.
 > The Professor's hands were shaking. I'd seen men shake like that over a gun. Never over a dictionary.
 ** A word with no definition can be anyone.
 ` },
-{ id: 'femme', title: 'The Woman in Red', s: `
+{ id: 'rnd.intro.femme', chapter: 0, title: 'The Woman in Red', s: `
 ~rain heavy
 ## THE WOMAN IN RED | Case No. {caseNo} · {date}
 @set office!
@@ -180,7 +181,7 @@ LOLA: When the lights came up, the matchbook was ash. And the word was gone.
 > She cried the way people cry in the movies. One tear, perfectly timed. I didn't trust her for a second.
 ** But I took the case. I always take the case.
 ` },
-{ id: 'cipher', title: 'The Radio Cipher', s: `
+{ id: 'rnd.intro.cipher', chapter: 0, title: 'The Radio Cipher', s: `
 ~rain light
 ## THE RADIO CIPHER | Case No. {caseNo} · {date}
 @set rooftop!

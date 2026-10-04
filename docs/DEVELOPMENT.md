@@ -20,14 +20,15 @@ Related docs: [README.md](../README.md) (quick start), [scene-scripts.md](scene-
 | Stack | Vanilla JS (native ES modules), CSS, inline SVG art, Web Audio synthesis. No framework, no dependencies, **no build step**. |
 | Hosting | Cloudflare Workers Builds, Worker `raspy-term-4561`, domain wordlenoir.com. Push to `main` deploys. |
 | Persistence | None yet. Nothing survives a reload. |
-| Content | 101 scene scripts + 21 one-line openers, 13 characters, 11 locations, 2,309 answers, 12,546 extra valid guesses. |
+| Content | Random Case pack (`rnd`): 101 scenes with stable IDs + 31 one-liners (21 openers, 10 closers). 13 characters, 11 locations, 2,309 answers, 12,546 extra valid guesses. No story chapters yet. |
 | Average scene | ~357 characters of script. |
 
 ## 1.2 Run, test, deploy
 
 ```sh
 npm run dev      # zero-dep static server for public/ on :8788 (tools/dev-server.mjs)
-npm run check    # validates all scenes, cast stings, cut-in budget + word lists (tools/check-scenes.mjs), exit 1 on errors
+npm run check    # validates every scene pack, cast stings, cut-in budget + word lists (tools/check-scenes.mjs), exit 1 on errors
+npm run check -- --coverage   # ...plus per-pack slot counts against the T8 chapter budget
 npm run e2e      # plays real cases in headless Chrome/Edge (tools/e2e.mjs), exit 1 on failure. Needs Node ≥ 22
 npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on first run
 ```
@@ -35,7 +36,8 @@ npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on fi
 - ES modules don't load from `file://`, so always use a server.
 - **URL `#speedN`** (e.g. `#speed20`) scales every scripted delay. `#speed400` plays a full case in about a second.
 - **Console hook `window.NOIR`**: `S` (state), `speed`, `forceAnswer`, `forceInf` (true = informant every round, false = never),
-  `press(key)`, `play(src, ctx)`, `score`, `stats()`, `parseScript`, `ANSWERS`, `ALLOWED`, `VT` (virtual ms played), `MISSING` (unfilled `{vars}`).
+  `press(key)`, `play(src, ctx)`, `score`, `stats()`, `parseScript`, `ANSWERS`, `ALLOWED`, `VT` (virtual ms played), `MISSING` (unfilled `{vars}`),
+  `pack` (the loaded Random Case pack), `scene(id)` (any loaded scene). Audition one with `NOIR.play(NOIR.scene('rnd.core.1-0.02').s, { vars: {}, flags: {} })`.
 - **End-to-end test (`npm run e2e`, about 7 s)**: zero dependencies. It starts the dev server on a free port and launches local Chrome or Edge
   headless (`CHROME=/path` overrides the browser) with `--remote-debugging-port=0` and a throwaway profile. It drives the page over the
   DevTools Protocol at `#speed400` with real clicks and key presses, using `NOIR` to force answers and informants and to read state.
@@ -77,9 +79,12 @@ public/js/
   content/                The story                                                          [DOM-free]
     cast.js               CAST: key → { name, color, bust, sting? }
     names.js              NAMES_M, NAMES_F (for {victim}/{singer})
-    scenes/               intros, intro-tail, openers, cores/suspect-1..5, informants, win, loss, closers, index
+    registry.js           packId, loadPack(ch) (lazy import, cached), getPack(ch), sceneById(id), scenesOf(pack)
+    random/               the Random Case pack (chapter 0): index (assembles the pack), intros, tail, openers,
+                          cores/suspect-1..5, informants, win, loss, closers
+    chapters/cNN/         story chapter packs, same shape (none yet; written fresh from step 8)
   game/
-    state.js              S (live binding) + setState, used (no-repeat sets), DEBUG
+    state.js              S (live binding) + setState, pack() (the active scene pack), used (no-repeat sets), DEBUG
     words.js              WORDS {answers, allowed}, loadWords() (fetch), parseWordList        [DOM-free at import]
     scoring.js            score, candidates, stats, bucketOf                                [DOM-free]
     board.js              grid/keyboard/clock/cigarettes/memo/toast, revealRow, verdictLine
@@ -89,7 +94,7 @@ public/js/
     game.js               press, attachKeyboard, submit, newCase, playScene (play + restore music)
 public/css/               base, title, board, cinema, effects, overlays, ambient (link order = cascade order)
 public/data/words/        answers.txt, allowed.txt (one word per line, # comments allowed)
-tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs
+tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs, migrate-scenes.mjs (one-off, already run)
 ```
 
 **Dependency direction:** `main → game → cinema → (art, audio, fx, script, content) → core`. Nothing imports `game/` except `main.js`
@@ -101,19 +106,19 @@ tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs
 ## 1.4 Runtime flow
 
 ```
-page load ─ main.js: loadWords() (async), startRain/Grain, keyboard listener, street backdrop, heavy rain
+page load ─ main.js: loadWords() + loadPack('random') (async), startRain/Grain, keyboard listener, street backdrop, heavy rain
    │
-"Open the case file" click ─ AU.init() (needs this user gesture), riff, await words, fade title, office backdrop
+"Open the case file" click ─ AU.init() (needs this user gesture), riff, await words + pack, fade title, office backdrop
    │
-newCase()  ─ genCase() picks an intro (no repeat until all 12 used) + vars; setState({...}); build grid/kb
-   │         play(intro.s + INTRO_TAIL)          ← tail = rules legend + "SIX SUSPECTS" + first title card
+newCase()  ─ genCase() picks from pack().intros (no repeat until all 12 used) + vars; setState({...}); build grid/kb
+   │         play(intro.s + pack().tail.s)       ← tail = rules legend + "SIX SUSPECTS" + first title card
    ▼
 board: player types ─ press() ─ submit()
    │   invalid length/word → shake + toast (the row keeps its letters)
    │   revealRow (interrogation flip) → S.counts.push(candidates) → memo verdict
-   ├─ win  → riff, play(WIN_CLIMAX + WIN_EPI[g]) → report
-   ├─ g==6 → play(LOSS_CLIMAX + LOSS_EPI[bucket]) → piano → report
-   └─ else → play(core(g,bucket) with opener + maybe informant + "## {nextTime} | closer")
+   ├─ win  → riff, play(win.climax + win.epi[g]) → report
+   ├─ g==6 → play(loss.climax + loss.epi[bucket]) → piano → report
+   └─ else → play(cores['g-b'] with opener + maybe informant + "## {nextTime} | closer")
               → back to board, memo "Suspect g+1 of 6"
 ```
 
@@ -143,28 +148,54 @@ board: player types ─ press() ─ submit()
 | `infUsed` (Set), `infLog[]`, `lastInf` | informant bookkeeping |
 | `title` | case title |
 
-`used.intro` / `used.core` live outside `S`, so no-repeat works across cases in one session. They are not persisted.
+`used.intro` / `used.core` hold scene IDs and live outside `S`, so no-repeat works across cases in one session. They are not persisted.
 
 **Script context `ctx`:** `{ vars, flags, clue }`. `vars` come from `baseVars()` (intro) or `guessVars()` (rounds).
 `informant()` mutates `ctx.vars` and sets `ctx.clue = { label, big, sub }` before `play()`. `flags` is `S.flags` itself, so `~flag` writes into the case.
 
-**Scenes today are bare template strings** (cores, openers, endings) or `{ id, title, s }` (intros) / `{ id, type, who, s }` (informants).
-Most have **no stable ID**. That's roadmap F2.
+**Scenes and packs (F2/T1).** Every scene is an object `{ id, chapter, s }` plus slot fields: intros add `title` (and `victimF: true` when
+`{victim}` must be a woman's name), informants add `type` and `who`. Scenes live in **packs**, one per chapter:
+
+```js
+{ id: 'rnd' | 'c01'…'c10', chapter: 0…10, title, intros: [], tail: {}, cores: { 'g-b': [] }, informants: [], openers: { set: [lines] },
+  win: { climax: [], epi: { 1..6: [] } }, loss: { climax: [], epi: { 0..3: [] } }, closers: { 1..5: [lines] }, beats?: { result: [] } }
+```
+
+Openers and closers are one-line strings, not scenes, so they have no ID (they play as part of their round's segment).
+`content/registry.js` loads a pack with a dynamic `import()` the first time it's asked for and indexes its scenes by ID. The game never imports scene
+files. It reads the active pack through `pack()` in game/state.js, which is `getPack('random')` until F3's mode object takes over.
+
+**Scene IDs are save-data keys (F1, T3). Never renumber, reuse or rename one.** Add new scenes with the next free number or letter, and
+retire a scene by deleting it, never by giving its ID to different text. Scheme (`<pack>` is `rnd` or `c01`…`c10`):
+
+| Slot | ID | Example |
+|---|---|---|
+| intro / opening variant | `<pack>.intro.<name>` | `rnd.intro.crossword` |
+| briefing tail | `<pack>.tail` | `rnd.tail` |
+| core | `<pack>.core.<g>-<bucket>.<01…>` | `rnd.core.3-2.02` |
+| informant | `<pack>.inf.<name>` | `rnd.inf.pete` |
+| win/loss climax | `<pack>.win.climax.<a…>`, `<pack>.loss.climax.<a…>` | `rnd.loss.climax.b` |
+| win/loss epilogue | `<pack>.win.epi.<g>.<a…>`, `<pack>.loss.epi.<bucket>.<a…>` | `rnd.win.epi.4.b` |
+| outro beat (chapters) | `<pack>.beat.<result>.<a…>` | `c01.beat.fast.a` |
+
+`npm run check` enforces this: IDs match `<pack>.<slot>…`, are unique across all packs, every scene's `chapter` matches its pack, every pool the
+game draws from exists, and **no scene text appears in two packs** (normalized-text comparison, an error). A prose line of 40+ characters
+reused across packs is a warning. `--coverage` prints each pack's slot counts against the T8 per-chapter budget.
 
 ## 1.6 The scene system
 
-Full syntax: [scene-scripts.md](scene-scripts.md). Summary of how scenes are chosen:
+Full syntax: [scene-scripts.md](scene-scripts.md). Summary of how the Random Case pack's scenes are chosen:
 
 | Pool | Count | Selection |
 |---|---|---|
-| `INTROS` | 12 (crossword, singer, ransom, dying, witness, password, telegram, typewriter, lastwords, dictionary, femme, cipher) | `pickUnused` per session |
-| `INTRO_TAIL` | 1 | always |
-| `CORES['g-b']` | 56 total; 3 per slot (1-0 has 4, every `-3` slot has 2) | `pickUnused` per session, shared set across slots |
-| `OPENERS[set]` | 21 lines over 10 sets | appended after the **first** `@set name` line without `!` in a core (regex in `withOpener`) |
-| `INFORMANTS` | 9: pete/n, zero/top, prof/pos, dooley/dbl, sal/top, nickel/pos, telegram/n, fenn/n, lola/top | see below; each at most once per case |
-| `CLOSERS[left]` | 2 per count | title card `## {nextTime} \| line` |
-| `WIN_CLIMAX` + `WIN_EPI[1..6]` | 2 + 12 | random + by guesses used |
-| `LOSS_CLIMAX` + `LOSS_EPI[0..3]` | 2 + 7 | random + by last guess's bucket |
+| `intros` | 12 (crossword, singer, ransom, dying, witness, password, telegram, typewriter, lastwords, dictionary, femme, cipher) | `pickUnused` per session |
+| `tail` | 1 | always |
+| `cores['g-b']` | 56 total; 3 per slot (1-0 has 4, every `-3` slot has 2) | `pickUnused` per session (by ID), shared set across slots |
+| `openers[set]` | 21 lines over 10 sets | appended after the **first** `@set name` line without `!` in a core (regex in `withOpener`) |
+| `informants` | 9: pete/n, zero/top, prof/pos, dooley/dbl, sal/top, nickel/pos, telegram/n, fenn/n, lola/top | see below; each at most once per case |
+| `closers[left]` | 2 per count | title card `## {nextTime} \| line` |
+| `win.climax` + `win.epi[1..6]` | 2 + 12 | random + by guesses used |
+| `loss.climax` + `loss.epi[0..3]` | 2 + 7 | random + by last guess's bucket |
 
 **Informant chance:** `p = [0, .22, .35, .45, .5, .6][g] + (bucket 0 ? .15 : 0)`, ×0.4 if the previous round had one (and g < 5).
 Types offered depend on `stats()`: `n` (candidates left) and `dbl` (double-letter odds) always; `top` (likeliest unrevealed letter)
@@ -224,7 +255,7 @@ reads on phone speakers that drop the sub.
   `brass`/`minor`/`sag` 0.23–0.25 (about half); `soft` 0.09; `versus` 0.30. Energy above 1 kHz is about 25 dB lower than the old sting.
   The 120–200 Hz body is about 6 dB lower, which is the cost of halving the peak.
 - `npm run check` validates `CAST[key].sting` names and warns when a scene has more than one `!!` or when more than ~20% of scenes have one
-  (it prints the current density: 11 of 101 scenes, 11%).
+  (per pack since step 3; it prints the density: `rnd` 11 of 101 scenes, 11%).
 
 ## 1.9 Visual conventions
 
@@ -263,6 +294,19 @@ below may carry into the story, but no existing scene text will.
 - Git is `core.autocrlf=true`. Word-list and script parsing trim lines, so CRLF is harmless. Keep it that way.
 - Typing `~sfx` with an unknown name silently does nothing in-game. `npm run check` is what catches it.
 - Pickers (`pickUnused`) reset a pool once it is exhausted. With bigger pools, repeats get rarer for free.
+- `pack()` / `getPack()` are synchronous and return `undefined` until `loadPack()` has resolved. Anything that starts a case must await the pack first (main.js does this for `random`).
+- Scene IDs are permanent (see §1.5). The checker catches duplicate and malformed IDs, but not an ID quietly moved onto new text. Don't do that.
+
+## 1.12 Change log
+
+What each roadmap step changed, newest first. Details live in the sections above and in each item's **Status** note in Part 2.
+
+| Date | Step | Branch | What changed |
+|---|---|---|---|
+| 2026-10-04 | 3: F2 + T1 | `step-3-scene-registry` | All 101 scenes became `{ id, chapter, s }` objects in the Random Case pack (`content/random/`, chapter 0). Added `content/registry.js` (lazy pack loading, lookup by ID), the game reads pools only through it, the checker enforces IDs/chapters/no cross-pack reuse, and `--coverage` was added. |
+| 2026-10-03 | 2: F4 | `step-2-smoke-test` | `npm run e2e`: zero-dependency headless Chrome/Edge test that plays real cases (invalid word, loss with informants, win, `--cases N`). |
+| 2026-10-03 | 1: T10 | `step-1-deeper-sting` | Cut-in sting replaced with low brass-hit variants, an 8 s cooldown, and a heavier versus hit. Per-character `CAST[key].sting`, checker cut-in budget. Verified by ear. |
+| 2026-10-03 | 0 | `main` | Restructure into a modular project + development docs (`5a33e1a`). |
 
 ---
 
@@ -310,15 +354,26 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
 ### F2. Scene registry: stable IDs, chapter tags, lazy loading
 **Needed by:** T1, T3, T5, T6, T8.
 
-- [ ] Every scene becomes an object: `{ id, chapter, s }`, plus slot-specific fields (`title` for intros, `type`/`who` for informants).
+**Status: done (step 3).** Implementation and the full ID scheme are in §1.5. Deviations from the plan:
+- Chapter **opening variants live in `intros`** and get `<pack>.intro.<name>` IDs (not `c01.open.b`), so one slot name works for every pack.
+  Ending packs (`end.best`, T7) aren't handled by the registry yet. T7 adds them.
+- Packs carry their own `id` (`rnd`, `c01`…), and `beats` is a generic `{ result: [scenes] }` map whose keys T6 will settle.
+  `culprit` and the per-chapter vars wait for T6 because the Random Case pack has none.
+- Openers and closers stay one-line strings without IDs (they are part of their round's segment, as T3 already planned).
+- The singer intro's hard-coded `intro.id === 'singer'` check became a data field, `victimF: true`.
+- Until F3's mode object exists, the game reads the active pack through `pack()` in game/state.js (`getPack('random')`).
+- The migration verified a byte-for-byte round trip of all 101 scenes and 31 one-liners before the old `content/scenes/` folder was removed.
+
+- [x] Every scene becomes an object: `{ id, chapter, s }`, plus slot-specific fields (`title` for intros, `type`/`who` for informants).
       **IDs are save-data keys and must never be renumbered or reused.** Scheme: `c01.core.3-2.07`, `c01.open.b`, `c01.inf.ruby`,
       `c01.win.epi.4.b`, `rnd.intro.crossword`, `rnd.core.1-0.03`, `end.best`.
-- [ ] Content packs, one per chapter: `content/chapters/c01/index.js` exports
+- [x] Content packs, one per chapter: `content/chapters/c01/index.js` exports
       `{ chapter, title, culprit, intros, tail, cores, informants, openers, win: { climax, epi }, loss: { climax, epi }, closers, beats }`.
       Loaded with `await import(\`../content/chapters/c${nn}/index.js\`)` only when needed. About 150 scenes × ~400 chars is about 60 KB per chapter.
-- [ ] `content/registry.js`: `loadPack(chapter | 'random')` and lookup by ID. The game asks the registry for pools and never imports scene files directly.
-- [ ] Random Case pack `content/random/index.js` (ID prefix `rnd.`, `chapter: 0`). Same shape as a chapter pack.
-- [ ] One-off migration script (`tools/migrate-scenes.mjs`) that assigns IDs to the existing 101 scenes and writes them into the **`rnd` pack** (T1, D3).
+      (The loader and checker support them. No chapter pack exists yet.)
+- [x] `content/registry.js`: `loadPack(chapter | 'random')` and lookup by ID. The game asks the registry for pools and never imports scene files directly.
+- [x] Random Case pack `content/random/index.js` (ID prefix `rnd.`, `chapter: 0`). Same shape as a chapter pack.
+- [x] One-off migration script (`tools/migrate-scenes.mjs`) that assigns IDs to the existing 101 scenes and writes them into the **`rnd` pack** (T1, D3).
       Chapter packs `c01`–`c10` start empty and are written fresh.
 
 ### F3. Screens and game modes
@@ -358,11 +413,19 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
 **Goal:** each scene declares which chapter it belongs to. `chapter: 1`–`10` are story chapters, and `chapter: 0` is the Random Case pool.
 All existing scenes go to the Random Case pool from the start (D3). The story starts fresh.
 
-- [ ] Done via F2: the `chapter` field on every scene object, existing content moved into the `rnd` pack with `chapter: 0`.
-- [ ] `check-scenes` enforces that every scene has a `chapter` matching its pack, IDs are unique across all packs, and
+**Status: done (step 3).** Checker rules are in §1.5. Deviations from the plan:
+- Text reuse is compared on normalized text (trimmed, comments dropped, lowercased, whitespace collapsed) instead of hashes. At this size that's
+  equivalent and gives readable error messages. A whole scene reused across packs is an **error**. Within one pack it's a warning.
+- Added a stricter **warning** for any prose line of 40+ characters (narration, dialogue, heavy, cut-in) that appears in two packs.
+  It's a warning because stock phrases can legitimately recur.
+- Verified with a throwaway broken `c01` pack: all seven planted faults were reported (reused text, wrong chapter, duplicate ID,
+  wrong ID prefix, bad informant type, missing core slot, reused prose lines).
+
+- [x] Done via F2: the `chapter` field on every scene object, existing content moved into the `rnd` pack with `chapter: 0`.
+- [x] `check-scenes` enforces that every scene has a `chapter` matching its pack, IDs are unique across all packs, and
       **no scene text is reused across chapters** (normalized-text hash comparison).
-- [ ] `check-scenes --coverage` prints per-chapter slot counts against targets (see T8 budget).
-- [ ] The checker also enforces that no story chapter reuses Random Case text.
+- [x] `check-scenes --coverage` prints per-chapter slot counts against targets (see T8 budget).
+- [x] The checker also enforces that no story chapter reuses Random Case text.
 
 ### T2. Main menu and settings
 **Goal:** Main menu with New Game, Continue, Chapter Select, Random Case, Dossier, Settings.
@@ -493,8 +556,8 @@ or from the Random Case pool. All of it should be noir, funny, and consistent wi
   - **Cut-in budget:** at most 1 `!!` per scene and in about 20% of scenes (ties into T10). At most 1 `**` heavy line per scene.
   - Recurring cast stays in character. New characters get `CAST` entries and portraits.
   - New locations are welcome. Each is one file in `art/sets/`, plus openers.
-- [ ] Checker additions: per-chapter coverage report, ~~cut-in density warning~~ (done in T10, currently over all scenes; make it per chapter
-      once packs exist), cross-chapter duplicate detection, and story-flag validation.
+- [ ] Checker additions: ~~per-chapter coverage report~~ (done in T1: `--coverage`), ~~cut-in density warning~~ (done in T10, per pack since step 3),
+      ~~cross-chapter duplicate detection~~ (done in T1), and story-flag validation (still open, lands with T6's `~story`).
 
 ### T9. More audio
 **Goal:** unique stings, jazzy loops, and more sounds that make the world feel alive.
@@ -558,7 +621,7 @@ structure that holds it is settled.
 |---|---|---|---|
 | 1 ✓ | **Deeper sting + cut-in cooldown** | T10 | Small, isolated, and directly fixes playtester feedback. Ships alone. |
 | 2 ✓ | **Smoke test in repo** | F4 | Safety net before the big refactors. |
-| 3 | **Scene registry + chapter tags** | F2, T1 | Every later feature keys off stable scene IDs and packs. |
+| 3 ✓ | **Scene registry + chapter tags** | F2, T1 | Every later feature keys off stable scene IDs and packs. |
 | 4 | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |
 | 5 | **Screens + modes refactor, Random Case mode, main menu shell, settings** | F3, T5, T2 (partial) | Today's game becomes "Random Case" behind a real menu. Story entries show as "coming soon". Settings land with audio buses (start of T9). |
 | 6 | **Skip seen scenes + case notes, export/import** | T3, T4 | Both are small once F1/F2 exist, and they make testing long content faster. |

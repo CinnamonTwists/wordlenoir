@@ -10,7 +10,7 @@ Requires [Node.js](https://nodejs.org) 18+. Nothing to install.
 
 ```sh
 npm run dev      # http://localhost:8788  (add #speed10 to the URL to fast-forward scenes)
-npm run check    # validate every scene script and word list
+npm run check    # validate every scene pack and word list (add -- --coverage for pool sizes)
 npm run e2e      # play a win, a loss and more in headless Chrome/Edge (Node 22+)
 npm run preview  # optional: run under Cloudflare's real runtime via wrangler
 ```
@@ -39,8 +39,9 @@ public/                     ← everything that gets deployed
       sets/                   one file per location
     cinema/                   the cutscene engine: stage, typewriter text, full-screen effects, script player
     script/                   scene-script parser (DOM-free)
-    content/                  the story: cast, names
-      scenes/                 intros, rounds (cores/), informants, win/loss endings, closers
+    content/                  the story: cast, names, registry.js (loads scene packs, looks up scenes by ID)
+      random/                 Random Case pack: intros, tail, rounds (cores/), informants, win/loss endings, openers, closers
+      chapters/               story chapter packs (coming)
     game/                     rules and flow: state, scoring, board UI, case generation, informants, report
 tools/                      dev server, scene validator, e2e test (not deployed)
 docs/                       development guide + roadmap (DEVELOPMENT.md), scene-script reference
@@ -52,8 +53,9 @@ when imported, so Node tools (like `npm run check`) can load them.
 
 ## Adding content
 
-- **A scene**: add a script string to the right file in `public/js/content/scenes/`. Syntax: [docs/scene-scripts.md](docs/scene-scripts.md).
-- **A case intro**: add `{ id, title, s }` to `intros.js`.
+- **A scene**: add `{ id, chapter, s: \`...\` }` to the right pool in `public/js/content/random/` (the Random Case pack). Give it the next
+  free ID in that pool and never reuse or renumber one (IDs are save-data keys). Syntax: [docs/scene-scripts.md](docs/scene-scripts.md).
+- **A case intro**: add `{ id: 'rnd.intro.<name>', chapter: 0, title, s }` to `random/intros.js`.
 - **A location**: create `public/js/art/sets/<name>.js` exporting `{ rain, indoor, draw(vars) }`, then register it in `sets/index.js`.
 - **A character**: add them to `public/js/content/cast.js`.
 - **Words**: edit `public/data/words/*.txt`.
@@ -70,4 +72,5 @@ NOIR.forceAnswer = 'crane'; // the next case uses this answer
 NOIR.forceInf = true;       // force an informant every round (false = never)
 NOIR.S                      // current case state
 NOIR.MISSING                // {vars} a script referenced but nothing supplied
+NOIR.scene('rnd.tail')      // any loaded scene by ID; NOIR.pack is the Random Case pack
 ```

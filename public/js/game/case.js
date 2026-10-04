@@ -1,7 +1,6 @@
 import { R, pick, cap, nounN, NUMW, fmtTime, pickUnused } from '../core/util.js';
 import { NAMES_M, NAMES_F } from '../content/names.js';
-import { INTROS } from '../content/scenes/index.js';
-import { S, used } from './state.js';
+import { S, used, pack } from './state.js';
 
 // Case generation and the {vars} every scene script can reference.
 
@@ -9,11 +8,11 @@ import { S, used } from './state.js';
 export function genTimes() { const t = [[23, 40 + Math.floor(R() * 12)]]; for (let k = 1; k <= 6; k++) t.push([k - 1, k === 1 ? 2 + Math.floor(R() * 10) : 5 + Math.floor(R() * 45)]); return t; }
 
 export function genCase() {
-  const intro = pickUnused(INTROS, used.intro, x => x.id);
+  const intro = pickUnused(pack().intros, used.intro, x => x.id);
   const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   return { intro, vars: {
     caseNo: String(1000 + Math.floor(R() * 9000)), date: `${pick(MON)} ${1 + Math.floor(R() * 28)}, 194${6 + Math.floor(R() * 4)}`,
-    victim: pick(intro.id === 'singer' ? NAMES_F : NAMES_M), singer: pick(NAMES_F), pier: String(9 + Math.floor(R() * 40)), caseTitle: intro.title
+    victim: pick(intro.victimF ? NAMES_F : NAMES_M), singer: pick(NAMES_F), pier: String(9 + Math.floor(R() * 40)), caseTitle: intro.title
   } };
 }
 

@@ -1,7 +1,6 @@
 import { R, pick, nounN, ORD } from '../core/util.js';
 import { CAST } from '../content/cast.js';
-import { INFORMANTS } from '../content/scenes/index.js';
-import { S, DEBUG } from './state.js';
+import { S, DEBUG, pack } from './state.js';
 import { WORDS } from './words.js';
 import { stats } from './scoring.js';
 
@@ -12,7 +11,7 @@ export function informant(g, b, ctx) {
   if (!DEBUG.forceInf && R() > p) { S.lastInf = false; return ''; }
   const st = stats(WORDS.answers, S.guesses, S.fb); if (st.n < 1) return '';
   const types = ['n', 'dbl']; if (st.top) types.push('top'); if (st.pos) types.push('pos');
-  const pool = INFORMANTS.filter(i => types.includes(i.type) && !S.infUsed.has(i.id)); if (!pool.length) return '';
+  const pool = pack().informants.filter(i => types.includes(i.type) && !S.infUsed.has(i.id)); if (!pool.length) return '';
   const inf = pick(pool); S.infUsed.add(inf.id); S.lastInf = true;
   const v = ctx.vars;
   Object.assign(v, { n: st.n, nN: nounN(st.n, 'word', 'words'), NWORDS: `${st.n} ${st.n === 1 ? 'WORD' : 'WORDS'}`, FIT: st.n === 1 ? 'FITS' : 'FIT', dblPct: st.dblPct });
