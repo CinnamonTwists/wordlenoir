@@ -31,7 +31,7 @@ export const AU = {
     const c = this.ctx = ctx;
     this.bed = null; this.bedName = null; this.loop = null;
     if (offline) this.mode = this.place = this.theme = null;
-    this.lastSting = -1e9; this.lastSoft = false; this.lastLow = null;
+    this.lastSting = -1e9; this.lastSoft = false; this.lastLow = null; this.libLast = {};
     this.master = c.createGain(); this.master.connect(c.destination);
     this.comp = c.createDynamicsCompressor(); this.comp.connect(this.master);
     for (const k of ['sfx', 'ui', 'mus', 'ambBus']) { this[k] = c.createGain(); this[k].connect(this.comp); }

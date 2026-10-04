@@ -48,7 +48,7 @@ export async function card(arg) {
 }
 export async function stamp(text, green) {
   await lit(); hideText(); const el = document.createElement('div'); el.className = 'stamp' + (green ? ' green' : ''); el.textContent = text;
-  C.fx.appendChild(el); await sleep(30); el.classList.add('in'); await sleep(220); AU.play('stamp'); shake(); await sleep(2300);
+  C.fx.appendChild(el); await sleep(30); el.classList.add('in'); await sleep(220); AU.play('stamp'); AU.play('sting', green ? 'hope' : 'stamp'); shake(); await sleep(2300);
   el.style.transition = `opacity ${500 / SPEED}ms`; el.style.opacity = 0; await sleep(500); el.remove();
 }
 export async function paper(arg) {

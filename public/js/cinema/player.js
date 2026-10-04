@@ -29,6 +29,9 @@ async function runLine(raw, ctx) {
       case 'lightning': await lit(); flashFx(.85); await sleep(140); flashFx(.6); await sleep(500); AU.play('thunder'); return sleep(700);
       case 'heart': AU.play('heart'); C.vig.classList.remove('pulse'); void C.vig.offsetWidth; C.vig.classList.add('pulse'); return sleep(1300);
       case 'rain': RAIN.set(arg); AU.setRain(arg, getSet(C.set).indoor); return;
+      case 'sting': AU.play('sting', arg || undefined); return sleep(300);
+      case 'music': AU.music(arg); return;   // until the next @mood or ~music
+      case 'amb': AU.amb(arg); return;       // until the next @set or ~amb
       case 'sfx': AU.play(arg); return sleep(arg === 'ring' ? 2600 : arg === 'hangup' ? 900 : arg === 'whistle' ? 1400 : arg === 'telegraph' ? 1200 : 400);
       case 'wait': return sleep(+arg || 1000);
       case 'flag': ctx.flags[arg] = 1; return;
@@ -49,7 +52,8 @@ async function runLine(raw, ctx) {
   return narrate(line);
 }
 
-// A skipped line still changes state (roadmap T3): flags (case and story), the set, the mood, rain and the letterbox, so the next segment starts right.
+// A skipped line still changes state (roadmap T3): flags (case and story), the set, the mood, rain, music, ambience and the letterbox,
+// so the next segment starts right.
 // Nothing is shown or heard.
 async function runQuiet(raw, ctx) {
   const line = fill(raw, ctx);
@@ -60,6 +64,8 @@ async function runQuiet(raw, ctx) {
   if (cmd === 'flag') ctx.flags[arg] = 1;
   else if (cmd === 'story') { if (ctx.story) ctx.story[arg] = 1; }
   else if (cmd === 'rain') { RAIN.set(arg); AU.setRain(arg, getSet(C.set).indoor); }
+  else if (cmd === 'music') AU.music(arg);
+  else if (cmd === 'amb') AU.amb(arg);
   else if (cmd === 'tight') C.el.classList.add('tight');
   else if (cmd === 'loose') C.el.classList.remove('tight');
 }

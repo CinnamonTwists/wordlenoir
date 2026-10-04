@@ -33,6 +33,7 @@ const ITEMS = [
   sfx('thud', `AU.play('thud')`, 3), sfx('boom', `AU.play('boom')`), sfx('heart', `AU.play('heart')`, 3.5), sfx('stamp', `AU.play('stamp')`, 3),
   sfx('sting brass', `AU.play('sting', 'brass')`, 7), sfx('sting minor', `AU.play('sting', 'minor')`, 7), sfx('sting sag', `AU.play('sting', 'sag')`, 7),
   sfx('sting soft', `AU.lastSting = AU.now(); AU.lastSoft = false; AU.play('sting')`, 7), sfx('versus', `AU.play('versus')`, 8),
+  sfx('sting word', `AU.play('sting', 'word')`, 8), sfx('sting hope', `AU.play('sting', 'hope')`, 8), sfx('sting stamp', `AU.play('sting', 'stamp')`, 6),
   sfx('paper', `AU.play('paper')`, 3), sfx('ring', `AU.play('ring')`), sfx('hangup', `AU.play('hangup')`, 4), sfx('whistle', `AU.play('whistle')`),
   sfx('siren', `AU.play('siren')`, 7.5), sfx('thunder', `AU.play('thunder')`, 7), sfx('telegraph', `AU.play('telegraph')`), sfx('foghorn', `AU.play('foghorn')`),
   sfx('card', `AU.play('card')`), sfx('lament', `AU.play('lament')`, 7),

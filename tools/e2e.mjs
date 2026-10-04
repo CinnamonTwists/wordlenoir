@@ -279,8 +279,9 @@ test('audio: sets and moods drive the beds and music; a skipped scene is silent;
     const ring = A.CUES.ring; A.CUES.ring = (...a) => { rings.push(1); return ring(...a); };
     const segs = [{ id: 'X', src: '@set bar!\\n@mood noir\\n> In the bar.' }, { id: 'Y', src: '@set station!\\n> At the station.' },
                   { id: 'Z', src: '@set precinct!\\n@mood red\\n> Trouble.' }, { id: 'S', src: '@set docks!\\n@mood noir\\n~sfx ring\\n> Skipped.' },
-                  { id: 'H', src: '@set street!\\n~sfx ring\\n> Heard.' }];
-    await NOIR.play(segs, { vars: {}, flags: {} }, { skip: id => id === 'S' ? 'auto' : false, onSegment: id => at.push([id, AU.bedName, AU.loop?.name, rings.length]) });
+                  { id: 'H', src: '@set street!\\n~sfx ring\\n> Heard.' },
+                  { id: 'Q', src: '@set office!\\n~music radio\\n~amb vault\\n> Quiet.' }, { id: 'W', src: '~sting word\\n@mood gold\\n> Hope.' }];
+    await NOIR.play(segs, { vars: {}, flags: {} }, { skip: id => id === 'S' || id === 'Q' ? 'auto' : false, onSegment: id => at.push([id, AU.bedName, AU.loop?.name, rings.length]) });
     A.CUES.ring = ring;
     const after = { bed: AU.bedName };
     for (const k of Object.keys(A.CUES)) AU.play(k, k === 'flip' ? 2 : undefined);
@@ -290,10 +291,11 @@ test('audio: sets and moods drive the beds and music; a skipped scene is silent;
     return { menu, at, after };
   })()`);
   if (!r.menu.ctx || r.menu.loop !== 'title' || r.menu.bed !== 'street') throw new Error(`menu sound: ${JSON.stringify(r.menu)}`);
-  const want = [['X', 'bar', 'jukebox', 0], ['Y', 'station', 'bigband', 0], ['Z', 'precinct', 'dread', 0], ['S', 'docks', 'calm', 0], ['H', 'street', 'calm', 1]];
+  const want = [['X', 'bar', 'jukebox', 0], ['Y', 'station', 'bigband', 0], ['Z', 'precinct', 'dread', 0], ['S', 'docks', 'calm', 0], ['H', 'street', 'calm', 1],
+    ['Q', 'vault', 'radio', 1], ['W', 'vault', 'hope', 1]];   // ~music and ~amb apply even when skipped; @mood takes over from ~music
   if (JSON.stringify(r.at) !== JSON.stringify(want)) throw new Error(`bed/loop per segment ${JSON.stringify(r.at)}, expected ${JSON.stringify(want)}`);
   if (r.after.bed !== 'board') throw new Error(`after a scene the bed is ${r.after.bed}, expected the board's`);
-  return 'bar → jukebox, station → bigband, red → dread, skipped ring silent';
+  return 'bar → jukebox, station → bigband, red → dread, skipped ring silent, ~music/~amb';
 });
 test('settings: clear all data', async () => {
   await toMenu(); await click('#mSettings');

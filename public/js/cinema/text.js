@@ -33,6 +33,7 @@ export async function say(key, text) {
     C.dlg.style.setProperty('--c', who.color);
     C.portrait.innerHTML = bust(Object.assign({ color: who.color }, who.bust));
     C.dname.textContent = who.name; C.dtext.innerHTML = '';
+    if (key === 'WORD') AU.play('sting', 'word');   // the Editor's voice comes in over a dark swell (at most every 20 s)
     void C.dlg.offsetWidth; C.dlg.classList.add('on', 'enter'); C.speaker = key; AU.duck(true); await sleep(320);
   }
   await typeInto(C.dtext, text, 24, true); await sleep(holdFor(text));
