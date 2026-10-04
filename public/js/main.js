@@ -3,14 +3,14 @@ import { $ } from './core/dom.js';
 import { AU } from './audio/audio.js';
 import { RAIN, startRain, startGrain } from './fx/rain.js';
 import { SETS } from './art/sets/index.js';
-import { play } from './cinema/player.js';
+import { play, skipNow } from './cinema/player.js';
 import { parseScript, MISSING } from './script/parser.js';
 import { S, DEBUG, setMode } from './game/state.js';
 import { WORDS, loadWords } from './game/words.js';
 import { getPack, sceneById } from './content/registry.js';
 import { score, stats } from './game/scoring.js';
 import { toast } from './game/board.js';
-import { press, attachKeyboard, newCase, resumeCase, dropSaved, savedSummary, hooks } from './game/game.js';
+import { press, attachKeyboard, newCase, resumeCase, dropSaved, savedSummary, hooks, showNotes } from './game/game.js';
 import { RandomMode } from './game/modes/random.js';
 import { store } from './save/store.js';
 import { show, back, screen, onShow } from './ui/screens.js';
@@ -47,7 +47,7 @@ function setBackdrop(name) {
   if (backdrop === name) return; backdrop = name;
   $('#backdrop').innerHTML = SETS[name].draw({}); $('#backdrop').className = name === 'office' ? 'dim' : 'title';
 }
-const overlaysOff = () => { for (const id of ['#pause', '#modal', '#report']) $(id).hidden = true; };
+const overlaysOff = () => { for (const id of ['#pause', '#modal', '#report', '#notes']) $(id).hidden = true; };
 onShow('menu', () => { overlaysOff(); setBackdrop('street'); RAIN.set('heavy'); AU.setRain('heavy', 0); AU.setMusic('calm'); document.body.className = ''; refreshMenu(RandomMode.stats()); });
 onShow('settings', () => syncSettings());
 onShow('game', () => { setBackdrop('office'); RAIN.set('light'); AU.setRain('window', 1); });
@@ -93,6 +93,11 @@ $('#pSettings').addEventListener('click', () => { $('#pause').hidden = true; set
 $('#pMenu').addEventListener('click', () => { $('#pause').hidden = true; show('menu'); });   // the case is already checkpointed
 hooks.toMenu = () => show('menu');
 
+// case notes (roadmap T3) and skipping a seen scene
+$('#notesBtn').addEventListener('click', () => { if (!S.busy) showNotes(); });
+$('#notesClose').addEventListener('click', () => { $('#notes').hidden = true; $('#notesBtn').focus(); });
+$('#skipBtn').addEventListener('click', () => skipNow());
+
 // sound toggles (top bar and in-game menu) are the `sound` setting
 const toggleSound = () => { AU.init(); setSetting('sound', !store.get('settings.sound')); };
 function soundLabels() {
@@ -105,10 +110,13 @@ $('#pSound').addEventListener('click', toggleSound);
 onChange(k => { if (k === 'sound') soundLabels(); });
 soundLabels();
 
-// Esc closes the top layer: a dialog, the in-game menu, Settings; on the board it opens the in-game menu.
+// During a scene, Esc or Space skips it (if it's been seen). Otherwise Esc closes the top layer: a dialog, the notes, the in-game menu,
+// Settings; on the board it opens the in-game menu.
 addEventListener('keydown', e => {
+  if (!$('#cinema').hidden && (e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); skipNow(); return; }
   if (e.key !== 'Escape') return;
   if (!$('#modal').hidden) { $('#modal').hidden = true; return; }
+  if (!$('#notes').hidden) { $('#notes').hidden = true; $('#notesBtn').focus(); return; }
   if (!$('#pause').hidden) { closePause(); return; }
   if (screen() === 'settings') { leaveSettings(); return; }
   if (screen() === 'game' && $('#cinema').hidden && $('#report').hidden) openPause();

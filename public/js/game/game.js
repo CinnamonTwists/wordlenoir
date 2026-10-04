@@ -19,14 +19,25 @@ import { snapshot, restore } from './snapshot.js';
 // Saving (roadmap F1): the case is checkpointed after the intro, the moment a guess is scored (so reloading can't take a guess
 // back), when its scenes are chosen (S.pending), and when they finish. Reopening resumes on the board after the last
 // checkpoint; scenes that were interrupted count as seen. The result is recorded once, when the final guess is scored.
+//
+// Scenes play as segments (roadmap T3): each is marked seen when it finishes, and one seen before can be skipped (Settings → Skip seen
+// scenes: ask = SKIP button, always = skipped automatically, never). Informant clues go into the case notes before the scene plays,
+// so skipping can't lose them.
 
 // Set by main.js: where "Main menu" on the report goes.
 export const hooks = { toMenu: () => {} };
 
-// Plays a scene, then restores the board's background music.
-async function playScene(src, ctx) {
-  await play(src, ctx);
+// Plays a scene's segments, then restores the board's background music.
+async function playScene(segments, ctx) {
+  await play(segments, ctx, { skip: skipPolicy, onSegment: id => {
+    mode.seen([id]);
+    if (S.pending.includes(id)) { S.pending = S.pending.filter(x => x !== id); checkpoint(); }
+  } });
   AU.setMusic(S.g >= 4 ? 'tense' : 'calm');
+}
+function skipPolicy(id) {
+  const how = store.get('settings.skipSeen');
+  return how !== 'never' && mode.isSeen(id) ? (how === 'always' ? 'auto' : 'ask') : false;
 }
 
 const checkpoint = () => mode.onCheckpoint(snapshot(S, mode.id));
@@ -34,7 +45,7 @@ function record() { if (S.recorded) return; S.recorded = true; mode.onComplete({
 const report = () => showReport(newCase, { onMenu: () => hooks.toMenu(), stats: mode.stats?.() });
 
 export function press(k) {
-  if (S.busy || S.over || !$('#pause').hidden || !$('#modal').hidden) return;
+  if (S.busy || S.over || !$('#pause').hidden || !$('#modal').hidden || !$('#notes').hidden) return;
   if (k === 'Enter') return submit();
   if (k === 'Backspace') { if (S.cur.length) { S.cur = S.cur.slice(0, -1); renderRow(); AU.key(); } return; }
   if (/^[a-z]$/i.test(k) && S.cur.length < 5) { S.cur += k.toLowerCase(); renderRow(); AU.key(); }
@@ -62,20 +73,22 @@ async function submit() {
   if (S.over) {
     if (win) { ctx.vars.clockH = S.times[g][0]; ctx.vars.clockM = S.times[g][1]; } else { ctx.vars.clockH = 6; ctx.vars.clockM = 0; }
     const sc = mode.endScript(win, g, b, ctx);
-    S.pending = sc.ids; checkpoint();
+    S.pending = sc.segments.map(s => s.id); checkpoint();
     if (win) AU.riff();
-    await playScene(sc.src, ctx);
+    await playScene(sc.segments, ctx);
     if (!win) AU.piano([311.13, 293.66, 261.63, 196], .7);
-    mode.seen(S.pending); S.pending = []; mode.clear();
+    S.pending = []; mode.clear();
     updateStatus(); report(); return;
   }
   const sc = mode.roundScript(g, b, ctx);
-  S.g = g; S.pending = sc.ids; checkpoint();
-  updateStatus();
-  await playScene(sc.src, ctx);
-  mode.seen(S.pending); S.pending = []; checkpoint();
+  S.g = g; S.pending = sc.segments.map(s => s.id);
+  if (ctx.clue) addNote(ctx.clue, g);
+  checkpoint(); updateStatus();
+  await playScene(sc.segments, ctx);
+  S.pending = []; checkpoint();
   S.busy = false; $('#menuBtn').disabled = false;
   setMemo(`Suspect ${g + 1} of 6. ${g === 5 ? 'Last chance before the train.' : 'Type a name. ENTER brings it in.'}`);
+  if (ctx.clue) toast('New entry in your case notes.');
 }
 
 function setCaseHeader() {
@@ -87,14 +100,13 @@ export async function newCase() {
   mode.clear();
   const cs = mode.newCase();
   setState({ answer: mode.pickAnswer(), guesses: [], fb: [], counts: [], cur: '', busy: true, over: false, won: false, g: 0, flags: {}, times: genTimes(),
-    caseVars: cs.vars, infUsed: new Set(), infLog: [], lastInf: false, title: cs.intro.title, pending: [], recorded: false, hard: !!store.get('settings.hardMode') });
-  buildGrid(); buildKB(press); updateStatus(); setMemo(''); setCaseHeader();
+    caseVars: cs.vars, infUsed: new Set(), infLog: [], lastInf: false, title: cs.intro.title, pending: [], recorded: false, hard: !!store.get('settings.hardMode'), notes: [] });
+  buildGrid(); buildKB(press); updateStatus(); setMemo(''); setCaseHeader(); updateNotes();
   $('#menuBtn').disabled = true;
   const ctx = { vars: baseVars(), flags: S.flags };
   ctx.vars.time = ctx.vars.time0;
-  const sc = mode.introScript(cs);
-  await playScene(sc.src, ctx);
-  mode.seen(sc.ids); checkpoint();
+  await playScene(mode.introScript(cs).segments, ctx);
+  checkpoint();
   S.busy = false; $('#menuBtn').disabled = false;
   setMemo(S.hard ? 'Suspect 1 of 6. Hard case: every clue you get must be used.' : 'Suspect 1 of 6. Type a five-letter name. ENTER brings it in.');
 }
@@ -109,7 +121,7 @@ export function resumeCase() {
   for (let i = S.counts.length; i < S.guesses.length; i++) S.counts.push(candidates(WORDS.answers, S.guesses.slice(0, i + 1), S.fb.slice(0, i + 1)).length);
   S.g = S.over ? S.g : S.guesses.length;
   $('#report').hidden = true; $('#modal').hidden = true; $('#pause').hidden = true;
-  buildGrid(); buildKB(press); paintRows(); updateKB(); updateStatus(); setCaseHeader();
+  buildGrid(); buildKB(press); paintRows(); updateKB(); updateStatus(); setCaseHeader(); updateNotes();
   if (S.pending.length) { mode.seen(S.pending); S.pending = []; }   // interrupted mid-scene: it still counts as seen
   AU.setMusic(S.g >= 4 ? 'tense' : 'calm');
   if (S.over) { record(); mode.clear(); S.busy = true; setMemo(''); report(); return true; }
@@ -118,6 +130,25 @@ export function resumeCase() {
   const n = S.guesses.length;
   setMemo(`Case reopened. Suspect ${n + 1} of 6. ${n === 5 ? 'Last chance before the train.' : 'Type a name. ENTER brings it in.'}`);
   return true;
+}
+
+// ---------- case notes (roadmap T3): every informant clue, re-readable from the board's Notes button ----------
+function addNote(c, g) { S.notes.push({ g, label: c.label, big: c.big, sub: c.sub || '' }); updateNotes(); }
+export function updateNotes() {
+  const n = S.notes?.length || 0, b = $('#notesBtn');
+  b.textContent = n ? `Notes (${n})` : 'Notes'; b.disabled = !n;
+}
+export function showNotes() {
+  const list = $('#notesList'); list.innerHTML = '';
+  for (const n of S.notes) {
+    const li = document.createElement('li');
+    for (const [cls, text] of [['lbl', n.label], ['big', n.big], ['sub', n.sub], ['when', `After suspect ${n.g}`]]) {
+      const d = document.createElement('div'); d.className = cls; d.textContent = text; li.appendChild(d);
+    }
+    list.appendChild(li);
+  }
+  $('#notesMeta').textContent = `CASE No. ${S.caseVars.caseNo} · ${S.notes.length} ${S.notes.length === 1 ? 'ENTRY' : 'ENTRIES'}`;
+  $('#notes').hidden = false; $('#notesClose').focus();
 }
 
 // Abandons the mode's saved case (Random Case from the menu while one is open). Once a suspect has been questioned it counts as a

@@ -5,7 +5,9 @@ const H = location.hash.slice(1);
 export let SPEED = /^speed\d+$/.test(H) ? +H.slice(5) : 1;
 export const setSpeed = v => { SPEED = v; };
 export const VT = { ms: 0 };   // virtual time: total ms of scripted delay, independent of SPEED
-export const sleep = ms => { VT.ms += ms; return new Promise(r => setTimeout(r, ms / SPEED)); };
+// While a scene is being skipped (SKIP.on, roadmap T3) every sleep resolves at once, so whatever line was playing finishes instantly.
+export const SKIP = { on: false };
+export const sleep = ms => { if (SKIP.on) return Promise.resolve(); VT.ms += ms; return new Promise(r => setTimeout(r, ms / SPEED)); };
 
 // Player preferences the engine reads live (set from Settings by ui/settings.js; both reduce flags default to the OS).
 // MOTION.reduced: no camera shake or drift, lighter rain and grain. FLASH.reduced: no white flashes or flicker.

@@ -22,7 +22,8 @@ Opening `public/index.html` straight from disk won't work, because browsers bloc
 
 "Open the case file" leads to the main menu: **Continue** (a case in progress), **Random Case**, and **Settings** (volumes, text speed,
 reduce motion/flashes, high-contrast tiles, hard mode, clear data). The story entries are stamped *coming soon*. During a case, **Menu** or **Esc**
-opens the in-game menu.
+opens the in-game menu. Scenes you've already seen can be skipped (SKIP ▸▸, Esc or Space), and informant clues are kept in
+**Notes** on the board. Settings → Data exports your case files to a file (or text) and imports them in another browser.
 
 ## Saves
 

@@ -73,6 +73,16 @@ Write `{name}` anywhere in a line. Which ones exist depends on where the script 
   `{n}` `{nN}` `{NWORDS}` `{FIT}` (words still possible), `{topL}` `{topPct}` (likeliest letter),
   `{posL}` `{posPct}` `{posOrd}` `{POSORD}` `{posArt}` (likeliest letter in a position), `{dblPct}` (chance of a double letter)
 
+## Skipping and seen scenes
+
+Each scene plays as its own segment. When it finishes, its ID is marked **seen**, and a seen scene can be skipped next time
+(SKIP ▸▸, Esc or Space, or automatically, depending on Settings). A skipped scene still applies its state: `~flag`, `@set`, `@mood`,
+`~rain` and `~tight`/`~loose` run silently, and nothing else is shown or heard. So:
+
+- Anything a later scene depends on must be a flag, not something the player only saw.
+- An informant's `~clue` card is also written to the board's case notes before the scene plays, so skipping never hides a clue.
+- The round's closing title card belongs to the round's last scene and is skipped with it.
+
 ## How scenes are chosen
 
 Pools are fields of the pack (file in `content/random/` in brackets):

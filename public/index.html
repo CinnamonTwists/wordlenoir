@@ -84,6 +84,7 @@
     <div class="casebox"><div class="caseno" id="caseNo">CASE No. ----</div><div class="casetitle" id="caseTitle">—</div></div>
     <div class="tools">
       <button class="tbtn" id="sndBtn" aria-pressed="true">Sound on</button>
+      <button class="tbtn" id="notesBtn" aria-haspopup="dialog" disabled>Notes</button>
       <button class="tbtn" id="menuBtn" aria-haspopup="dialog">Menu</button>
     </div>
   </header>
@@ -109,6 +110,7 @@
   <div id="fx"></div>
   <div id="black"></div>
   <div id="flash"></div>
+  <button id="skipBtn" class="skip" hidden aria-label="Skip this scene (you've seen it)">Skip ▸▸</button>
 </section>
 
 <div id="toast" role="status"></div>
@@ -118,6 +120,15 @@
     <h3 id="pauseH">Case on hold</h3>
     <div class="meta" id="pauseMeta"></div>
     <div class="acts col"><button id="pResume" class="primary">Back to the case</button><button id="pSettings">Settings</button><button id="pSound" aria-pressed="true">Sound: on</button><button id="pMenu">Main menu</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="notes" hidden role="dialog" aria-modal="true" aria-labelledby="notesH">
+  <div class="file narrow">
+    <h3 id="notesH">Case notes</h3>
+    <div class="meta" id="notesMeta"></div>
+    <ol class="notes" id="notesList"></ol>
+    <div class="acts"><button id="notesClose" class="primary">Close</button></div>
   </div>
 </div>
 

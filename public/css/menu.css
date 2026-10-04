@@ -70,3 +70,24 @@
 .file .mini i[data-s="gray"]{background:var(--t-gray)}
 .file .mini i[data-s="yellow"]{background:var(--t-yellow)}
 .file .mini i[data-s="green"]{background:var(--t-green)}
+
+/* skip a scene you've seen (roadmap T3): bottom-right of the cinema, above the black layer */
+.skip{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(var(--lb) + 14px);z-index:25;padding:8px 14px;background:rgba(9,9,12,.7);border:1px solid rgba(232,225,209,.5);
+  color:var(--paper);font-family:var(--f-impact);font-weight:900;font-size:15px;letter-spacing:.2em;text-transform:uppercase;animation:skipIn .4s ease both}
+.skip:hover{background:var(--paper);color:var(--ink)}
+@keyframes skipIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+html[data-motion="reduced"] .skip{animation:none}
+
+/* case notes: informant clues, re-readable from the board */
+.file .notes{list-style:none;margin:0;padding:0;display:grid;gap:10px;max-height:min(56dvh,460px);overflow-y:auto}
+.file .notes li{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;align-items:center;padding:10px 12px;background:#f2ead6;border:1px solid #b8ab8e}
+.file .notes .lbl{grid-column:1 / -1;font-size:11px;letter-spacing:.16em;color:#5b5140}
+.file .notes .big{grid-row:span 2;font-family:var(--f-impact);font-weight:900;font-size:34px;letter-spacing:.04em;color:#1d1a15;min-width:1.4em;text-align:center}
+.file .notes .sub{font-size:12px;letter-spacing:.08em;color:#1d1a15}
+.file .notes .when{font-size:11px;color:#7a6f5a}
+
+/* settings → data: export / import */
+#setForm .row{display:flex;gap:8px;flex-wrap:wrap}
+#setForm textarea{width:100%;height:110px;margin-top:8px;box-sizing:border-box;font-family:var(--f-type);font-size:12px;background:#f6eed9;border:1px solid #8b7f66;color:#1d1a15;user-select:text;-webkit-user-select:text}
+#setForm .err{margin:8px 0 0;padding:8px 10px;border-left:4px solid #a3101a;background:rgba(163,16,26,.08);font-family:var(--f-type);font-size:13px;color:#7d0c14}
+#importSummary{font-family:var(--f-type);font-size:14px;margin:0 0 6px;line-height:1.45}

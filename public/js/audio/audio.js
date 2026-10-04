@@ -17,7 +17,7 @@ const LOW = ['brass', 'minor', 'sag'];
 const COOLDOWN = 8;   // s: a sting this soon after another plays `soft`, and a third plays nothing
 
 export const AU = {
-  ctx: null, on: true, vol: { master: 1, music: 1, sfx: 1, ambience: 1 }, lastSting: -1e9, lastSoft: false, lastLow: null,
+  ctx: null, on: true, quiet: false, vol: { master: 1, music: 1, sfx: 1, ambience: 1 }, lastSting: -1e9, lastSoft: false, lastLow: null,
   init() {
     if (this.ctx) { this.ctx.resume && this.ctx.resume(); return; }
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
@@ -164,3 +164,11 @@ export const AU = {
     }
   }
 };
+
+// While a scene is skipped (AU.quiet, roadmap T3) every one-shot sound is a no-op, so a line that finishes instantly doesn't fire a burst of
+// ticks, thuds and stings. Beds and settings (rain, music, volumes) keep working.
+const ALWAYS = new Set(['init', 'now', 'toggle', 'setVolumes', 'applyVolumes', 'setHidden', 'setRain', 'setMusic', 'env']);
+for (const k of Object.keys(AU)) {
+  const f = AU[k];
+  if (typeof f === 'function' && !ALWAYS.has(k)) AU[k] = function (...a) { if (this.quiet) return; return f.apply(this, a); };
+}

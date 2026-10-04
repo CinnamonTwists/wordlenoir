@@ -278,6 +278,117 @@ test('settings: clear all data', async () => {
   if (doc.random.stats.played !== 0 || Object.keys(doc.seen).length || doc.settings.highContrast || doc.settings.hardMode) throw new Error(`data not cleared: ${JSON.stringify(doc).slice(0, 200)}`);
   if (await ev(`document.documentElement.hasAttribute('data-hc')`)) throw new Error('high contrast still applied after clearing');
 });
+test('skip: a seen segment can be skipped without losing its flags; the unseen one after it still plays', async () => {
+  await toMenu();   // AU and the cinema need the title gesture first
+  const r = await ev(`(async () => {
+    NOIR.speed = 10;
+    const shown = [], done = [], ctx = { vars: {}, flags: {} };
+    const mo = new MutationObserver(() => { const t = document.querySelector('#narr').textContent; if (t && !shown.includes(t)) shown.push(t); });
+    mo.observe(document.querySelector('#narr'), { childList: true, subtree: true, characterData: true });
+    const segs = [{ id: 'A', src: '@set office!\\n> Alpha line one, long enough to take a while to type out.\\n~flag fa\\n> Alpha line two.' },
+                  { id: 'B', src: '> Bravo line.\\n~flag fb' }];
+    const p = NOIR.play(segs, ctx, { skip: id => id === 'A' ? 'ask' : false, onSegment: id => done.push(id) });
+    while (document.querySelector('#skipBtn').hidden) await new Promise(r => setTimeout(r, 20));
+    await new Promise(r => setTimeout(r, 120));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await p; mo.disconnect(); NOIR.speed = 400;
+    // auto: never shown at all
+    const shown2 = [], ctx2 = { vars: {}, flags: {} };
+    const mo2 = new MutationObserver(() => { const t = document.querySelector('#narr').textContent; if (t && !shown2.includes(t)) shown2.push(t); });
+    mo2.observe(document.querySelector('#narr'), { childList: true, subtree: true, characterData: true });
+    await NOIR.play([{ id: 'C', src: '> Charlie line.\\n~flag fc' }, { id: 'D', src: '> Delta line.' }], ctx2, { skip: id => id === 'C' ? 'auto' : false });
+    mo2.disconnect();
+    return { shown, done, flags: ctx.flags, shown2, flags2: ctx2.flags, quiet: NOIR.save && !document.querySelector('#skipBtn').hidden };
+  })()`);
+  if (!r.flags.fa || !r.flags.fb) throw new Error(`flags lost by skipping: ${JSON.stringify(r.flags)}`);
+  if (r.done.join() !== 'A,B') throw new Error(`segments reported ${r.done}`);
+  if (r.shown.some(t => t.startsWith('Alpha line two'))) throw new Error('the rest of the skipped segment was shown');
+  if (!r.shown.some(t => t.startsWith('Bravo'))) throw new Error('the unseen segment after a skip did not play');
+  if (r.shown2.some(t => t.startsWith('Charlie')) || !r.shown2.some(t => t.startsWith('Delta')) || !r.flags2.fc) throw new Error(`auto-skip wrong: ${JSON.stringify(r)}`);
+  if (r.quiet) throw new Error('skip button left showing');
+});
+test('skip: Never hides the button, Always skips the seen briefing, Replay brings it back', async () => {
+  const watch = `(() => { window.__sk = { btn: false, legend: false };
+    window.__skObs?.disconnect(); window.__skObs = new MutationObserver(() => { if (!document.querySelector('#skipBtn').hidden) __sk.btn = true; if (document.querySelector('#fx .legend')) __sk.legend = true; });
+    __skObs.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] }); })()`;
+  const intro = async (setting, answer) => {
+    await ev(`NOIR.setting('skipSeen', '${setting}')`); await ev(watch);
+    await openCase(answer, false); await until(READY, 'the intro to finish');
+    return ev('({ ...window.__sk })');
+  };
+  const [a, b, c, d] = await randomWords(4, '');
+  const never = await intro('never', a);   // plays the briefing in full (and marks it seen if it wasn't)
+  if (never.btn || !never.legend) throw new Error(`Never: ${JSON.stringify(never)}`);
+  if (!(await saved()).seen['rnd.tail']) throw new Error('the briefing was not marked seen');
+  const always = await intro('always', b);
+  if (always.btn || always.legend) throw new Error(`Always should skip the seen briefing silently: ${JSON.stringify(always)}`);
+  await toMenu(); await click('#mSettings'); await click('#replayBtn'); await toastSays('/briefing will play/'); await key('Escape');
+  if ((await saved()).seen['rnd.tail']) throw new Error('Replay the briefing did not un-see it');
+  const replay = await intro('always', c);
+  if (!replay.legend) throw new Error('after Replay the briefing, the legend should play even on Always');
+  // Ask: the button shows for the (now seen again) briefing, and Esc skips it
+  await ev(`NOIR.setting('skipSeen', 'ask')`); await ev(watch);
+  await ev('NOIR.speed = 20'); await ev(`NOIR.forceAnswer = ${JSON.stringify(d)}`);
+  await toMenu(); await click('#mRandom'); await wait(50); if (await ev(`!document.querySelector('#modal').hidden`)) await click('#mDrop');
+  await until(`!document.querySelector('#skipBtn').hidden`, 'the SKIP button on a seen scene', 30000);
+  await key('Escape');
+  await until(READY, 'the board after skipping', 15000);
+  await ev('NOIR.speed = 400');
+  return 'never / always / replay / ask';
+});
+test('notes: an informant clue goes into the case notes and survives a reload', async () => {
+  const [answer, ...wrong] = await randomWords(3, '');
+  await openCase(answer, true);
+  await guess(wrong[0]);
+  await until(READY, 'the round to finish');
+  const n = await ev(`({ btn: document.querySelector('#notesBtn').textContent, dis: document.querySelector('#notesBtn').disabled, notes: NOIR.S.notes.length, inf: NOIR.S.infLog.length })`);
+  if (n.inf && (n.notes !== n.inf || n.dis || !/Notes \(1\)/.test(n.btn))) throw new Error(`notes not recorded: ${JSON.stringify(n)}`);
+  if (!n.inf) return `${answer}: no informant was possible this round (skipped)`;
+  await click('#notesBtn');
+  await until(`!document.querySelector('#notes').hidden && document.querySelectorAll('#notesList li .big').length === 1`, 'the case notes');
+  await key('Escape');
+  await until(`document.querySelector('#notes').hidden`, 'Esc to close the notes');
+  await reload(); await continueCase(1);
+  if (await ev('NOIR.S.notes.length') !== 1) throw new Error('notes lost across a reload');
+  await guess(answer); await checkReport(answer, true, 2);
+  return answer;
+});
+test('transfer: export → clear all data → import gives back the same files; a bad paste is refused', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wordlenoir-dl-'));
+  try {
+    await send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: dir });
+    const before = await saved();
+    await toMenu(); await click('#mSettings');
+    await click('#exportBtn');
+    let file; for (let i = 0; i < 100 && !file; i++) { await wait(50); file = fs.readdirSync(dir).find(f => /^wordle-noir-save-\d{4}-\d\d-\d\d\.json$/.test(f)); }
+    if (!file) throw new Error('no export file downloaded');
+    const exported = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+    const strip = d => { const { app, exportedAt, updatedAt, ...rest } = d; return JSON.stringify(rest); };
+    if (exported.app !== 'wordle-noir' || strip(exported) !== strip(before)) throw new Error('export does not match the save');
+    // bad paste
+    await click('#pasteBtn'); await click('#pasteText');
+    await send('Input.insertText', { text: '{"app":"wordle-noir", nope' });
+    await click('#pasteGo');
+    await until(`!document.querySelector('#importErr').hidden && /JSON/.test(document.querySelector('#importErr').textContent)`, 'the bad paste to be refused');
+    // clear everything
+    await click('#clearBtn'); await click('#clearType'); await type('destroy');
+    await ev('window.__oldPage = 1'); await click('#clearGo');
+    for (let i = 0; i < 200; i++) { try { if (await ev('!window.__oldPage && !!(window.NOIR && NOIR.ANSWERS.length)')) break; } catch { /* reloading */ } await wait(50); }
+    if ((await saved()).random.stats.played !== 0) throw new Error('clear did not clear');
+    // import the file
+    await toMenu(); await click('#mSettings');
+    const { result } = await send('Runtime.evaluate', { expression: `document.querySelector('#importFile')` });
+    await send('DOM.setFileInputFiles', { files: [path.join(dir, file)], objectId: result.objectId });
+    await until(`!document.querySelector('#importConfirm').hidden`, 'the import summary');
+    const summary = await ev(`document.querySelector('#importSummary').textContent`);
+    if (!summary.includes(`${before.random.stats.played} random case`)) throw new Error(`import summary: ${summary}`);
+    await ev('window.__oldPage = 1'); await click('#importGo');
+    for (let i = 0; i < 200; i++) { try { if (await ev('!window.__oldPage && !!(window.NOIR && NOIR.ANSWERS.length)')) break; } catch { /* reloading */ } await wait(50); }
+    const after = await saved();
+    if (strip(after) !== strip(before)) throw new Error('imported save differs from the exported one');
+    return `${file}: ${summary.split('.')[0]}`;
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
 test('save: blocked storage warns and still plays', async () => {
   const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('denied', 'SecurityError'); } });` });
   try {

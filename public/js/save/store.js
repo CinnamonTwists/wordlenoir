@@ -64,6 +64,12 @@ export function createStore({ storage = () => globalThis.localStorage, key = KEY
       return doc;
     },
     flush: write,
+    // Swaps in a whole, already-validated document (an import, roadmap T4) and writes it at once. Returns false if it can't be kept.
+    replace(next) {
+      if (!doc) S.load();
+      doc = next; dirty = true; write();
+      return status.persistent && !dirty;
+    },
     // Wipes the save (Settings → Clear all data). Also clears corrupt-file backups.
     reset() {
       clearTimeout(timer); timer = null;
