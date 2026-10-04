@@ -37,6 +37,7 @@ const ITEMS = [
   sfx('paper', `AU.play('paper')`, 3), sfx('ring', `AU.play('ring')`), sfx('hangup', `AU.play('hangup')`, 4), sfx('whistle', `AU.play('whistle')`),
   sfx('siren', `AU.play('siren')`, 7.5), sfx('thunder', `AU.play('thunder')`, 7), sfx('telegraph', `AU.play('telegraph')`), sfx('foghorn', `AU.play('foghorn')`),
   sfx('card', `AU.play('card')`), sfx('lament', `AU.play('lament')`, 7),
+  ...['type', 'ding', 'typing', 'rustle', 'bell', 'gull', 'car', 'horn', 'steps', 'door', 'slam', 'match', 'lighter', 'clink', 'pour', 'cuffs', 'gunshot'].map(k => sfx(k, `AU.play('${k}')`, 6)),
   { group: 'music', name: 'riff', code: `AU.play('riff')`, dur: 9, mute: ['ambience'], pre: `AU.music('off')` },
   ...Object.keys(LOOPS).map(m => ({ group: 'music', name: `music ${m}`, code: `AU.music('${m}'); AU.pump(40)`, dur: 40, from: 6, mute: ['sfx', 'ambience'] })),
   ...Object.keys(BEDS).map(b => ({ group: 'beds', name: `bed ${b}`, code: `AU.amb('${b}'); AU.pump(40)`, dur: 40, from: 5, mute: ['sfx', 'music'], pre: `AU.setRain('none'); AU.rainG.gain.value = 0` })),

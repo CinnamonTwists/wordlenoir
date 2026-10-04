@@ -1,6 +1,6 @@
 import { sleep, SKIP } from '../core/timing.js';
 import { $ } from '../core/dom.js';
-import { AU } from '../audio/audio.js';
+import { AU, SFX_WAIT } from '../audio/audio.js';
 import { RAIN } from '../fx/rain.js';
 import { getSet } from '../art/sets/index.js';
 import { parseScript, condOK, fill } from '../script/parser.js';
@@ -32,7 +32,7 @@ async function runLine(raw, ctx) {
       case 'sting': AU.play('sting', arg || undefined); return sleep(300);
       case 'music': AU.music(arg); return;   // until the next @mood or ~music
       case 'amb': AU.amb(arg); return;       // until the next @set or ~amb
-      case 'sfx': AU.play(arg); return sleep(arg === 'ring' ? 2600 : arg === 'hangup' ? 900 : arg === 'whistle' ? 1400 : arg === 'telegraph' ? 1200 : 400);
+      case 'sfx': AU.play(arg); return sleep(SFX_WAIT[arg] ?? 400);
       case 'wait': return sleep(+arg || 1000);
       case 'flag': ctx.flags[arg] = 1; return;
       case 'story': if (ctx.story) ctx.story[arg] = 1; return;   // campaign-scoped (roadmap T6); kept only if the chapter is won

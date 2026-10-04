@@ -55,7 +55,7 @@ export async function paper(arg) {
   const [label, text] = arg.split('|'); await lit(); hideText();
   const el = document.createElement('div'); el.className = 'paper'; el.innerHTML = `<div class="lbl"></div><div class="txt"></div>`;
   el.querySelector('.lbl').textContent = label; C.fx.appendChild(el); await sleep(30); el.classList.add('on'); AU.play('paper'); await sleep(600);
-  await typeInto(el.querySelector('.txt'), text, 42, true); await sleep((2400 + text.length * 20) * TEXT.hold);
+  await typeInto(el.querySelector('.txt'), text, 42, 'type'); AU.play('ding'); await sleep((2400 + text.length * 20) * TEXT.hold);
   el.classList.remove('on'); await sleep(450); el.remove();
 }
 export async function clue(ctx) {

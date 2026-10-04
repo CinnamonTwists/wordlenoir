@@ -11,6 +11,7 @@
 // active voice up to now + 0.3 s (1.5 s while the tab is hidden, when browsers slow timers to once a second). So #speedN never
 // stretches them. They are exempt from AU.quiet, so a skipped scene keeps its room and its music.
 import { SFX } from './sfx.js';
+export { SFX_WAIT } from './sfx.js';
 import { BEDS, makeBed } from './beds.js';
 import { makeLoop, pickLoop } from './music.js';
 export { STINGS } from './stings.js';
@@ -42,6 +43,9 @@ export const AU = {
     // the room reverb that beds send their distant sounds to: a dark, generated 2.4 s tail
     this.ambVerb = c.createConvolver(); this.ambVerb.buffer = impulse(c, 2.4, 3.2);
     const vg = c.createGain(); vg.gain.value = .5; this.ambVerb.connect(vg); vg.connect(this.ambBus);
+    // the same room for distant one-shots (a gunshot, the train whistle), on the effects bus
+    this.sfxVerb = c.createConvolver(); this.sfxVerb.buffer = this.ambVerb.buffer;
+    const sg = c.createGain(); sg.gain.value = .5; this.sfxVerb.connect(sg); sg.connect(this.sfx);
     // rain bed
     const rs = c.createBufferSource(); rs.buffer = b; rs.loop = true;
     const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = .45;

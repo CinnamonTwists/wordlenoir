@@ -77,7 +77,7 @@ async function submit() {
     if (win) { ctx.vars.clockH = S.times[g][0]; ctx.vars.clockM = S.times[g][1]; } else { ctx.vars.clockH = 6; ctx.vars.clockM = 0; }
     const sc = mode.endScript(win, g, b, ctx);
     S.pending = sc.segments.map(s => s.id); checkpoint();
-    if (win) { AU.music('off'); AU.play('riff'); }   // the riff alone; the ending's moods bring the music back
+    if (win) { AU.music('off'); AU.play('cuffs'); AU.play('riff'); }   // the cuffs, then the riff alone; the ending's moods bring the music back
     await playScene(sc.segments, ctx);
     AU.music(win ? 'hope' : 'off');                    // the report: hopeful after a catch, silence for the falling piano after an escape
     if (!win) AU.play('lament');

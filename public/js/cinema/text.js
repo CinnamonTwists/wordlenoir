@@ -6,6 +6,7 @@ import { CAST } from '../content/cast.js';
 import { C, lit } from './stage.js';
 
 // Typewriter text: narration captions (`> line`) and character dialogue (`NAME: line`).
+// typeInto's `ticks`: false, true (the soft blip) or a cue name (~paper types with real typewriter keys, 'type'). Settings → Typewriter blips gates both.
 // `_word_` in a line renders as emphasis.
 
 export function emParse(t) { const out = []; const re = /_([^_\s][^_]*?)_/g; let i = 0, m; while ((m = re.exec(t))) { if (m.index > i) out.push([t.slice(i, m.index), 0]); out.push([m[1], 1]); i = re.lastIndex; } if (i < t.length) out.push([t.slice(i), 0]); return out; }
@@ -15,7 +16,7 @@ export async function typeInto(el, text, perChar, ticks) {
   if (SPEED > 20 || !TEXT.type) { segs.forEach(([sp, t]) => sp.textContent = t); await sleep(text.length * perChar * TEXT.type); return; }
   perChar *= TEXT.type;
   let k = 0;
-  for (const [sp, t] of segs) for (const ch of t) { sp.textContent += ch; if (ticks && TEXT.blips && ch !== ' ' && (k++ % 2 === 0)) AU.play('tick'); await sleep(ch === '.' || ch === ',' || ch === '?' ? perChar * 4 : perChar); }
+  for (const [sp, t] of segs) for (const ch of t) { sp.textContent += ch; if (ticks && TEXT.blips && ch !== ' ' && (k++ % 2 === 0)) AU.play(ticks === true ? 'tick' : ticks); await sleep(ch === '.' || ch === ',' || ch === '?' ? perChar * 4 : perChar); }
 }
 export const holdFor = t => clamp(1200 + t.length * 30, 1900, 5400) * TEXT.hold;
 

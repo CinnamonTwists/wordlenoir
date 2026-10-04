@@ -178,3 +178,42 @@ export function sirenFar(au, out, t, v = 1, dur = 6) {
 export function shipBell(au, out, t, v = 1) {
   [[523, .12, 2.5], [1250, .05, 1.4], [1690, .03, 1], [2730, .015, .6]].forEach(([f, a, d]) => note(au, out, { f, t, dur: d, type: 'sine', vol: a * v, a: .002 }));
 }
+// A match: the scratch along the box, then the flare.
+export function match(au, out, t, v = 1) {
+  for (let x = 0; x < .14; x += R(.012, .025)) noise(au, out, { t: t + x, dur: .012, type: 'bandpass', f: R(2500, 4500), q: 2, vol: R(.15, .3) * v, a: .001 });
+  const c = au.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), at = t + .16;
+  s.buffer = au.noise; s.loop = true; f.type = 'bandpass'; f.Q.value = .7; f.frequency.setValueAtTime(2200, at); f.frequency.exponentialRampToValueAtTime(700, at + .5);
+  g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(.3 * v, at + .03); g.gain.setTargetAtTime(.04 * v, at + .05, .12); g.gain.setTargetAtTime(0, at + .6, .2);
+  s.connect(f); f.connect(g); g.connect(out); s.start(at, Math.random()); s.stop(at + 1.4);
+}
+// A lighter: the lid flips open with a clink, the wheel rasps, the flame catches.
+export function lighter(au, out, t, v = 1) {
+  [[3150, .06, .25], [4720, .03, .15], [6900, .012, .08]].forEach(([f, a, d]) => note(au, out, { f, t, dur: d, type: 'sine', vol: a * v, a: .001 }));
+  noise(au, out, { t, dur: .015, type: 'highpass', f: 3000, vol: .2 * v, a: .001 });
+  for (let x = .35; x < .47; x += .02) noise(au, out, { t: t + x, dur: .015, type: 'bandpass', f: 5000, q: 1.5, vol: .14 * v, a: .001 });
+  noise(au, out, { t: t + .48, dur: .35, type: 'lowpass', f: 900, vol: .18 * v, a: .02 });
+}
+// A door: a slow creak and the latch.
+export function doorCreak(au, out, t, v = 1) {
+  creak(au, out, t, v * 1.2, R(1, 1.6));
+  noise(au, out, { t: t + R(1.2, 1.7), dur: .03, type: 'bandpass', f: 1800, q: 3, vol: .25 * v, a: .001 });
+}
+// A door slammed: the boom of the slab, the frame rattling, the latch.
+export function doorSlam(au, out, t, v = 1) {
+  const o = note(au, out, { f: 70, t, dur: .35, type: 'sine', vol: .55 * v, a: .003 }); o.frequency.exponentialRampToValueAtTime(42, t + .3);
+  noise(au, out, { t, dur: .18, type: 'lowpass', f: 700, vol: .5 * v, a: .002 });
+  noise(au, out, { t: t + .005, dur: .05, type: 'bandpass', f: 1500, q: 2, vol: .3 * v, a: .001 });
+  for (let i = 1; i < 5; i++) noise(au, out, { t: t + .05 + i * .035, dur: .02, type: 'bandpass', f: 2400, q: 4, vol: .08 * v / i, a: .001 });
+}
+// Handcuffs: the ratchet closing, then the lock.
+export function cuffs(au, out, t, v = 1) {
+  for (let i = 0; i < 7; i++) { const x = t + i * R(.028, .036); noise(au, out, { t: x, dur: .012, type: 'bandpass', f: R(3800, 4600), q: 6, vol: .2 * v, a: .001 }); note(au, out, { f: R(2600, 2900), t: x, dur: .03, type: 'sine', vol: .03 * v, a: .001 }); }
+  const e = t + .3; noise(au, out, { t: e, dur: .03, type: 'bandpass', f: 2200, q: 3, vol: .35 * v, a: .001 });
+  [[1760, .05, .3], [2710, .03, .2]].forEach(([f, a, d]) => note(au, out, { f, t: e, dur: d, type: 'sine', vol: a * v, a: .001 }));
+}
+// A gunshot a few blocks away: a sharp crack, a low thump, and the city throwing it back (send `out` through reverb).
+export function gunshot(au, out, t, v = 1) {
+  noise(au, out, { t, dur: .06, type: 'bandpass', f: 1600, q: .6, vol: .9 * v, a: .001 });
+  const o = note(au, out, { f: 110, t, dur: .25, type: 'sine', vol: .5 * v, a: .002 }); o.frequency.exponentialRampToValueAtTime(45, t + .2);
+  noise(au, out, { t: t + .01, dur: .5, type: 'lowpass', f: 600, vol: .25 * v, a: .005 });
+}
