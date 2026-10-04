@@ -341,7 +341,9 @@ reads on phone speakers that drop the sub.
 ## 1.10 Story canon so far (Random Case material)
 
 All current scenes become the Random Case pool (decision D3). Story mode starts fresh with new scenes. Characters, setting and tone
-below may carry into the story, but no existing scene text will.
+below may carry into the story, but no existing scene text will. **Story mode's canon is [story/bible.md](story/bible.md) (approved 2026-10-04).**
+Where the bible adds to a character (Sal is Dash's best friend and secretly the Editor; Vera is a *Gazette* proofreader), the bible wins in story
+chapters, while Random Case scenes keep the lighter versions below.
 
 
 - **Setting:** an unnamed rain-soaked American city, 1946–1949. Union Station's **6:00 AM train** is the deadline. Bars: The Last Word. Hotel Grammatica. Pier numbers. The Varga crime family.
@@ -476,7 +478,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
-| 2026-10-04 | 7: T6 (bible r2) | `step-7-story-bible` | Revision 2: the Editor is Sal, Dash's best friend (the Professor becomes the red herring); four personal threads (Pop, Vera, Nora and Tommy, the bottle) in nine interludes with kept/late/missed variants driven by each chapter's guess count, resolved in per-thread ending codas. Awaiting final OK. |
+| 2026-10-04 | 7: T6 (bible approved) | `step-7-story-bible` | Owner's final OK; bible marked approved and its §11 folded into T6/T7/T8. Revision 2: the Editor is Sal, Dash's best friend (the Professor becomes the red herring); four personal threads (Pop, Vera, Nora and Tommy, the bottle) in nine interludes with kept/late/missed variants driven by each chapter's guess count, resolved in per-thread ending codas. |
 | 2026-10-04 | 7: T6 (bible draft) | `step-7-story-bible` | `docs/story/bible.md` drafted: the Lexicon, the Editor, the grand-jury frame, ten chapters with culprits, deadlines, beats and hooks, the arc map, endings and easter-egg seeds. Not approved yet; no story content or campaign code written. |
 | 2026-10-04 | 6: T3 + T4 | `step-6-skip-notes-transfer` | Scenes play as segments: each is marked seen when it finishes, and seen ones can be skipped (SKIP ▸▸ / Esc / Space; Settings: Ask / Always / Never, plus Replay the briefing). Skipping applies only state, silently. Informant clues go into case notes on the board. Export (file or text) and import (file or paste) with full validation and a confirm summary. 29 unit tests, 13 e2e scenarios. |
 | 2026-10-04 | 5: F3 + T5 + T2 (part) | `step-5-menu-modes-settings` | Main menu (case-file folder), screen manager, in-game menu (Menu button, Esc), Settings screen (volumes on new audio buses, sound, mute-hidden, blips, text speed, reduce motion/flashes, high contrast, hard mode, clear data). The game loop became a mode-driven session runner, with `RandomMode` and a win record (played/won/streak/best/distribution) on the report and menu. 23 unit tests, 9 e2e scenarios. |
@@ -718,9 +720,9 @@ Results are recorded when the final guess is scored, so reloading during the end
 **Goal:** 10 chapters, each with a different culprit from the same organization fleeing a different crime, each with its own reason the culprit
 must be caught within six guesses, plus character arcs for Dash, his allies, and an overarching crime lord. Full creative control has been delegated.
 
-- [ ] **Story bible** `docs/story/bible.md` (write first, get sign-off, then everything else follows it):
-      **Drafted in step 7 (branch `step-7-story-bible`). Revision 2 (Sal as the Editor; Dash's personal threads in interludes between chapters,
-      resolved by performance) is awaiting the owner's final OK.** Its §11 lists the changes it makes to T6, T7 and T8; they get folded in here on approval.
+- [x] **Story bible** `docs/story/bible.md` (write first, get sign-off, then everything else follows it):
+      **Done in step 7: revision 2, approved 2026-10-04.** The Editor is Sal, Dash's best friend (the Professor is the red herring), and Dash's
+      personal threads play in interludes between chapters, resolved by performance. Its §11 changes are folded into T6, T7 and T8 below.
   - The organization: name, structure, how it uses words or ciphers, and why each member is effectively "a word on the run".
   - The crime lord: identity hidden until the finale, motive, and how they taunt Dash (the existing `WORD` phone voice is a natural seed).
   - The 10 culprits: name, alias, crime, M.O., personality, **why the 6:00 AM deadline matters in their chapter** (a train, a ship, an execution,
@@ -735,6 +737,12 @@ must be caught within six guesses, plus character arcs for Dash, his allies, and
   - **Story flags** persist across chapters (`campaign.storyFlags`). Proposal: keep `~flag` case-scoped, add `~story name` for campaign-scoped flags,
     and let conditions read both. `check-scenes` validates both.
   - Fixed **story beats** per chapter (opening and outro variants by result) wrap the performance-driven round pool.
+  - **Interludes** (bible §7): after chapter k's outro (k = 1–9), play its interlude from the pack's `interlude: { kept, late, missed }` slot
+    (IDs `cNN.inter.kept` …). The variant comes from the winning attempt: guess 1–2 = kept, 3–4 = late, 5–6 = missed, one step worse if the chapter
+    needed a retry. Each interlude belongs to one personal thread (Pop: 1, 5, 8 · Vera: 2, 6, plus chapter 8's result · Nora and Tommy: 3, 7 ·
+    the bottle: 4, 9). The marks are computed from `campaign.results`, so they need no save data of their own.
+  - **Losing is a retelling** (bible §4): the escaped outro beat returns to the hearing room ("Strike that. That's not how it went.") before
+    the rollback.
   - **Losing a chapter (D1):** the culprit escapes (loss climax/epilogue plays), then the story **rolls back to the start of that chapter**.
     The player can't progress until it's won. The rollback discards the attempt's pending seen marks and story flags (F1).
     The retry plays **a different set of scenes**: the picker avoids `usedScenes[chapter]` (scenes from failed attempts, including the opening variant)
@@ -761,6 +769,9 @@ must be caught within six guesses, plus character arcs for Dash, his allies, and
   | **Bad: "Last Train Out"** | avg ≥ 5.5 | Crime lord gets away on the 6:00 train |
 
 - [ ] Endings live in `content/endings/` as packs (lazy-loaded). Each is a long script and may use story flags for variations.
+      **Bible §8:** an ending = the band's case script + four life codas (Pop, Vera, Nora and Tommy, the bottle), each best / middle / worst
+      by the thread's total marks (best ≥ ⅔ of the maximum, worst ≤ ⅓). Ending packs gain `coda: { pop, vera, nora, bottle } × { best, middle, worst }`
+      (IDs `end.coda.pop.best` …). The easter egg replaces the codas.
 - [ ] Unlock record per ending in the save (viewable from the menu once seen) and a "fastest run" stat.
 - [ ] e2e: forced answers that reach every band, including the easter egg.
 
@@ -779,9 +790,10 @@ or from the Random Case pool. All of it should be noir, funny, and consistent wi
   | Win climax + epilogues | 3 + 12 | epilogues 2 per guesses-used 1–6 |
   | Loss climax + epilogues | 3 + 8 | epilogues 2 per bucket 0–3 |
   | Outro beats | 4 | by result: fast catch / slow catch / near miss / escaped; sets up next chapter |
+  | Interlude | 3 | chapters 1–9 only: kept / late / missed variants of the same personal scene (bible §7); no cut-ins |
   | Openers, closers | ~20 lines each | one-liners, not counted |
 
-  10 chapters is about 1,460 scenes. At today's ~360 chars average, that's roughly 0.5–0.6 MB of scripts total, loaded about 60 KB per chapter.
+  Plus 12 ending codas (bible §8). 10 chapters is about 1,460 scenes (+27 interludes). At today's ~360 chars average, that's roughly 0.5–0.6 MB of scripts total, loaded about 60 KB per chapter.
 - [ ] Produce chapter by chapter, in batches (beats → cores per guess number → informants → endings). Run `npm run check` after each batch.
 - [ ] **Writing constraints** (enforce in review and partly in the checker):
   - Works for any guess/answer. Use `{GUESS}`, `{hitsN}` etc. and never assume letters.
@@ -858,7 +870,7 @@ structure that holds it is settled.
 | 4 ✓ | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |
 | 5 ✓ | **Screens + modes refactor, Random Case mode, main menu shell, settings** | F3, T5, T2 (partial) | Today's game becomes "Random Case" behind a real menu. Story entries show as "coming soon". Settings land with audio buses (start of T9). |
 | 6 ✓ | **Skip seen scenes + case notes, export/import** | T3, T4 | Both are small once F1/F2 exist, and they make testing long content faster. |
-| 7 … | **Story bible** (needs your sign-off; drafted, awaiting approval) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |
+| 7 ✓ | **Story bible** (approved 2026-10-04) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |
 | 8 | **Campaign framework + vertical slice** | T6, T7, T2 (rest) | Chapter flow, attempts and loss rollback, retry scene variety, story flags, continue, chapter select, dossier, endings logic with placeholder endings. Chapters 1–2 get fresh minimum coverage (2 scenes per slot, so retries can differ) to prove the whole loop end to end. |
 | 9 | **Content production, chapter by chapter** | T8, T7 | Write each chapter fresh to ~146 scenes, in story order, then the 6 endings plus the easter egg. |
 | 10 | **Audio expansion** | T9 | Runs in parallel with step 9: jazz scheduler, stings, SFX, ambience beds, script commands. |

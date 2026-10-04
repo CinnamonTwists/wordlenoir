@@ -3,9 +3,9 @@
 The source of truth for story mode (roadmap T6, T7, T8). Every chapter pack, interlude, ending and dossier entry follows this file.
 Nothing here reuses Random Case text (decision D3). Characters, setting and tone carry over from DEVELOPMENT.md §1.10.
 
-**Status:** revision 2, 2026-10-04. Revision 1's decisions were approved with two requests: make the Editor someone close to Dash, and give Dash
-personal and family drama between chapters, resolved by how well the player does. Both are worked in below; what's new is marked **(new in r2)**.
-No story content or campaign code gets written until revision 2 gets a final OK.
+**Status: APPROVED** (revision 2, signed off by the owner on 2026-10-04). Revision 1 was approved with two requests: make the Editor someone close
+to Dash, and give Dash personal and family drama between chapters, resolved by how well the player does. Both are worked in; what changed is marked
+**(new in r2)**. Changes from here on need the owner's OK. Record them in a dated note at the end of this file.
 
 ---
 
