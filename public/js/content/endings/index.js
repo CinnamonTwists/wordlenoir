@@ -279,6 +279,7 @@ best: { id: 'end.coda.bottle.best', s: `
 @mood warm
 ~rain off
 > After the trial, the Last Word was sold for the licence. Before they took the keys, I went in one last time.
+~sfx pour
 > I took the last bottle of Sal's good rye off the shelf and poured it down the sink behind the bar myself, all of it, slowly.
 > It took a long time. I didn't hurry. Sal never hurried with that bottle either.
 ` },

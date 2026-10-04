@@ -42,6 +42,7 @@ epi: {
 SAL: First try. You walked in, said her name, and she folded like a napkin.
 DASH: She never saw it coming.
 SAL: Nobody does, with you. You know what I like about you, Dash? You never look surprised.
+~sfx pour
 > He poured one for me and one for himself, which he never does.
 ` },
 { id: 'c02.win.epi.1.b', chapter: 2, s: `

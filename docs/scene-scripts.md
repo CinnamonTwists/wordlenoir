@@ -36,7 +36,7 @@ The same text can't appear in two packs: story chapters are written fresh.
 | `~fade` / `~black` | Fade to black (the next visible line fades back in). |
 | `~shake` `~flash` `~lightning` `~heart` | Camera shake, white flash, lightning + thunder, heartbeat + red pulse. |
 | `~rain heavy\|light\|window\|off` | Override the set's rain. |
-| `~sfx name` | Play a sound: `ring` `hangup` `thunder` `whistle` `siren` `telegraph` `foghorn` `boom` `stamp` ... (any cue in `CUES`, `audio/sfx.js`). |
+| `~sfx name` | Play a sound and hold for it (`SFX_WAIT`): the phone `ring` `hangup`; the city `whistle` (the train) `foghorn` `bell` `siren` `car` `horn` `gull` `thunder` `gunshot`; up close `steps` `door` `slam` `match` `lighter` `clink` `pour` `cuffs` `rustle` `typing` `ding` `telegraph`; impacts `boom` `thud` `stamp` ... (any cue in `CUES`, `audio/sfx.js`). Use them where the text describes the sound, sparingly: the room's bed (`@set`) already carries the background. |
 | `~sting name` | A sting from `STINGS` (`audio/stings.js`): the cut-in hits `brass` `minor` `sag` `soft` `versus`, and the library: `word` (a dark swell, plays by itself when the Editor starts talking), `hope` (a warm swell, under every green stamp), `stamp` (a dark hit, under every red stamp). Without a name, a random low hit. Stings share the cut-in cooldown, so use them sparingly. |
 | `~music name` | Change the music until the next `@mood` or `~music`: a mood (`calm` `tense` `hope` `dread`), a loop by name (`title` `jukebox` `radio` `bigband` `finale` `elegy` `lasttrain` `mirror`), or `off`. |
 | `~amb name` | Change the ambience bed until the next `@set` or `~amb`: any bed in `audio/beds.js` (they're named after the sets, plus `board` and `board.last`), or `off`. |

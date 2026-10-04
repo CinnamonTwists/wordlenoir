@@ -12,6 +12,7 @@ Requires [Node.js](https://nodejs.org) 18+. Nothing to install.
 npm run dev      # http://localhost:8788  (add #speed10 to the URL to fast-forward scenes)
 npm run check    # validate every scene pack and word list (add -- --coverage for pool sizes)
 npm run e2e      # play a win, a loss and more in headless Chrome/Edge (Node 22+)
+npm run levels   # measure every sound's loudness offline in headless Chrome/Edge (Node 22+)
 npm test         # unit tests for the save system and other DOM-free modules
 npm run preview  # optional: run under Cloudflare's real runtime via wrangler
 ```

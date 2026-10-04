@@ -142,6 +142,7 @@ DASH: It's the last thing that isn't. Let me have it.
 @set bar!
 @mood warm
 ~rain window
+~sfx pour
 > The Last Word, closing time, the night before everything. Sal poured without asking, the way he has since 1946. The good rye.
 > I looked at the glass for a while. Then I pushed it back across the bar with two fingers, gently, the way Briggs would.
 DASH: Not tonight, Sal. Not anymore.
@@ -173,6 +174,7 @@ missed: [
 @set bar!
 @mood blue
 ~rain heavy
+~sfx pour
 > The Last Word, closing time. Sal poured without asking. I drank it without asking. Then I asked for the bottle.
 > He gave it to me. He sat down on my side of the bar, which he never does, and watched me drink his whole bottle of the good rye.
 DASH: Sal. Why do you always stay?
