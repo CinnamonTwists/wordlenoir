@@ -19,7 +19,7 @@ import { informant } from '../informant.js';
 // Retries play different scenes: every pick avoids campaign.usedScenes[chapter] (scenes from failed attempts) until a pool runs out.
 // Replays never touch the campaign; their seen marks wait in memory and count only if the replay is won.
 
-const pickFresh = (list, avoid) => { const fresh = list.filter(x => !avoid.has(x.id)); return pick(fresh.length ? fresh : list); };
+export const pickFresh = (list, avoid) => { const fresh = list.filter(x => !avoid.has(x.id)); return pick(fresh.length ? fresh : list); };
 
 export function createStoryMode(chapter, { replay = false } = {}) {
   const P = () => getPack(chapter), info = chapterInfo(chapter);

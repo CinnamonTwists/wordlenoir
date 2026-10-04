@@ -1,7 +1,7 @@
 # Scene script reference
 
 Every cutscene in Wordle Noir is a plain-text script in the `s` field of a scene object, `{ id, chapter, s: \`...\` }`,
-inside a **scene pack**: `public/js/content/random/` for Random Case (chapter 0), and later `public/js/content/chapters/cNN/` for story chapters.
+inside a **scene pack**: `public/js/content/random/` for Random Case (chapter 0), and `public/js/content/chapters/cNN/` for story chapters (`c01`, `c02` so far).
 The engine (`public/js/cinema/player.js`) runs it one line at a time.
 Blank lines and lines starting with `//` are ignored. Run `npm run check` after editing to catch typos.
 
@@ -38,7 +38,8 @@ The same text can't appear in two packs: story chapters are written fresh.
 | `~rain heavy\|light\|window\|off` | Override the set's rain. |
 | `~sfx name` | Play a sound: `ring` `hangup` `thunder` `whistle` `siren` `telegraph` `foghorn` `sting` `versusHit` `boom` `stamp` ... (any method on `AU` in `audio/audio.js`). |
 | `~wait ms` | Pause. |
-| `~flag name` | Set a story flag for the rest of the case. |
+| `~flag name` | Set a flag for the rest of the case. |
+| `~story name` | Story chapters only: set a campaign flag. It's kept if the chapter is won and dropped if the attempt is lost (bible §10 rule 7 lists them). |
 | `~stamp TEXT` / `~gstamp TEXT` | Red / green rubber stamp. |
 | `~paper LABEL\|TEXT` | A typed sheet of paper. |
 | `~clue` | The informant's evidence card (only meaningful in informant scenes). |
@@ -57,7 +58,8 @@ Prefix a line with one or more conditions; it only plays if all are true.
 ```
 
 `?key` (truthy) · `?!key` (falsy) · `?key=3` `?key>3` `?key<3` `?key>=3` `?key<=3`.
-A key can be a flag set by `~flag` or any variable below.
+A key can be a flag set by `~flag`, a campaign flag set by `~story`, or any variable below. Story endings use `?g>=5` (the near miss) to show
+what a late catch still costs.
 
 ## Variables
 
@@ -69,6 +71,8 @@ Write `{name}` anywhere in a line. Which ones exist depends on where the script 
   word forms `{hitsN}` "two letters", `{greensN}` `{yellowsN}` `{graysN}` `{leftN}` `{leftW}`
   and capitalized versions `{HitsN}` `{GreensN}` ...,
   `{time}` (now) `{nextTime}` `{ANSWER}`
+- **Story chapters** add to every scope: `{chapterNo}` `{chapterTitle}` `{culprit}` `{alias}` `{crime}` `{deadline}`.
+  **Interludes** get only those (they happen the day after, outside the case).
 - **Informants** (`informants.js`): everything above, plus
   `{n}` `{nN}` `{NWORDS}` `{FIT}` (words still possible), `{topL}` `{topPct}` (likeliest letter),
   `{posL}` `{posPct}` `{posOrd}` `{POSORD}` `{posArt}` (likeliest letter in a position), `{dblPct}` (chance of a double letter)
@@ -93,6 +97,14 @@ Pools are fields of the pack (file in `content/random/` in brackets):
    Then maybe one of `informants`, then a title card with a line from `closers`.
 3. **Win**: one `win.climax` + one `win.epi[guesses used]` (`win.js`).
 4. **Loss**: one `loss.climax` + one `loss.epi[bucket of the last guess]` (`loss.js`).
+
+Story chapters (`chapters/cNN/`, files: `intros.js`, `cores.js`, `informants.js`, `endings.js`, `beats.js`, `lines.js`) work the same way, plus:
+
+5. **Outro beat** after the ending: `beats.fast` (won on guess 1–2), `beats.slow` (3–4), `beats.near` (5–6), or `beats.escaped` after a loss.
+   Won beats return to the hearing room and set up the next chapter's hook; the escaped beat is the retelling ("Strike that.").
+6. **Interlude** after a won chapter (1–9): `interlude.kept`, `.late` or `.missed`, by when Dash got home (bible §7). Interludes are quiet:
+   no `!!`, `%%`, `**` or `~clue` (the checker enforces it).
+7. **Retries** avoid every scene a failed attempt played, so every slot needs at least two scenes (`npm test` enforces it for written chapters).
 
 To preview a single scene, start a case and run `NOIR.play(NOIR.scene('rnd.core.1-0.02').s, { vars: {}, flags: {} })` in the console.
 `npm run check -- --coverage` shows how many scenes each pool has.

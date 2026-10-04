@@ -20,8 +20,9 @@ Opening `public/index.html` straight from disk won't work, because browsers bloc
 
 ## Playing
 
-"Open the case file" leads to the main menu: **Continue** (a case in progress), **Random Case**, and **Settings** (volumes, text speed,
-reduce motion/flashes, high-contrast tiles, hard mode, clear data). The story entries are stamped *coming soon*. During a case, **Menu** or **Esc**
+"Open the case file" leads to the main menu: **New Game** (the story: chapters 1–2 so far), **Continue** (the story run, or a Random Case
+in progress), **Chapter Select** (replay any chapter you've reached), **Random Case**, the **Dossier**, and **Settings** (volumes, text speed,
+reduce motion/flashes, high-contrast tiles, hard mode, clear data). During a case, **Menu** or **Esc**
 opens the in-game menu. Scenes you've already seen can be skipped (SKIP ▸▸, Esc or Space), and informant clues are kept in
 **Notes** on the board. Settings → Data exports your case files to a file (or text) and imports them in another browser.
 
@@ -55,9 +56,10 @@ public/                     ← everything that gets deployed
     script/                   scene-script parser (DOM-free)
     content/                  the story: cast, names, registry.js (loads scene packs, looks up scenes by ID)
       random/                 Random Case pack: intros, tail, rounds (cores/), informants, win/loss endings, openers, closers
-      chapters/               story chapter packs (coming)
+      chapters/               story: the chapter manifest (index.js) and chapter packs c01, c02 (opening, cores, informants, endings, beats, interlude)
+      endings/                story endings (placeholders until step 9)
     game/                     rules and flow: state, scoring, board UI, case generation, informants, report, snapshots
-      modes/                  game modes (random.js: Random Case)
+      modes/                  game modes (random.js: Random Case, story.js: a campaign chapter or a replay)
     ui/                       screens around the game: screen manager, main menu, settings
     save/                     browser saves: one versioned localStorage document, migrations, progress rules
 tools/                      dev server, scene validator, e2e test (not deployed)

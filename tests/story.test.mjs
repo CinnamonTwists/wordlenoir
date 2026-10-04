@@ -65,3 +65,22 @@ test('the chapter manifest matches the bible: ten chapters, complete facts, chap
   assert.deepEqual(Object.keys(chapterVars(1)), ['chapterNo', 'chapterTitle', 'culprit', 'alias', 'crime', 'deadline']);
   assert.equal(isWritten(3), false);
 });
+test('retries play different scenes: the picker skips avoided ids until a pool runs out (D1)', async () => {
+  const { pickFresh } = await import('../public/js/game/modes/story.js');
+  const list = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+  for (let i = 0; i < 50; i++) assert.equal(pickFresh(list, new Set(['a', 'c'])).id, 'b');
+  for (let i = 0; i < 20; i++) assert.ok(list.includes(pickFresh(list, new Set(['a', 'b', 'c']))));   // exhausted: reuse rather than fail
+});
+test('written chapters have at least two scenes in every slot a retry draws from, and all three interlude variants', async () => {
+  const { loadPack } = await import('../public/js/content/registry.js');
+  for (const c of CHAPTERS.filter(x => x.written)) {
+    const P = await loadPack(c.n), at = `chapter ${c.n}`;
+    const pools = { intros: P.intros, 'win.climax': P.win.climax, 'loss.climax': P.loss.climax };
+    for (let g = 1; g <= 5; g++) for (let b = 0; b <= 3; b++) pools[`cores ${g}-${b}`] = P.cores[`${g}-${b}`];
+    for (let g = 1; g <= 6; g++) pools[`win.epi ${g}`] = P.win.epi[g];
+    for (let b = 0; b <= 3; b++) pools[`loss.epi ${b}`] = P.loss.epi[b];
+    for (const k of ['fast', 'slow', 'near', 'escaped']) pools[`beats.${k}`] = P.beats[k];
+    for (const [k, list] of Object.entries(pools)) assert.ok(list?.length >= 2, `${at}: ${k} has ${list?.length ?? 0} scene(s), needs 2 so a retry can differ`);
+    if (c.n < 10) for (const k of ['kept', 'late', 'missed']) assert.equal(P.interlude[k]?.length, 1, `${at}: interlude.${k}`);
+  }
+});

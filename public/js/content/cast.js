@@ -21,5 +21,6 @@ export const CAST = {
   POP:    { name: 'POP LEXINGTON', color: '#9fb4c9', bust: { hair: 'bald', build: 1.05, coat: true } },
   NORA:   { name: 'NORA HEALY', color: '#e0a07a', bust: { hair: 'long', build: .92 } },
   PELL:   { name: 'LINUS PELL', color: '#c9b98f', bust: { hair: 'short', glasses: true, build: .88 } },
+  FOREMAN: { name: 'THE FOREMAN', color: '#a89a84', bust: { hat: 'cap', build: 1.22, cig: true } },   // the Gazette's press foreman (ch 1 bit part)
   DELLA:  { name: 'DELLA MARSH', color: '#d49a7a', bust: { hair: 'bun', build: 1.12 } }
 };
