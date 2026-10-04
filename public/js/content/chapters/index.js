@@ -15,7 +15,7 @@ export const CHAPTERS = [
     deadline: 'the freighter Lindqvist sails', why: 'At 6:00 the Lindqvist sails with a copy of the Lexicon\'s ledger.',
     associates: 'The Lexicon (an Entry). The Last Word\'s back room. A Varga leftover or two.', quote: 'Everybody owes somebody, sugar. I just write it down.',
     bust: { hair: 'bun', build: 1.12, color: '#d49a7a' } },
-  { n: 3, title: 'Dead Man\'s Sentence', date: 'October 19, 1948', written: false,
+  { n: 3, title: 'Dead Man\'s Sentence', date: 'October 19, 1948', written: true,
     culprit: 'Augustin Fairweather', alias: 'the Notary', crime: 'a forged murder confession',
     mo: 'Signatures, seals, sworn statements. If it\'s stamped, people believe it.',
     deadline: 'Eddie Ruiz goes to the chair', why: 'At 6:00 an innocent dockworker is executed for a confession the Notary forged.',
