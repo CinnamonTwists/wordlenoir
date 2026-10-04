@@ -51,7 +51,7 @@ export const CHAPTERS = [
     deadline: 'the ferry leaves for Blackwell Island', why: 'At 6:00 the ferry sails with Vera aboard and a farewell letter in her handwriting.',
     associates: 'The Lexicon (an Entry). Nobody who\'d admit it.', quote: 'I\'ve written your goodbye already. It\'s very moving.',
     bust: { hair: 'short', build: .9, coat: true, color: '#a0a0a8' } },
-  { n: 9, title: 'The Count', date: 'December 2, 1948', written: false,
+  { n: 9, title: 'The Count', date: 'December 2, 1948', written: true,
     culprit: 'Lola Vance', alias: 'the Understudy', crime: 'stolen ballot boxes and a dead poll watcher',
     mo: 'Plays whatever part the job needs: client, widow, volunteer.',
     deadline: 'the election count is certified', why: 'At 6:00 the count is certified, and a Lexicon slate takes City Hall.',
