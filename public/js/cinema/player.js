@@ -32,6 +32,7 @@ async function runLine(raw, ctx) {
       case 'sfx': if (AU[arg]) AU[arg](); return sleep(arg === 'ring' ? 2600 : arg === 'hangup' ? 900 : arg === 'whistle' ? 1400 : arg === 'telegraph' ? 1200 : 400);
       case 'wait': return sleep(+arg || 1000);
       case 'flag': ctx.flags[arg] = 1; return;
+      case 'story': if (ctx.story) ctx.story[arg] = 1; return;   // campaign-scoped (roadmap T6); kept only if the chapter is won
       case 'stamp': return stamp(arg, false);
       case 'gstamp': return stamp(arg, true);
       case 'paper': return paper(arg);
@@ -48,7 +49,7 @@ async function runLine(raw, ctx) {
   return narrate(line);
 }
 
-// A skipped line still changes state (roadmap T3): flags, the set, the mood, rain and the letterbox, so the next segment starts right.
+// A skipped line still changes state (roadmap T3): flags (case and story), the set, the mood, rain and the letterbox, so the next segment starts right.
 // Nothing is shown or heard.
 async function runQuiet(raw, ctx) {
   const line = fill(raw, ctx);
@@ -57,6 +58,7 @@ async function runQuiet(raw, ctx) {
   const [cmd, ...rest] = line.startsWith('~') ? line.slice(1).split(' ') : [];
   const arg = rest.join(' ');
   if (cmd === 'flag') ctx.flags[arg] = 1;
+  else if (cmd === 'story') { if (ctx.story) ctx.story[arg] = 1; }
   else if (cmd === 'rain') { RAIN.set(arg); AU.setRain(arg, getSet(C.set).indoor); }
   else if (cmd === 'tight') C.el.classList.add('tight');
   else if (cmd === 'loose') C.el.classList.remove('tight');

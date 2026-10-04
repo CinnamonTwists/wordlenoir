@@ -12,6 +12,7 @@ import { AU, STINGS } from '../public/js/audio/audio.js';
 import { CAST } from '../public/js/content/cast.js';
 import { parseWordList } from '../public/js/game/words.js';
 import { loadPack, packId, scenesOf } from '../public/js/content/registry.js';
+import { CHAPTERS, chapterVars } from '../public/js/content/chapters/index.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const COVERAGE = process.argv.includes('--coverage');
@@ -24,14 +25,20 @@ const GUESS = ['guess', 'GUESS', 'g', 'left', 'greens', 'yellows', 'grays', 'hit
   'HitsN', 'GreensN', 'YellowsN', 'GraysN', 'LeftN', 'LeftW', 'nextTime', 'ANSWER', 'clockH', 'clockM'];
 const INFO = ['n', 'nN', 'NWORDS', 'FIT', 'dblPct', 'topL', 'topPct', 'posL', 'posPct', 'posOrd', 'POSORD', 'posArt'];
 const SCOPE = { intro: new Set(BASE), round: new Set([...BASE, ...GUESS]), informant: new Set([...BASE, ...GUESS, ...INFO]) };
-const SLOT_SCOPE = { intro: 'intro', tail: 'intro', inf: 'informant' };   // everything else (cores, endings, beats) is a round scene
+// story chapters add the chapter's facts to every scope; interludes (the day after, outside any case) get only those
+const CHAPTER = Object.keys(chapterVars(1));
+const STORY_SCOPE = Object.fromEntries(Object.entries(SCOPE).map(([k, v]) => [k, new Set([...v, ...CHAPTER])]));
+STORY_SCOPE.interlude = new Set(CHAPTER);
+const SLOT_SCOPE = { intro: 'intro', tail: 'intro', inf: 'informant', inter: 'interlude' };   // everything else (cores, endings, beats) is a round scene
 
-const TILDE = new Set(['fade', 'black', 'shake', 'flash', 'lightning', 'heart', 'rain', 'sfx', 'wait', 'flag', 'stamp', 'gstamp', 'paper', 'clue', 'legend', 'tight', 'loose', 'push']);
+const TILDE = new Set(['fade', 'black', 'shake', 'flash', 'lightning', 'heart', 'rain', 'sfx', 'wait', 'flag', 'story', 'stamp', 'gstamp', 'paper', 'clue', 'legend', 'tight', 'loose', 'push']);
 const RAIN = new Set(['off', 'window', 'light', 'heavy']);
 
 // ---------- load packs: Random Case + every chapters/cNN/ that exists ----------
 const CH_DIR = path.join(ROOT, 'public/js/content/chapters');
 const chapterNos = fs.existsSync(CH_DIR) ? fs.readdirSync(CH_DIR).filter(d => /^c\d\d$/.test(d) && fs.existsSync(path.join(CH_DIR, d, 'index.js'))).map(d => +d.slice(1)) : [];
+// the manifest (content/chapters/index.js) must say `written: true` for exactly the chapters that have a pack
+for (const c of CHAPTERS) if (!!c.written !== chapterNos.includes(c.n)) err(`chapter ${c.n}`, c.written ? 'marked written but has no pack' : 'has a pack but is not marked written in the manifest');
 const PACKS = [];
 for (const ch of ['random', ...chapterNos]) {
   try { PACKS.push(await loadPack(ch)); } catch (e) { err(`pack ${packId(ch)}`, `failed to load: ${e.message}`); }
@@ -39,7 +46,8 @@ for (const ch of ['random', ...chapterNos]) {
 
 // Flags are whatever any script sets with ~flag; conditions may test flags or vars.
 const allScripts = [];
-const add = (where, src, scope, pack, isScene) => allScripts.push({ where, src, scope, pack, isScene });
+const add = (where, src, scope, pack, isScene, slot) => allScripts.push({ where, src, scope, pack, isScene, slot });
+const STORY = new Set();   // campaign flags set anywhere with ~story
 const FLAGS = new Set();
 
 // ---------- collect and check each pack's structure ----------
@@ -60,7 +68,7 @@ for (const P of PACKS) {
       if (!['n', 'top', 'pos', 'dbl'].includes(x.type)) err(where, `unknown informant type "${x.type}"`);
       if (x.who !== null && !CAST[x.who]) err(where, `who "${x.who}" is not in CAST`);
     }
-    add(where, x.s, SLOT_SCOPE[slot] || 'round', pid, true);
+    add(where, x.s, SLOT_SCOPE[slot] || 'round', pid, true, slot);
   }
   // every pool the game draws from must exist
   if (!P.intros?.length) err(at, 'intros missing or empty');
@@ -72,13 +80,21 @@ for (const P of PACKS) {
     for (const k of keys) if (!P[end]?.epi?.[k]?.length) err(at, `${end}.epi[${k}] missing or empty`);
   }
   for (let n = 1; n <= 5; n++) if (!P.closers?.[n]?.length) err(at, `closers[${n}] missing or empty`);
+  // story chapters: outro beats by result, and (chapters 1–9) the interlude in three variants (docs/story/bible.md §7)
+  if (P.chapter > 0) {
+    for (const k of ['fast', 'slow', 'near', 'escaped']) if (!P.beats?.[k]?.length) err(at, `beats.${k} missing or empty`);
+    if (P.chapter < 10) for (const k of ['kept', 'late', 'missed']) if (!P.interlude?.[k]?.length) err(at, `interlude.${k} missing or empty`);
+  }
   for (const [set, lines] of Object.entries(P.openers || {})) {
     if (!SETS[set]) err(`${at} openers.${set}`, 'not a known set');
     lines.forEach((l, i) => add(`${pid} openers.${set}[${i}]`, l, 'round', pid, false));
   }
 }
 
-for (const { src } of allScripts) for (const { line } of parseScript(src)) { const m = line.match(/^~flag\s+(\w+)/); if (m) FLAGS.add(m[1]); }
+for (const { src } of allScripts) for (const { line } of parseScript(src)) {
+  let m = line.match(/^~flag\s+(\w+)/); if (m) FLAGS.add(m[1]);
+  m = line.match(/^~story\s+(\w+)/); if (m) STORY.add(m[1]);
+}
 
 for (const [k, v] of Object.entries(CAST)) if (v.sting !== undefined && !STINGS[v.sting]) err(`CAST.${k}`, `unknown sting "${v.sting}"`);
 
@@ -124,6 +140,7 @@ if (COVERAGE) {
     ['loss climax', P => len(P.loss?.climax), T.climax],
     ['loss epi 0..3', P => [0, 1, 2, 3].map(k => len(P.loss?.epi?.[k])), Array(4).fill(T.lossEpi)],
     ['outro beats', P => lines(P.beats), T.beats],
+    ['interlude k/l/m', P => ['kept', 'late', 'missed'].map(k => (P.interlude?.[k] || []).length), [1, 1, 1]],
     ['openers (lines)', P => lines(P.openers), T.lines],
     ['closers (lines)', P => lines(P.closers), T.lines],
     ['TOTAL scenes', P => scenesOf(P).length, 146]
@@ -136,11 +153,12 @@ if (COVERAGE) {
 }
 
 // ---------- validate each line ----------
-for (const { where, src, scope } of allScripts) {
-  const vars = SCOPE[scope];
+for (const { where, src, scope, pack, slot } of allScripts) {
+  const story = pack !== 'rnd', vars = (story ? STORY_SCOPE : SCOPE)[scope];
   parseScript(src).forEach(({ conds, line }, n) => {
     const at = `${where} line ${n + 1}`;
-    for (const c of conds) if (!FLAGS.has(c.key) && !vars.has(c.key)) err(at, `condition on unknown flag/var "${c.key}"`);
+    for (const c of conds) if (!FLAGS.has(c.key) && !vars.has(c.key) && !(story && STORY.has(c.key))) err(at, `condition on unknown flag/var "${c.key}"`);
+    if (slot === 'inter' && /^(!!|%%|\*\*|~clue)/.test(line)) err(at, 'interludes are quiet: no cut-ins, versus, heavy lines or clues');
     if (line.startsWith('?')) err(at, `malformed condition: ${line}`);
     for (const [, k] of line.matchAll(/\{(\w+)\}/g)) if (!vars.has(k)) err(at, `{${k}} is not available in ${scope} scenes`);
     let m;
@@ -150,6 +168,7 @@ for (const { where, src, scope } of allScripts) {
     else if ((m = line.match(/^~(\w+)\s*(.*)$/))) {
       const [, cmd, arg] = m;
       if (!TILDE.has(cmd)) err(at, `unknown command ~${cmd}`);
+      if (cmd === 'story' && !story) err(at, '~story is for story chapters only (Random Case has no campaign)');
       if (cmd === 'sfx' && typeof AU[arg] !== 'function') err(at, `unknown sound "${arg}"`);
       if (cmd === 'rain' && !RAIN.has(arg)) err(at, `rain must be one of ${[...RAIN].join('|')}`);
       if (cmd === 'paper' && !arg.includes('|')) err(at, '~paper needs LABEL|TEXT');

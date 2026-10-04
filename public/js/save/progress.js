@@ -62,3 +62,46 @@ export function loseAttempt(doc) {
 }
 // Scene ids the retry picker should avoid for a chapter (reused only once a slot's pool runs out).
 export const avoidFor = (doc, chapter) => new Set(doc.campaign?.usedScenes?.[chapter] || []);
+
+// ---------- story results → interludes, endings and records (docs/story/bible.md §7–§8) ----------
+
+// When Dash got home is how many guesses the winning attempt took: 1–2 kept, 3–4 late, 5–6 missed. A chapter that needed a retry
+// costs one step. Returns { tier: 'kept' | 'late' | 'missed', mark: 2 | 1 | 0 }.
+export function interludeTier({ guesses, attempts = 1 }) {
+  const mark = Math.max(0, (guesses <= 2 ? 2 : guesses <= 4 ? 1 : 0) - (attempts > 1 ? 1 : 0));
+  return { tier: ['missed', 'late', 'kept'][mark], mark };
+}
+// Which chapters' interludes (and results) feed each personal thread.
+export const THREADS = { pop: [1, 5, 8], vera: [2, 6, 8], nora: [3, 7], bottle: [4, 9] };
+// Each thread's total marks and tier: best if ≥ ⅔ of the maximum, worst if ≤ ⅓, else middle. Unplayed chapters count 0.
+export function threadTiers(results) {
+  const byCh = Object.fromEntries(results.map(r => [r.chapter, r])), out = {};
+  for (const [name, chs] of Object.entries(THREADS)) {
+    const total = chs.reduce((s, ch) => s + (byCh[ch] ? interludeTier(byCh[ch]).mark : 0), 0), max = chs.length * 2;
+    out[name] = { total, max, tier: total * 3 >= max * 2 ? 'best' : total * 3 <= max ? 'worst' : 'middle' };
+  }
+  return out;
+}
+// The ending for a finished run (D5, D7): the egg if all ten chapters were won on guess 1 of their first attempt, else a band by average.
+export function endingFor(results) {
+  if (results.length === 10 && results.every(r => r.guesses === 1 && r.attempts === 1)) return 'egg';
+  const avg = results.reduce((s, r) => s + r.guesses, 0) / Math.max(1, results.length);
+  return avg < 2.5 ? 'A' : avg < 3.5 ? 'B' : avg < 4.5 ? 'C' : avg < 5.5 ? 'D' : 'bad';
+}
+// Records that outlive any run (D2): chapters reached, best guesses, and the dossier. Campaign and replay results both feed them.
+export function noteChapterStart(doc, chapter) { doc.story.reached = Math.max(doc.story.reached, chapter); return doc; }
+export function noteChapterResult(doc, { chapter, won, guesses }, now = Date.now()) {
+  const prev = doc.dossier[chapter];
+  if (won) {
+    doc.dossier[chapter] = { status: 'apprehended', guesses: Math.min(guesses, prev?.guesses ?? 7), at: prev?.status === 'apprehended' ? prev.at : now };
+    doc.story.best[chapter] = Math.min(guesses, doc.story.best[chapter] ?? 7);
+  } else if (prev?.status !== 'apprehended') doc.dossier[chapter] = { status: 'escaped', at: now };
+  return doc;
+}
+// A finished campaign: the ending is unlocked and the run's total may be the fastest yet.
+export function noteRunFinished(doc, ending, results, now = Date.now()) {
+  doc.story.endings[ending] ??= now;
+  const total = results.reduce((s, r) => s + r.guesses, 0);
+  if (doc.story.fastest === null || total < doc.story.fastest) doc.story.fastest = total;
+  return doc;
+}

@@ -3,7 +3,7 @@
 import { hide, reveal } from '../save/codec.js';
 import { score } from './scoring.js';
 
-const KEEP = ['guesses', 'counts', 'over', 'won', 'g', 'flags', 'times', 'caseVars', 'infLog', 'lastInf', 'title', 'pending', 'recorded', 'hard', 'notes'];
+const KEEP = ['guesses', 'counts', 'over', 'won', 'g', 'flags', 'times', 'caseVars', 'infLog', 'lastInf', 'title', 'pending', 'recorded', 'hard', 'notes', 'story'];
 
 export function snapshot(S, mode = 'random') {
   const snap = { mode, answer: hide(S.answer), infUsed: [...S.infUsed], savedAt: Date.now() };
@@ -28,7 +28,7 @@ export function restore(snap, isWord = () => true) {
       cur: '', busy: false, over, won, g: Number.isInteger(snap.g) ? snap.g : 0, flags: snap.flags || {}, times: snap.times,
       caseVars: snap.caseVars, infUsed: new Set(snap.infUsed || []), infLog: snap.infLog || [], lastInf: !!snap.lastInf,
       title: snap.title || '', pending: Array.isArray(snap.pending) ? snap.pending : [], recorded: !!snap.recorded, hard: !!snap.hard,
-      notes: Array.isArray(snap.notes) ? snap.notes : []
+      notes: Array.isArray(snap.notes) ? snap.notes : [], story: snap.story && typeof snap.story === 'object' ? snap.story : {}
     };
   } catch { return null; }
 }

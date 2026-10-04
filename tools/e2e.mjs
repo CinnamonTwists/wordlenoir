@@ -135,6 +135,25 @@ const saved = () => ev(`(NOIR.save.flush(), JSON.parse(localStorage.getItem('wor
 const randomWords = async (n, not) => ev(`(() => { const out = []; while (out.length < ${n}) { const w = NOIR.ANSWERS[Math.floor(Math.random() * NOIR.ANSWERS.length)]; if (w !== ${JSON.stringify(not)} && !out.includes(w)) out.push(w); } return out; })()`);
 const toastSays = re => until(`${re}.test(document.querySelector('#toast').textContent)`, `a toast matching ${re}`);
 
+// ---------- story helpers ----------
+const STORY_READY = ch => `NOIR.S.caseVars?.chapterNo === '${ch}' && ${READY}`;
+const storySeen = (doc, ch) => Object.keys(doc.seen).filter(k => k.startsWith(`c0${ch}.`));
+// A chapter's report: verdict, answer, one row per guess, the chapter in the header, and the mode's next step on the main button.
+async function checkStoryReport(answer, won, n, next) {
+  await until(REPORT, 'the chapter report');
+  const r = await ev(`(() => { const f = document.querySelector('#reportFile');
+    return { verdict: f.querySelector('.verdict')?.className, ans: [...f.querySelectorAll('.ans .tile')].map(t => t.textContent).join(''),
+      rows: f.querySelectorAll('tr').length, next: f.querySelector('#rNew')?.textContent, meta: f.querySelector('.meta')?.textContent, menu: !!f.querySelector('#rMenu') }; })()`);
+  const bad = [];
+  if (r.verdict !== `verdict ${won ? 'win' : 'lose'}`) bad.push(`verdict class "${r.verdict}"`);
+  if (r.ans !== answer) bad.push(`answer "${r.ans}", expected "${answer}"`);
+  if (r.rows !== n) bad.push(`${r.rows} rows, expected ${n}`);
+  if (r.next !== next) bad.push(`main button "${r.next}", expected "${next}"`);
+  if (!/^CHAPTER \d+ · CASE No\./.test(r.meta || '')) bad.push(`header "${r.meta}"`);
+  if (!r.menu) bad.push('no "Main menu" button');
+  if (bad.length) throw new Error('chapter report: ' + bad.join('; '));
+}
+
 // ---------- scenarios ----------
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -143,9 +162,8 @@ test('title → menu → first case, invalid word is refused', async () => {
   await until('window.NOIR && NOIR.ANSWERS.length > 0 && NOIR.pack', 'the word lists and the Random Case pack to load');
   if (!await ev(`NOIR.pack.id === 'rnd' && NOIR.scene('rnd.tail') === NOIR.pack.tail`)) throw new Error('scene registry: rnd pack or id lookup is wrong');
   await toMenu();
-  const m = await ev(`({ cont: document.querySelector('#mContinue').disabled, locked: [...document.querySelectorAll('.item.locked')].length })`);
-  if (!m.cont || m.locked !== 3) throw new Error(`fresh menu looks wrong: ${JSON.stringify(m)}`);
-  await click('#mNewGame'); await toastSays('/typist/');   // story entries are stamped, not broken
+  const m = await ev(`({ cont: document.querySelector('#mContinue').disabled, locked: [...document.querySelectorAll('#menu .item.locked, #menu .item:disabled')].map(b => b.id) })`);
+  if (!m.cont || m.locked.join() !== 'mContinue') throw new Error(`fresh menu looks wrong: ${JSON.stringify(m)}`);
   const answer = (await randomWords(1, ''))[0];
   await openCase(answer);
   await until(READY, 'the intro to finish');
@@ -352,6 +370,126 @@ test('notes: an informant clue goes into the case notes and survives a reload', 
   if (await ev('NOIR.S.notes.length') !== 1) throw new Error('notes lost across a reload');
   await guess(answer); await checkReport(answer, true, 2);
   return answer;
+});
+test('story: New Game → chapter 1 won on suspect 2 → the "kept" interlude → chapter 2', async () => {
+  const [a1, w1, a2] = await randomWords(3, '');
+  await ev(`NOIR.forceAnswer = ${JSON.stringify(a1)}; NOIR.forceInf = false`);
+  await toMenu();
+  if (await ev(`!!NOIR.save.get('campaign')`)) throw new Error('a campaign exists before New Game');
+  await click('#mNewGame');
+  await until(STORY_READY(1), 'chapter 1 to begin');
+  const head = await ev(`document.querySelector('#caseNo').textContent`);
+  if (!/^CHAPTER 1 · CASE No\./.test(head)) throw new Error(`case header: ${head}`);
+  let doc = await saved();
+  const at = doc.campaign?.attempt;
+  if (at?.chapter !== 1 || at.n !== 1 || !at.pendingSeen.includes('c01.tail') || !at.pendingSeen.some(k => k.startsWith('c01.intro.'))) throw new Error(`attempt: ${JSON.stringify(at)}`);
+  if (storySeen(doc, 1).length) throw new Error('chapter scenes were marked seen before the chapter was won (D1)');
+  if (doc.story.reached !== 1) throw new Error(`story.reached is ${doc.story.reached}`);
+  await guess(w1); await guess(a1);
+  await checkStoryReport(a1, true, 2, 'Next: Chapter 2');
+  doc = await saved();
+  const r = doc.campaign.results[0];
+  if (doc.campaign.chapter !== 2 || r?.chapter !== 1 || r.guesses !== 2 || r.attempts !== 1 || doc.campaign.pendingInterlude !== 1) throw new Error(`result not recorded: ${JSON.stringify(doc.campaign)}`);
+  if (JSON.stringify(doc).includes(`"${a1}"`)) throw new Error('the answer is readable in the save');
+  const seen = storySeen(doc, 1);
+  if (!seen.includes('c01.tail') || !seen.some(k => k.startsWith('c01.win.epi.2.')) || !seen.some(k => k.startsWith('c01.beat.fast.'))) throw new Error(`seen marks not committed on the win: ${seen}`);
+  if (doc.dossier[1]?.status !== 'apprehended') throw new Error(`dossier: ${JSON.stringify(doc.dossier)}`);
+  await ev(`NOIR.forceAnswer = ${JSON.stringify(a2)}`);
+  await click('#rNew');
+  await until(STORY_READY(2), 'chapter 2 to begin after the interlude');
+  doc = await saved();
+  if (!doc.seen['c01.inter.kept'] || doc.seen['c01.inter.late'] || doc.seen['c01.inter.missed']) throw new Error(`wrong interlude: ${storySeen(doc, 1).filter(k => k.includes('inter'))}`);
+  if (doc.campaign.pendingInterlude !== null || doc.campaign.attempt?.chapter !== 2) throw new Error(`campaign after the interlude: ${JSON.stringify(doc.campaign)}`);
+  return `${a1} on suspect 2 → kept`;
+});
+test('story: a lost chapter is retold (attempt 2 avoids its scenes), Continue resumes it, and the retry costs the interlude a step', async () => {
+  const a2 = await ev('NOIR.S.answer');
+  const [ans, ...wrong] = await randomWords(8, a2);
+  for (const w of wrong.slice(0, 6)) await guess(w);
+  await checkStoryReport(a2, false, 6, 'Tell it again');
+  let doc = await saved();
+  const used = doc.campaign.usedScenes[2] || [];
+  if (doc.campaign.chapter !== 2 || doc.campaign.attempt?.n !== 2 || doc.campaign.results.length !== 1) throw new Error(`no rollback: ${JSON.stringify(doc.campaign)}`);
+  for (const slot of ['c02.intro.', 'c02.core.5-', 'c02.loss.climax.', 'c02.beat.escaped.']) if (!used.some(k => k.startsWith(slot))) throw new Error(`usedScenes is missing ${slot}*: ${used}`);
+  if (storySeen(doc, 2).length) throw new Error(`a lost attempt left seen marks: ${storySeen(doc, 2)}`);
+  if (doc.dossier[2]?.status !== 'escaped') throw new Error(`dossier: ${JSON.stringify(doc.dossier[2])}`);
+  await ev(`NOIR.forceAnswer = ${JSON.stringify(ans)}`);
+  await click('#rNew');
+  await until(`NOIR.S.answer === ${JSON.stringify(ans)} && ${STORY_READY(2)}`, 'the retold chapter 2');
+  await guess(wrong[6]);
+  await until(READY, 'the round to finish');
+  doc = await saved();
+  const again = doc.campaign.attempt.pendingSeen.filter(k => k !== 'c02.tail' && used.includes(k));
+  if (again.length) throw new Error(`the retry replayed scenes from the failed attempt: ${again}`);
+  await reload();
+  await continueCase(1);
+  await guess(ans);
+  await checkStoryReport(ans, true, 2, 'Next: Chapter 3');
+  doc = await saved();
+  const r = doc.campaign.results.find(x => x.chapter === 2);
+  if (r?.guesses !== 2 || r.attempts !== 2 || doc.dossier[2]?.status !== 'apprehended') throw new Error(`result: ${JSON.stringify(r)}`);
+  await click('#rNew');
+  await until(`NOIR.screen === 'menu'`, 'the menu (chapter 3 is not written yet)');
+  await toastSays('/typist/');
+  doc = await saved();
+  if (!doc.seen['c02.inter.late'] || doc.seen['c02.inter.kept']) throw new Error(`a retried 2-suspect win should play "late": ${storySeen(doc, 2).filter(k => k.includes('inter'))}`);
+  const sub = await ev(`document.querySelector('#mContinueSub').textContent`);
+  if (doc.campaign.chapter !== 3 || !/^Chapter 3: Dead Man's Sentence · coming soon/.test(sub)) throw new Error(`after chapter 2: chapter ${doc.campaign.chapter}, Continue "${sub}"`);
+  return `${a2} escaped, ${ans} on attempt 2 → late`;
+});
+test('story: Chapter Select replays without touching the run; the dossier shows who was caught', async () => {
+  await toMenu();
+  const before = JSON.stringify((await saved()).campaign);
+  await click('#mChapters');
+  await until(`NOIR.screen === 'chapters'`, 'Chapter Select');
+  const locked = await ev(`[...document.querySelectorAll('#chList .item')].map(b => b.classList.contains('locked'))`);
+  if (locked.join() !== 'false,false,true,true,true,true,true,true,true,true') throw new Error(`chapter locks: ${locked}`);
+  const ans = (await randomWords(1, ''))[0];
+  await ev(`NOIR.forceAnswer = ${JSON.stringify(ans)}`);
+  await click('#chList .item[data-ch="1"]');
+  await until(`NOIR.S.answer === ${JSON.stringify(ans)} && ${STORY_READY(1)}`, 'the chapter 1 replay');
+  await guess(ans);
+  await checkStoryReport(ans, true, 1, 'Play it again');
+  const doc = await saved();
+  if (JSON.stringify(doc.campaign) !== before) throw new Error('a replay changed the campaign (D2)');
+  if (doc.story.best[1] !== 1 || doc.dossier[1]?.guesses !== 1) throw new Error(`best/dossier not updated: ${JSON.stringify({ best: doc.story.best, d: doc.dossier[1] })}`);
+  await toMenu(); await click('#mDossier');
+  await until(`NOIR.screen === 'dossier'`, 'the dossier');
+  const page = () => ev(`({ h: document.querySelector('#doPage h3').textContent, st: document.querySelector('#doPage .status').textContent, idx: document.querySelector('#doIdx').textContent })`);
+  const pages = [await page()];
+  await click('#doNext'); pages.push(await page());
+  await click('#doNext'); pages.push(await page());
+  const [p1, p2, p3] = pages;
+  if (p1.h !== 'Linus Pell' || p1.st !== 'Apprehended · 1 suspect' || p1.idx !== 'Chapter 1 of 10') throw new Error(`dossier page 1: ${JSON.stringify(p1)}`);
+  if (p2.h !== 'Della Marsh' || p2.st !== 'Apprehended · 2 suspects') throw new Error(`dossier page 2: ${JSON.stringify(p2)}`);
+  if (p3.st !== 'Classified' || /Fairweather/.test(p3.h)) throw new Error(`dossier page 3 should be redacted: ${JSON.stringify(p3)}`);
+  await key('Escape');
+  await until(`NOIR.screen === 'menu'`, 'Esc back to the menu');
+  return ans;
+});
+test('story: New Game asks before replacing a run; every ending plays from forced results', async () => {
+  await toMenu(); await click('#mNewGame');
+  await until(`!document.querySelector('#modal').hidden`, 'the "Start over?" dialog');
+  const runId = await ev(`NOIR.save.get('campaign.runId')`);
+  await click('#mKeep');
+  await until(`document.querySelector('#modal').hidden`, 'the dialog to close');
+  if (await ev(`NOIR.save.get('campaign.runId')`) !== runId || await ev('NOIR.screen') !== 'menu') throw new Error('"Keep my run" did not keep the run');
+  const runs = { egg: Array(10).fill(1), A: [2, 2, 3, 2, 2, 3, 2, 2, 3, 2], B: Array(10).fill(3), C: Array(10).fill(4), D: Array(10).fill(5), bad: Array(10).fill(6) };
+  for (const [want, gs] of Object.entries(runs)) {
+    const got = await ev(`(async () => {
+      NOIR.save.update(d => { Object.assign(d.campaign, { chapter: 11, finished: null, pendingInterlude: null, attempt: null,
+        results: ${JSON.stringify(gs)}.map((g, i) => ({ chapter: i + 1, guesses: g, attempts: 1, answer: '', at: 0 })) }); });
+      return NOIR.campaign.playEnding(); })()`);
+    if (got !== want) throw new Error(`results ${gs} gave ending ${got}, expected ${want}`);
+    await toastSays(`/Ending found/`);
+  }
+  const doc = await saved();
+  if (Object.keys(doc.story.endings).sort().join() !== 'A,B,C,D,bad,egg' || doc.story.fastest !== 10) throw new Error(`endings record: ${JSON.stringify(doc.story)}`);
+  if (await ev(`/Chapter/.test(document.querySelector('#mContinueSub').textContent)`)) throw new Error('a finished run is still offered by Continue');
+  await click('#mChapters');
+  if (!await ev(`/6 of 6/.test(document.querySelector('#chNote').textContent)`)) throw new Error('Chapter Select does not list the endings found');
+  await key('Escape');
+  return 'egg, A, B, C, D, bad';
 });
 test('transfer: export → clear all data → import gives back the same files; a bad paste is refused', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wordlenoir-dl-'));

@@ -11,9 +11,14 @@ import apartment from './apartment.js';
 import phonebooth from './phonebooth.js';
 import station from './station.js';
 import docks from './docks.js';
+import hearing from './hearing.js';
+import pressroom from './pressroom.js';
+import hospital from './hospital.js';
+import restaurant from './restaurant.js';
+import gangway from './gangway.js';
 import voidSet from './void.js';
 
-export const SETS = { office, street, bar, precinct, alley, rooftop, apartment, phonebooth, station, docks, void: voidSet };
+export const SETS = { office, street, bar, precinct, alley, rooftop, apartment, phonebooth, station, docks, hearing, pressroom, hospital, restaurant, gangway, void: voidSet };
 
 // Unknown names fall back to the empty void stage.
 export const getSet = name => SETS[name] || SETS.void;

@@ -50,7 +50,8 @@
   <div class="logo"><span class="w">WORDLE</span><span class="n">NOIR</span></div>
   <div class="tagline">Five letters. Six suspects. One night.</div>
   <button class="bigbtn" id="startBtn">Open the case file</button>
-  <p class="fine">Best with sound on. Scenes play out in full and can't be skipped. A case runs about five to eight minutes.</p>
+  <p class="fine">Best with sound on. A case runs about five to eight minutes.</p>
+  <p class="fine disclaimer">A fan game. Not affiliated with or endorsed by The New York Times. Wordle is a trademark of The New York Times Company.</p>
 </section>
 
 <section id="menu" class="screen" hidden aria-labelledby="menuH">
@@ -60,12 +61,32 @@
     <h2 id="menuH" class="sr">Main menu</h2>
     <nav class="items" aria-labelledby="menuH">
       <button class="item" id="mContinue" disabled><span class="t">Continue</span><span class="s" id="mContinueSub">No case open.</span></button>
-      <button class="item locked" id="mNewGame" aria-disabled="true"><span class="t">New Game</span><span class="s">The story. Ten words on the run, one night at a time.</span><span class="stamp">Coming soon</span></button>
-      <button class="item locked" id="mChapters" aria-disabled="true"><span class="t">Chapter Select</span><span class="s">Replay any chapter you've reached.</span><span class="stamp">Classified</span></button>
+      <button class="item" id="mNewGame"><span class="t">New Game</span><span class="s">The story. Ten words on the run, one night at a time.</span></button>
+      <button class="item" id="mChapters"><span class="t">Chapter Select</span><span class="s">Replay any chapter you've reached.</span></button>
       <button class="item" id="mRandom"><span class="t">Random Case</span><span class="s" id="mRandomSub">One word. Six suspects. Any night.</span></button>
-      <button class="item locked" id="mDossier" aria-disabled="true"><span class="t">Dossier</span><span class="s">The faces behind the words.</span><span class="stamp">Classified</span></button>
+      <button class="item" id="mDossier"><span class="t">Dossier</span><span class="s">The faces behind the words.</span></button>
       <button class="item" id="mSettings"><span class="t">Settings</span><span class="s">Sound, text speed, accessibility, data.</span></button>
     </nav>
+  </div>
+</section>
+
+<section id="chapters" class="screen" hidden aria-labelledby="chH">
+  <div class="folder wide">
+    <div class="tab">Chapters</div>
+    <h2 id="chH" class="sr">Chapter Select</h2>
+    <nav class="items" id="chList" aria-labelledby="chH"></nav>
+    <p class="note" id="chNote"></p>
+    <div class="foot"><button type="button" id="chBack" class="primary">Back</button></div>
+  </div>
+</section>
+
+<section id="dossier" class="screen" hidden aria-labelledby="doH">
+  <div class="folder wide">
+    <div class="tab">Dossier</div>
+    <h2 id="doH" class="sr">Dossier</h2>
+    <article id="doPage" class="dossier" aria-live="polite"></article>
+    <div class="foot pager"><button type="button" id="doPrev" aria-label="Previous page">◂</button><span id="doIdx"></span><button type="button" id="doNext" aria-label="Next page">▸</button>
+      <button type="button" id="doBack" class="primary">Back</button></div>
   </div>
 </section>
 
@@ -135,7 +156,7 @@
 <div class="overlay" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalH">
   <div class="file">
     <h3 id="modalH">Drop this case?</h3>
-    <div class="meta">The word walks free. Nobody will ever know what it was. Except you. It goes in the books as a cold case.</div>
+    <div class="meta" id="modalMeta"></div>
     <div class="acts"><button id="mKeep" class="primary">Keep digging</button><button id="mDrop">Drop it</button></div>
   </div>
 </div>
