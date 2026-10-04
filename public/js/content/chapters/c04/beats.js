@@ -124,6 +124,7 @@ DASH: It should be. It's the only time he ever told it.
 @set bar!
 @mood warm
 ~rain window
+~sfx pour
 > Closing time at the Last Word. Sal flipped the sign and poured two ryes out of habit. I pushed mine back.
 DASH: Coffee, Sal. Tonight just coffee.
 SAL: Coffee. Look at you.
@@ -141,6 +142,7 @@ late: [
 @set bar!
 @mood noir
 ~rain window
+~sfx pour
 > I made it to the Last Word at a quarter to closing. Sal poured two without asking, and I drank them without arguing.
 SAL: You know you never thanked me for the river.
 DASH: What river?

@@ -88,6 +88,7 @@ LOLA: Where was I? Box nine. Two hundred and twelve. Or was it twenty-one? I'm d
 LOLA: {HitsN}, on the very first try. You always did know my lines before I said them, Dash.
 DASH: You never told me any lines.
 LOLA: Didn't I? Then you must have written them yourself.
+~sfx lighter
 > She lit a cigarette with my lighter, which she'd taken from my desk without my seeing.
 ` },
 { id: 'c09.core.1-2.03', chapter: 9, s: `

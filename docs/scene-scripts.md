@@ -25,9 +25,9 @@ The same text can't appear in two packs: story chapters are written fresh.
 
 | Directive | Effect |
 |---|---|
-| `@set place` | Cut to a location (`public/js/art/sets/`). Inside a core scene, the first `@set` also gets a random establishing line from `openers.js`. |
+| `@set place` | Cut to a location (`public/js/art/sets/`), with its rain and its ambience bed (the set's `ambience`, `audio/beds.js`). Inside a core scene, the first `@set` also gets a random establishing line from `openers.js`. |
 | `@set place!` | Same, but never adds an establishing line. |
-| `@mood name` | Colour grade and music: `noir` `warm` `gold` `blue` `red` `sick` `violet`. |
+| `@mood name` | Colour grade and music: `noir` `warm` `gold` `blue` `red` `sick` `violet`. noir/warm/blue play the calm ballad (the jukebox in the `bar`, the radio in the `apartment`, the big band in the `station`), gold plays hope, red dread, sick/violet tense. Music crossfades and ducks a little under text. |
 
 ## Commands
 
@@ -36,7 +36,10 @@ The same text can't appear in two packs: story chapters are written fresh.
 | `~fade` / `~black` | Fade to black (the next visible line fades back in). |
 | `~shake` `~flash` `~lightning` `~heart` | Camera shake, white flash, lightning + thunder, heartbeat + red pulse. |
 | `~rain heavy\|light\|window\|off` | Override the set's rain. |
-| `~sfx name` | Play a sound: `ring` `hangup` `thunder` `whistle` `siren` `telegraph` `foghorn` `sting` `versusHit` `boom` `stamp` ... (any method on `AU` in `audio/audio.js`). |
+| `~sfx name` | Play a sound and hold for it (`SFX_WAIT`): the phone `ring` `hangup`; the city `whistle` (the train) `foghorn` `bell` `siren` `car` `horn` `gull` `thunder` `gunshot`; up close `steps` `door` `slam` `match` `lighter` `clink` `pour` `cuffs` `rustle` `typing` `ding` `telegraph`; impacts `boom` `thud` `stamp` ... (any cue in `CUES`, `audio/sfx.js`). Use them where the text describes the sound, sparingly: the room's bed (`@set`) already carries the background. |
+| `~sting name` | A sting from `STINGS` (`audio/stings.js`): the cut-in hits `brass` `minor` `sag` `soft` `versus`, and the library: `word` (a dark swell, plays by itself when the Editor starts talking), `hope` (a warm swell, under every green stamp), `stamp` (a dark hit, under every red stamp). Without a name, a random low hit. Stings share the cut-in cooldown, so use them sparingly. |
+| `~music name` | Change the music until the next `@mood` or `~music`: a mood (`calm` `tense` `hope` `dread`), a loop by name (`title` `jukebox` `radio` `bigband` `finale` `elegy` `lasttrain` `mirror`), or `off`. |
+| `~amb name` | Change the ambience bed until the next `@set` or `~amb`: any bed in `audio/beds.js` (they're named after the sets, plus `board` and `board.last`), or `off`. |
 | `~wait ms` | Pause. |
 | `~flag name` | Set a flag for the rest of the case. |
 | `~story name` | Story chapters only: set a campaign flag. It's kept if the chapter is won and dropped if the attempt is lost (bible §10 rule 7 lists them). |
@@ -83,7 +86,7 @@ Write `{name}` anywhere in a line. Which ones exist depends on where the script 
 
 Each scene plays as its own segment. When it finishes, its ID is marked **seen**, and a seen scene can be skipped next time
 (SKIP ▸▸, Esc or Space, or automatically, depending on Settings). A skipped scene still applies its state: `~flag`, `@set`, `@mood`,
-`~rain` and `~tight`/`~loose` run silently, and nothing else is shown or heard. So:
+`~rain`, `~music`, `~amb` and `~tight`/`~loose` run silently (the music and the room carry on), and no other sound plays. So:
 
 - Anything a later scene depends on must be a flag, not something the player only saw.
 - An informant's `~clue` card is also written to the board's case notes before the scene plays, so skipping never hides a clue.

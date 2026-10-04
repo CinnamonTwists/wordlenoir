@@ -4,6 +4,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'off',
   indoor: true,
+  ambience: 'precinct',
   draw(v) {
     const g = (v && v.GUESS) || '';
     return svg(`<rect width="1600" height="900" fill="#171a20"/>

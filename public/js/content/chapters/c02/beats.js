@@ -67,6 +67,7 @@ near: [
 { id: 'c02.beat.near.a', chapter: 2, s: `
 @set bar!
 @mood blue
+~sfx pour
 > The Lindqvist went out past the breakwater with the copy in her hold. Sal poured a shot of the good rye and set it on the windowsill, facing the river.
 SAL: One for the river, Dash. It's going to read that book before we do.
 > But Della's carpetbag had her working book in it, the green one, in her own neat hand. The ship had a copy. We had the original.

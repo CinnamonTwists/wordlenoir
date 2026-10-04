@@ -5,6 +5,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'light',
   indoor: false,
+  ambience: 'gangway',
   draw(v) {
     const r = rng(103);
     let ports = '', shim = '', rivets = '';

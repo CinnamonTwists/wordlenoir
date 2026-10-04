@@ -5,6 +5,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'window',
   indoor: true,
+  ambience: 'hospital',
   draw(v) {
     const r = rng(89);
     let blinds = '', drops = '';

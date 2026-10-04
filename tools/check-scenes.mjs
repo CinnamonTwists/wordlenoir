@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { parseScript } from '../public/js/script/parser.js';
 import { SETS } from '../public/js/art/sets/index.js';
 import { MOOD_MUSIC } from '../public/js/cinema/moods.js';
-import { AU, STINGS } from '../public/js/audio/audio.js';
+import { CUES, STINGS } from '../public/js/audio/audio.js';
+import { BEDS } from '../public/js/audio/beds.js';
+import { LOOPS, MOODS } from '../public/js/audio/music.js';
 import { CAST } from '../public/js/content/cast.js';
 import { parseWordList } from '../public/js/game/words.js';
 import { loadPack, packId, scenesOf } from '../public/js/content/registry.js';
@@ -33,7 +35,7 @@ STORY_SCOPE.interlude = new Set(CHAPTER);
 STORY_SCOPE.ending = new Set(['popTold', 'popHalf', 'popLetter', 'veraWorst', 'endBad', 'total']);
 const SLOT_SCOPE = { intro: 'intro', tail: 'intro', inf: 'informant', inter: 'interlude' };   // everything else (cores, endings, beats) is a round scene
 
-const TILDE = new Set(['fade', 'black', 'shake', 'flash', 'lightning', 'heart', 'rain', 'sfx', 'wait', 'flag', 'story', 'stamp', 'gstamp', 'paper', 'clue', 'legend', 'tight', 'loose', 'push']);
+const TILDE = new Set(['fade', 'black', 'shake', 'flash', 'lightning', 'heart', 'rain', 'sfx', 'sting', 'music', 'amb', 'wait', 'flag', 'story', 'stamp', 'gstamp', 'paper', 'clue', 'legend', 'tight', 'loose', 'push']);
 const RAIN = new Set(['off', 'window', 'light', 'heavy']);
 
 // ---------- load packs: Random Case + every chapters/cNN/ that exists ----------
@@ -112,6 +114,8 @@ for (const { src } of allScripts) for (const { line } of parseScript(src)) {
   m = line.match(/^~story\s+(\w+)/); if (m) STORY.add(m[1]);
 }
 
+// every set names an ambience bed (or null for silence)
+for (const [k, v] of Object.entries(SETS)) if (v.ambience !== null && !BEDS[v.ambience]) err(`set ${k}`, `ambience "${v.ambience}" is not a bed in audio/beds.js (use null for silence)`);
 for (const [k, v] of Object.entries(CAST)) if (v.sting !== undefined && !STINGS[v.sting]) err(`CAST.${k}`, `unknown sting "${v.sting}"`);
 
 // ---------- text reuse (roadmap T1): no scene is reused across packs; long prose lines shouldn't be either ----------
@@ -186,7 +190,10 @@ for (const { where, src, scope, pack, slot } of allScripts) {
       const [, cmd, arg] = m;
       if (!TILDE.has(cmd)) err(at, `unknown command ~${cmd}`);
       if (cmd === 'story' && !story) err(at, '~story is for story chapters only (Random Case has no campaign)');
-      if (cmd === 'sfx' && typeof AU[arg] !== 'function') err(at, `unknown sound "${arg}"`);
+      if (cmd === 'sfx' && !CUES[arg]) err(at, `unknown sound "${arg}"`);
+      if (cmd === 'sting' && arg && !STINGS[arg]) err(at, `unknown sting "${arg}" (one of ${Object.keys(STINGS).join(' ')})`);
+      if (cmd === 'music' && !(arg === 'off' || MOODS.includes(arg) || LOOPS[arg])) err(at, `unknown music "${arg}" (a mood, off, or one of ${Object.keys(LOOPS).join(' ')})`);
+      if (cmd === 'amb' && !(arg === 'off' || BEDS[arg])) err(at, `unknown ambience "${arg}" (off or a bed in audio/beds.js)`);
       if (cmd === 'rain' && !RAIN.has(arg)) err(at, `rain must be one of ${[...RAIN].join('|')}`);
       if (cmd === 'paper' && !arg.includes('|')) err(at, '~paper needs LABEL|TEXT');
     }

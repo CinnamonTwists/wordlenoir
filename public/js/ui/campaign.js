@@ -62,7 +62,7 @@ async function playInterlude(n) {
   if (sc) {
     await play([{ id: sc.id, src: sc.s }], { vars: chapterVars(n), flags: {}, story: structuredClone(campaign().storyFlags) },
       { skip: id => skipPolicy(id, isSeen), onSegment: id => store.update(d => markSeen(d, [id])) });
-    AU.setMusic('calm');
+    AU.music('calm');
   }
   store.update(d => { d.campaign.pendingInterlude = null; });
 }
@@ -77,13 +77,19 @@ export async function playEnding() {
   return ending;
 }
 
+// Each ending has a theme (audio/music.js) that replaces the calm and hopeful music in its case scene and the close; the life codas
+// between them keep their own moods.
+const THEMES = { A: 'finale', B: 'finale', C: 'elegy', D: 'elegy', bad: 'lasttrain', egg: 'mirror' };
 // Plays an ending's scenes as segments: each is marked seen when it finishes, so a replay can skip it.
 async function runEnding(ending, results, story) {
   const { endingScenes } = await import('../content/endings/index.js');
   const scenes = endingScenes(ending, threadTiers(results));
-  await play(scenes.map(x => ({ id: x.id, src: x.s })), { vars: endingVars(ending, results), flags: {}, story },
-    { skip: id => skipPolicy(id, isSeen), onSegment: id => store.update(d => markSeen(d, [id])) });
-  AU.setMusic('calm');
+  try {
+    await play(scenes.map(x => ({ id: x.id, src: x.s })), { vars: endingVars(ending, results), flags: {}, story },
+      { skip: id => skipPolicy(id, isSeen), onSegment: id => store.update(d => markSeen(d, [id])),
+        onStart: id => AU.setTheme(id.startsWith('end.coda.') ? null : THEMES[ending]) });
+  } finally { AU.setTheme(null); }
+  AU.music('calm');
 }
 
 // Chapter Select: replay an ending you've found, with the life of the run that found it if that's the current run, else a middling one.

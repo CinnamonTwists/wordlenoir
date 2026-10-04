@@ -29,6 +29,7 @@ LOLA: Because he's coming for me next, darling. And because you're looking at th
 ` },
 { id: 'c09.core.3-0.04', chapter: 9, s: `
 @set bar
+~sfx pour
 > {GUESS} was a bust. Lola was at Sal's bar, in no disguise at all. Sal poured for her without a word and went into the back.
 LOLA: A trade, Dash. A name for a head start. The Proofreader is Ellery Thorne. Real name. Real man. He frightens me, and I'm not easily frightened.
 DASH: And the head start?

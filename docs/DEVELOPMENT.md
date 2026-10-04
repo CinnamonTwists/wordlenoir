@@ -33,6 +33,7 @@ npm run check    # validates every scene pack, cast stings, cut-in budget + word
 npm run check -- --coverage   # ...plus per-pack slot counts against the T8 chapter budget
 npm run e2e      # plays real cases in headless Chrome/Edge (tools/e2e.mjs), exit 1 on failure. Needs Node ≥ 22
 npm test         # unit tests (node:test, tests/*.test.mjs): save store, schema, codec, snapshots, chapter attempts, story rules (tiers, endings, retry picker, pack slots)
+npm run levels   # renders every sound offline through the real bus chain in headless Chrome/Edge and prints its level (§1.8). Needs Node ≥ 22
 npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on first run
 ```
 
@@ -64,7 +65,10 @@ npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on fi
     replay that leaves the run untouched (D2) plus the dossier's pages; and New Game's "Start over?" guard plus all six endings from forced results.
     Step 9 added a Chapter Select ending replay and **two full campaigns at speed**: all ten chapters won on the first suspect (every interlude
     kept, the catch flags, the easter egg playing alone) and all ten at dawn on suspect 6 (every interlude missed, every near-miss flag, the bad
-    ending with the four worst codas and the close). Between them every story flag is exercised both ways. About 85 s in all.
+    ending with the four worst codas and the close). Between them every story flag is exercised both ways.
+    Step 10 added an audio scenario: the menu plays the title theme over the street; `@set`/`@mood` drive the bed and the loop (the bar's jukebox, the
+    station's big band, red → dread); a skipped scene's `~sfx` stays silent while its `~music`/`~amb` still apply; every cue, loop and bed plays
+    without an error. About 90 s in all.
     `--cases N` adds N random cases (random answer, random win guess or loss, random informant setting) for scene coverage.
   - Every scenario asserts the report (verdict, answer tiles, one table row per guess, the record panel, the Main menu button), no exceptions, no `console.error`, no failed same-origin requests,
     and an empty `NOIR.MISSING`. The first failure stops the run.
@@ -84,17 +88,21 @@ public/js/
     util.js               R, pick, clamp, cap, nounN, NUMW, ORD, fmtTime, pickUnused        [DOM-free]
     timing.js             SPEED/setSpeed, sleep(ms), VT, SKIP (skip token); live preference knobs MOTION, FLASH, TEXT (+ TEXT_SPEEDS, OS_REDUCED)
     dom.js                $()
-  audio/audio.js          AU: the whole Web Audio synth (buses, sfx, drone music, rain bed, quiet switch), STINGS [DOM-free at import]
+  audio/                  Web Audio synthesis, every sound by name (§1.8)                    [DOM-free at import]
+    audio.js              AU: context, buses, reverbs, lookahead clock, play(name)/music(mode)/amb(name)/duck/setTheme, volumes; CUES
+    synth.js · foley.js   building blocks; the world's small sounds (bells, typewriters, cars, drips, doors...) at an absolute time
+    sfx.js · stings.js    SFX (the one-shot cues) + SFX_WAIT; STINGS, sting(), versusHit()
+    beds.js · music.js    BEDS (ambience per place); LOOPS (the procedural jazz band), pickLoop, makeLoop
   fx/rain.js              RAIN canvas (attach/set/frame), startRain(), startGrain()
   art/
     svg.js                rng(seed), DEFS (gradients/filters), svg(inner), f()               [DOM-free]
     props.js              skyline, lamp, figure, car, smoke, rainStreaks                     [DOM-free]
     portraits.js          bust(opts) dialogue portrait, eyes(color, evil) cut-in band        [DOM-free]
     icons.js              cigarette(state) guess counter                                    [DOM-free]
-    sets/*.js             one location per file: { rain, indoor, draw(vars) }                [DOM-free]
+    sets/*.js             one location per file: { rain, indoor, ambience, draw(vars) }      [DOM-free]
     sets/index.js         SETS registry, getSet(name) (unknown → void)
   cinema/                 The cutscene engine
-    moods.js              MOOD_MUSIC: mood → drone mode                                      [DOM-free]
+    moods.js              MOOD_MUSIC: mood → music mood (calm/tense/hope/dread)              [DOM-free]
     stage.js              C (DOM refs + state), blackIn/Out, lit, hideText, cutToBlack, flashFx, shake, setScene, setMood
     text.js               typeInto (typewriter), narrate, say (portrait + nameplate), emParse (_em_)
     effects.js            cutin, heavy, versus, card, stamp, paper, clue, legend
@@ -144,7 +152,8 @@ public/js/
     modes/story.js        createStoryMode(chapter, { replay }): a campaign chapter attempt or a Chapter Select replay; pickFresh (retry picker)
 public/css/               base, title, menu, board, cinema, effects, overlays, ambient, prefs (link order = cascade order)
 public/data/words/        answers.txt, allowed.txt (one word per line, # comments allowed)
-tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs, migrate-scenes.mjs (one-off, already run)
+tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs, audio-levels.mjs (npm run levels), browser.mjs (shared by those two),
+                          migrate-scenes.mjs (one-off, already run)
 tests/                    *.test.mjs unit tests for DOM-free modules (npm test)
 ```
 
@@ -333,57 +342,131 @@ literally in the text and recorded in `NOIR.MISSING`.
   playing finishes instantly behind the black, and the rest of the segment runs through `runQuiet()`, which applies only state: `@set`, `@mood`,
   `~flag`, `~rain`, `~tight`/`~loose`. At the segment's end, black is re-asserted so the next segment fades in. `flashFx` and `shake` are
   no-ops while skipping, and the closing title card is part of the round's last segment.
-- **Moods** (`@mood`): CSS filter on `.bgs` plus `#moodlay` colour blend plus vignette (css/cinema.css), and the drone mode from `MOOD_MUSIC`.
+- **Moods** (`@mood`): CSS filter on `.bgs` plus `#moodlay` colour blend plus vignette (css/cinema.css), and the music from `MOOD_MUSIC` (§1.8).
   noir/warm/blue → calm, gold → hope, red → dread, sick/violet → tense.
+- **Sets** (`@set`) bring their rain and their ambience bed (`ambience` in the set module, §1.8).
 - `body.stakes-N` (N = guesses + 1) reddens the board vignette from stakes 4 on.
 
-## 1.8 Audio (audio/audio.js)
+## 1.8 Audio (audio/)
 
-Graph: four buses → `DynamicsCompressor` → `master` → speakers. Each bus gain is its base level × its Settings slider (T9 bus restructure):
+Everything is synthesized with Web Audio; there are no sound files. Every sound is reached **by name** (T9, D4), so any voice can later be
+swapped for a recorded file without touching scripts or game code. All of `audio/` is DOM-free at import (the checker and the level meter load it).
+
+| File | Holds |
+|---|---|
+| `audio.js` | `AU`: the context, buses, compressor, the two reverbs, the lookahead clock, the named-cue API, volumes. Re-exports `STINGS`, `SFX_WAIT`; exports `CUES`. |
+| `synth.js` | building blocks: `env`, `tone`/`burst` (relative time), `note`/`noise` (absolute time), `midi()` |
+| `sfx.js` | `SFX`: every one-shot cue by name (`CUES` is this table), and `SFX_WAIT` (how long `~sfx name` holds the script) |
+| `foley.js` | the world's small sounds at an absolute time into any node: clock tick, typewriter key, stenotype, phone bell, drip, clink, pour, car pass, horn, creak, clang, cough, steam, PA chime and announcer babble, knock, gull, press, rustle, footstep, foghorn, siren, ship's bell, match, lighter, doors, handcuffs, gunshot |
+| `stings.js` | `STINGS` (T10's cut-in hits plus the T9 library), `sting()`, `versusHit()`, `hit()` |
+| `beds.js` | `BEDS`: one ambience bed per kind of place, and `makeBed()` |
+| `music.js` | the band's voices, the parts, `LOOPS`, `MOODS`, `pickLoop()`, `makeLoop()` |
+
+**The API.**
+
+| Call | Does | Called by |
+|---|---|---|
+| `AU.play(name, arg)` | a one-shot cue from `CUES`. **The only door for one-shots:** it no-ops before `init()` and while `AU.quiet` (a skipped scene) | everything that makes a one-shot sound; `~sfx name` |
+| `AU.music(mode)` | a mood (`calm` `tense` `hope` `dread`), a loop by name, or `'off'`; resolved by `pickLoop(mode, place, theme)` and crossfaded | `@mood` (via `MOOD_MUSIC`), `~music`, the board, the menu (`title`), the report |
+| `AU.amb(name)` | the ambience bed (a `BEDS` key, or anything else for silence); also sets the place that picks set-specific music | `@set` (the set's `ambience`), `~amb`, the board, the menu (`street`) |
+| `AU.setTheme(name)` | an ending's theme, which replaces calm and hope until cleared | ui/campaign.js `runEnding` |
+| `AU.duck(on)` | music dips about 3.5 dB (in over 0.25 s, back over 0.8 s) | `narrate`/`say` on, `hideText` off |
+| `AU.setRain(level, indoor)` | the rain bed (filtered noise; indoor = 900 Hz lowpass), separate from the location beds | `@set`, `~rain` |
+| `AU.chordNow()` | the chord the music is on, so a title card's piano note (`card`) plays its root | `SFX.card` |
+| `AU.pump(ahead)` | schedules beds and music up to `now + ahead` | a 60 ms timer (0.3 s ahead; 1.5 s while the tab is hidden); the level meter |
+
+Music, beds, rain, volumes, `duck` and `setTheme` are **exempt from `AU.quiet`**: a skipped scene keeps its room and its music, and `runQuiet()`
+applies `@set`, `@mood`, `~music`, `~amb` and `~rain` so the next segment starts in the right place.
+Beds and music are **scheduled on AudioContext time** a little ahead (the lookahead-clock pattern), so `#speedN` never stretches them. Anything that
+waits in a script still goes through `sleep()`.
+`AU.init(ctx)` must run inside a user gesture. It can also be given an `OfflineAudioContext` (the level meter does this; that skips the timer and
+resets the music state). Every call no-ops before init. `AU.setHidden(hidden, mute)` suspends the context while the tab is hidden if "Mute when the
+tab is hidden" is on, and otherwise widens the lookahead (browsers slow hidden-tab timers to once a second).
+`window.NOIR.AU` exposes the engine for testing (`NOIR.AU.loop.name`, `NOIR.AU.bedName`).
+
+**Graph.** Four buses → `DynamicsCompressor` → `master` → speakers. Each bus gain is its base level × its Settings slider:
 
 | Bus | Base | Slider | Carries |
 |---|---|---|---|
-| `sfx` | 0.8 | Sound effects | every one-shot, stings, flips, booms |
-| `ui` | 0.8 | Sound effects | key presses and typewriter ticks (`tone`/`burst` take a bus argument) |
-| `mus` | 0.55 | Music | the drone, the riff |
-| `amb` | 1 | Ambience | the rain bed (`rainG` → `amb`); location beds will join it (T9) |
+| `sfx` | 0.8 | Sound effects | every one-shot, stings, flips, booms; `sfxVerb` (the shared room) for distant ones |
+| `ui` | 0.8 | Sound effects | key presses, typewriter blips and ~paper's typewriter keys |
+| `mus` | 0.55 | Music | `musIn` (the loops, ducked under text, plus `musVerb`, a warm 2 s room) and the riff |
+| `ambBus` | 1 | Ambience | the rain bed, the location beds, `ambVerb` (a dark generated 2.4 s room that beds send distant sounds to) |
 | `master` | 0.85 | Master | everything; 0 when Sound is off |
 
-`AU.setVolumes({ master, music, sfx, ambience, on })` stores values (safe before `init()`, which applies them) and ramps gains over ~50 ms.
-`AU.setHidden(hidden, mute)` suspends the context while the tab is hidden if "Mute when the tab is hidden" is on.
-`AU.quiet = true` (while a scene is skipped) turns every one-shot method into a no-op. Beds, music and volume methods are exempt (the `ALWAYS` list
-at the bottom of audio.js, which wraps every other method).
-A 2 s noise buffer is shared by rain, bursts and thunder. `AU.init()` must run inside a user gesture. Every method no-ops before init.
+A 2 s noise buffer is shared by rain, bursts, beds and brushes. The reverbs are generated impulses (decaying noise that darkens as it fades).
 
-| Method | Sound | Triggered by |
+**Ambience beds** (`beds.js`). Every set names one in its `ambience` key (`null` for silence; the checker validates it), and `@set` crossfades to it
+over 1.5 s. A bed is a list of layers on the ambience bus: `wash` (filtered noise drifting in level and colour: room tone, traffic, wind, water),
+`hum` (steady oscillators, optionally throbbing: refrigeration, mains, the ferry's engine), `murmur` (five speech bands flickering like a crowd), and
+`every` (a foley sound at random gaps, panned, softened by distance with `lp` and sent to the room with `verb`). Every set has one (precinct
+typewriters and far-off phones, the street's wet car passes and horns, the bar's talk, glasses and neon hum, Ruth's stenotype and the hearing-room
+clock, the station's crowd, PA and steam, the press room's presses, the docks, wind on the rooftop, the vault's time lock, ...), plus `board` (the
+office between scenes) and `board.last` (the office clock coming up while the last suspect is on the board). Levels: quiet rooms about −45 LUFS,
+busy ones −38 to −41; the street's cars stay under its heavy rain (−23 LUFS).
+
+**Music** (`music.js`). A loop is a tempo, a swing ratio, a chord chart (one or two chords a bar) and parts. On every eighth note each part looks at
+the bar, the beat and the chord and decides what to play, with small random choices (a pickup into the next chord, a re-struck chord, whether a
+phrase comes in) so it doesn't loop audibly. The band: upright bass (plucked triangle and sine, closing lowpass), brushes (swish and tap), ride
+(six detuned squares), hi-hat, a feathered kick, Rhodes (FM with a decaying index), piano, vibes (with motor tremolo), music box, horns (muted
+trumpet, clarinet, sax, a brass section; legato phrases with delayed vibrato) and strings (detuned saws, optionally bowed tremolo).
+
+| Loop | When | What |
 |---|---|---|
-| `setMusic(mode)` | 4-oscillator drone through LFO lowpass; modes calm/tense/hope/dread | `@mood`, after each scene |
-| `setRain(level, indoor)` | filtered noise bed; indoor = 900 Hz lowpass | `@set`, `~rain` |
-| `riff()` | 8-note sawtooth "muted trumpet" phrase (G minor) | start button, win |
-| `piano(notes, gap)` | triangle+sine notes | every title card (1 note), loss (4-note fall) |
-| `sting(name?)` | low brass hit, one of the `STINGS` variants (below), with a cooldown | every `!!` cut-in (11 in scripts), `~sfx sting` |
-| `versusHit()` | the heavier `versus` variant (adds a B1 saw and a two-stroke timpani roll); always plays and restarts the sting cooldown | every `%%` versus (5) |
-| `hit(variant)` | the shared synth behind both (no-op without an argument) | internal |
-| `boom`, `thud` | low sine drops + noise | heavy lines |
-| `heart` | double low thump | `~heart`, reveal |
-| `flip(0/1/2)` | gray thunk / yellow dyad / green arpeggio | tile reveals, legend |
-| `tick`, `key` | typewriter tick, key press | typing, keyboard |
-| `stamp`, `ring`, `hangup`, `whistle`, `siren`, `thunder`, `telegraph`, `foghorn` | one-shots | `~stamp`, `~sfx` |
+| `calm` | noir, warm, blue; the board | D minor ballad (ii–V–i), 58 bpm, brushes, two-feel bass, Rhodes, an occasional vibes phrase |
+| `tense` | sick, violet; the board from suspect 4 | C minor eighth-note ostinato over a pedal, tremolo strings, sparse ride |
+| `hope` | gold; a won case's report | F major turnaround, walking bass, Rhodes, vibes |
+| `dread` | red | a low D pedal (beating), struck low clusters, a high bowed minor second now and then; no drums |
+| `jukebox` | calm in the `bar` | a swing tune on the jukebox: lowpassed "from another room", record crackle, a sax riff |
+| `radio` | calm in the `apartment` | a dance-band ballad on a tinny radio: band-limited, a little saturated, crackle, clarinet |
+| `bigband` | calm in the `station` | a big band echoing through the hall: section shouts, a sax riff, delay and a big room |
+| `title` | the menu | G minor ballad; muted trumpet plays the start riff's melody every eight bars |
+| `finale` / `elegy` / `lasttrain` / `mirror` | ending themes (A–B / C–D / bad / egg) | the riff motif in F major over the turnaround / on piano over the ballad / on trumpet over the ostinato / on a music box over the pedal |
 
-**Stings (T10).** `STINGS` in audio.js is a table of variants: `brass` (E root + fifth), `minor` (E + G), `sag` (F chord sinking to E),
-`soft` (the cooldown repeat), and `versus`. Each is a sub sine around E1 (41 Hz) that starts about a whole tone sharp and settles,
-detuned sawtooth pairs (±6 cents) at 62–131 Hz through a lowpass that closes from ~700 Hz to ~200 Hz over ~1.5–1.9 s, a 35–60 ms attack,
-a timpani thump (about 70→45 Hz) under the attack, and a long soft tail. There is no noise and nothing bright. The 120–200 Hz saw body is what still
-reads on phone speakers that drop the sub.
-- **Choice:** `sting(name)` plays `name` if it's a variant (cut-ins pass `CAST[key].sting`; today only `BRIGGS: 'brass'`), otherwise a random one of
-  `brass`/`minor`/`sag`, never the same as the last.
-- **Cooldown** (`COOLDOWN` = 8 s of real AudioContext time, so `#speedN` doesn't change it): a sting within 8 s of the previous one plays `soft`,
-  and a third plays nothing. `versusHit()` counts as a sting, so the cut-in right after a versus (intro tail "SIX SUSPECTS", win "GOT YOU.") is soft.
-- **Levels** (measured offline through the real sfx → compressor → master chain, with the compressor settled): old sting peak 0.47 (−6.6 dBFS);
-  `brass`/`minor`/`sag` 0.23–0.25 (about half); `soft` 0.09; `versus` 0.30. Energy above 1 kHz is about 25 dB lower than the old sting.
-  The 120–200 Hz body is about 6 dB lower, which is the cost of halving the peak.
-- `npm run check` validates `CAST[key].sting` names and warns when a scene has more than one `!!` or when more than ~20% of scenes have one
-  (per pack since step 3; it prints the density: `rnd` 11 of 101 scenes, 11%).
+`pickLoop(mode, place, theme)`: a loop name plays as itself; a theme replaces calm and hope; calm in the bar, apartment or station plays that
+place's loop; otherwise the mood's loop. A change crossfades (new in over 2 s, old out over 2.5 s). Asking for the loop already playing changes
+nothing, so the many `@mood` lines in a scene don't restart it. The win riff plays with the music off (it's in G minor, which clashes with the D minor
+ballad); the ending's moods bring the music back, and the report plays `hope`. After a loss the report is silent for the falling piano.
+Ending themes play during the case scene and the close, not during the life codas (`play()`'s `onStart` hook). Levels: moods about −29.5 LUFS
+(well under a cut-in's −26 momentary, well over the beds); the jukebox, radio and big band −32 to −35.
+
+| Cue (`AU.play`) | Sound | Triggered by |
+|---|---|---|
+| `tick`, `key`, `type` | typewriter blip; key press; a real typewriter key | dialogue and cards; the keyboard; ~paper's typing |
+| `flip` (0/1/2) | gray thunk / yellow dyad / green arpeggio | tile reveals, legend |
+| `thud`, `boom`, `heart` | low sine drops and noise; a double thump | heavy lines; `~heart`, the reveal |
+| `stamp` | the rubber stamp | `~stamp`/`~gstamp`, clue cards, the volume sliders |
+| `sting` (name) | `sting(au, name)`, below | every `!!` cut-in, `~sting`, stamps, the Editor's voice |
+| `versus` (`versusHit`) | the heavier hit | every `%%` versus |
+| `paper`, `ding`, `rustle`, `typing` | a sheet rolled in; the carriage bell; a newspaper; a burst of typing | `~paper` (start, end); scripts |
+| `ring`, `hangup` | a desk phone's two hammered gongs (a slightly different phone each time); the receiver on the cradle, the bell shivering, a click, a faint dial hum | `~sfx` (86 and 60 uses) |
+| `whistle`, `foghorn`, `bell`, `siren`, `thunder`, `telegraph` | the train whistle scooping up to pitch; the foghorn out in the bay; a ship's or station bell; ... | `~sfx`, `~lightning`, versus |
+| `car`, `horn`, `gull`, `steps`, `door`, `slam`, `match`, `lighter`, `clink`, `pour`, `gunshot` | foley up close (or far, through `sfxVerb`) | `~sfx` (a light pass added `pour` and `lighter` where the text describes them) |
+| `cuffs` | handcuffs ratcheting shut | every win, before the riff |
+| `card`, `lament`, `piano`, `riff` | a title card's piano note (the root of the chord playing); the four falling notes of a loss; any notes; the 8-note muted-trumpet phrase | cards; a loss; the start button and every win |
+
+**Stings.** `STINGS` (stings.js) holds T10's cut-in hits and the T9 library. Each is a sub sine, detuned sawtooth pairs through a moving lowpass,
+an attack and a long soft tail, optionally with a timpani thump. There is no noise and nothing bright. The 120–200 Hz saw body is what still reads
+on phone speakers that drop the sub.
+- **Cut-in hits (T10):** `brass` (E root + fifth), `minor` (E + G), `sag` (F chord sinking to E), `soft` (the cooldown repeat), `versus` (adds a B1 saw
+  and a two-stroke timpani roll). `sting(name)` plays `name` if it's a variant (cut-ins pass `CAST[key].sting`: `BRIGGS: 'brass'`, `THORNE: 'minor'`,
+  `WORD: 'word'`), otherwise a random one of `brass`/`minor`/`sag`, never the same as the last.
+- **Cooldown** (`COOLDOWN` = 8 s of AudioContext time, so `#speedN` doesn't change it): a cut-in sting within 8 s of the previous sting plays `soft`,
+  and a third plays nothing. `versusHit()` counts as a sting, so the cut-in right after a versus is soft.
+- **Library (T9):** `word` (E, F and B♭: a minor second over a tritone, swelling in slowly; plays by itself when the Editor starts talking, at most every
+  20 s), `hope` (a warm F major swell, the filter opening; under every green stamp, CASE CLOSED), `stamp` (a short dark tritone hit; under every red
+  stamp, COLD CASE / SUSPENDED). A library sting never goes soft: inside the cooldown, or within its own `lib` gap, it simply doesn't play. It counts
+  toward the cooldown, so a cut-in right after it comes in soft.
+- `npm run check` validates `CAST[key].sting` names and `~sting` names, and warns when a scene has more than one `!!` or when more than ~20% of a
+  pack's scenes have one (it prints the density per pack).
+
+**Measuring levels: `npm run levels`** (tools/audio-levels.mjs; Node 22). It renders each cue, loop and bed into an `OfflineAudioContext` through the
+real chain (bus → compressor → master, default volumes) in headless Chrome/Edge, after 2 s of silence so the compressor has settled, and prints peak,
+the loudest 400 ms RMS, RMS, energy above 1 kHz, and **K-weighted loudness** (BS.1770 filters, no gating: `lufs` over the span, `mLufs` the loudest
+400 ms). Use the LUFS columns to compare sounds of different colour: the old drone read −17.7 dBFS RMS but was nearly all sub-bass. One-shots are
+measured alone (music and ambience muted), loops and beds over 30–40 s. Filter by name (`npm run levels -- sting bed`); `--parts calm` measures
+each instrument of a loop alone (to balance a band); `--json` prints raw numbers. Its readings for T10's stings (peak 0.16–0.22) are a little below
+T10's own scratch harness (0.23–0.25), which didn't mute the other buses, so compare like with like.
 
 ## 1.9 Visual conventions
 
@@ -437,7 +520,12 @@ Oct 4 · Oct 11 · Oct 12 · Oct 20 · Oct 21 · Nov 1 · Nov 9 · Dec 1 · Dec 
 - A new setting needs three things: a default in save/schema.js `defaults()`, an entry in ui/settings.js `SPEC` (the form is generated from it),
   and handling in `applySettings()`. Hard mode is the exception: it's read when a case starts (`S.hard`).
 - Git is `core.autocrlf=true`. Word-list and script parsing trim lines, so CRLF is harmless. Keep it that way.
-- Typing `~sfx` with an unknown name silently does nothing in-game. `npm run check` is what catches it.
+- Typing `~sfx` with an unknown name silently does nothing in-game. `npm run check` is what catches it (and bad `~sting`, `~music`, `~amb` names).
+- **Every one-shot sound goes through `AU.play(name)`**, which is where skipping silences it. Don't call synth functions directly from game code.
+  A new sound is an entry in `SFX` (audio/sfx.js) and, if a script holds for it, in `SFX_WAIT`. A new set needs an `ambience` (a `BEDS` key or null).
+- Beds and music are scheduled ahead on AudioContext time by `AU.pump()`; build new ones the same way (absolute times from `fill(until)`), never with
+  `sleep()` or `setTimeout`, so `#speedN` and skipping leave them alone. Check new sounds with `npm run levels`.
+- The ambience **bus** is `AU.ambBus`; `AU.amb` is the method that picks a bed.
 - Pickers (`pickUnused`) reset a pool once it is exhausted. With bigger pools, repeats get rarer for free.
 - `pack()` / `getPack()` are synchronous and return `undefined` until `loadPack()` has resolved. Anything that starts a case must await the pack first (main.js does this for `random`).
 - Scene IDs are permanent (see §1.5). The checker catches duplicate and malformed IDs, but not an ID quietly moved onto new text. Don't do that.
@@ -571,6 +659,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
+| 2026-10-04 | 10: T9 | `step-10-audio` | Audio expansion. Every sound by name (`AU.play/music/amb`); `audio/` split into synth, foley, SFX, stings, beds, music. Ambience beds for every set (and the board, whose clock comes up for the last suspect). A procedural jazz band scheduled on AudioContext time: calm/tense/hope/dread loops, the bar's jukebox, the apartment's radio, the station's big band, a title theme, four ending themes; crossfades and ducking. Sting library (`word`, `hope`, `stamp`) and `~sting`/`~music`/`~amb`. New SFX (the phone, a typewriter for `~paper`, handcuffs on a win, foley cues). `npm run levels` measures everything offline. 40 unit tests, 20 e2e scenarios. Awaiting the owner's ear check. |
 | 2026-10-04 | 9: T8 + T7 | `step-9-content` | The whole story. Chapters 3–10 written at the full T8 budget and chapters 1–2 grown to it (153 scenes each; 150 for chapter 10), every interlude, the real endings (six case endings + the egg, twelve codas, the close) replacing the placeholders, ending replays in Chapter Select. 16 new characters, 11 new sets. Chapter dates follow the bible's "tomorrow" hooks. The checker validates endings and catches a stray `NAME?` line. 40 unit tests, 19 e2e scenarios including two full campaigns. |
 | 2026-10-04 | 8: T6 + T7 (logic) + T2 (rest) | `step-8-campaign-slice` | The campaign: New Game, Continue, chapter attempts with D1 rollback and retry variety, `~story` flags, outro beats, interludes (kept/late/missed), the "Strike that" retelling, Chapter Select replays (D2), the Dossier, ending logic with placeholder endings, save v2. Chapters 1 "Stop the Presses" and 2 "Last Call" written at 2 scenes per slot (82 scenes each), with their interludes; new sets hearing, pressroom, hospital, restaurant, gangway. Bible amendment recorded (escape consequences move to the near miss). The title screen's stale "scenes can't be skipped" fine print is replaced by a fan-game disclaimer (not affiliated with The New York Times). 38 unit tests, 17 e2e scenarios. |
 | 2026-10-04 | 7: T6 (bible approved) | `step-7-story-bible` | Owner's final OK; bible marked approved and its §11 folded into T6/T7/T8. Revision 2: the Editor is Sal, Dash's best friend (the Professor becomes the red herring); four personal threads (Pop, Vera, Nora and Tommy, the bottle) in nine interludes with kept/late/missed variants driven by each chapter's guess count, resolved in per-thread ending codas. |
@@ -938,6 +1027,35 @@ characters reused across packs are varied rather than repeated (the checker warn
 ### T9. More audio
 **Goal:** unique stings, jazzy loops, and more sounds that make the world feel alive.
 
+**Status: built (step 10), awaiting the owner's ear check.** Implementation in §1.8. Built in the groundwork note's order, one commit each:
+the named-cue API (no audible change), ambience beds, the music scheduler, the sting library and its commands, the new SFX, then a light scene pass.
+Deviations from the plan:
+- **Module split.** `audio.js` became `audio/`: synth, foley, sfx, stings, beds, music. The `ALWAYS` wrapper is gone: the quiet gate lives in
+  `AU.play()`, the only door for one-shots, and music/beds don't go through it. The ambience bus was renamed `ambBus` (`AU.amb` is now the method).
+- **Cue names are plain** (`AU.play('ring')`, `AU.play('sting', 'word')`) rather than dotted (`sting.low`), so every existing `~sfx name` kept working.
+  The checker validates `~sfx` against `CUES` instead of "any method on AU".
+- **The drone is gone.** All four moods are band loops; `dread` keeps a beating low pedal, which is what the drone did best.
+- **The title theme and the ending themes are loops**, not stings: `title` on the menu, and `finale`/`elegy`/`lasttrain`/`mirror` replacing calm and
+  hope during an ending's case scene and close (not the life codas, which keep their own moods). They're driven by code (`AU.setTheme`, `play()`'s new
+  `onStart` hook), so no ending script changed. All of them are built on the start riff's eight-note motif.
+- **Sting library names:** `stingLow` is T10's random `brass`/`minor`/`sag`; the new ones are `word`, `hope`, `stamp`. Nobody in the scripts cuts in
+  as the Editor, so `word` plays when the Editor *starts talking* (at most every 20 s). `hope` goes under green stamps and `stamp` under red ones,
+  which covers CASE CLOSED and COLD CASE at the end of every case. Library stings never play soft; inside the cooldown they're skipped.
+- **Set variants** replace only `calm` (the jukebox, radio and big band are diegetic; a red or tense mood in the bar still plays dread or tense).
+- **Ride cymbal** is six detuned square waves through a highpass (the classic metallic cluster), not high-passed noise, which sounded like hiss.
+- **Neon buzz** is a quiet 120 Hz hum in the bar's bed, not synced to the `flicker` animation (sound and CSS run on different clocks).
+- **Clock tick (final guess)** is the board's `board.last` bed: the office clock comes up while the last suspect is on the board.
+- **The win riff plays with the music off** (G minor over the D minor ballad clashed); a won case's report plays `hope`, a lost one's is silent
+  for the falling piano. **Title-card piano notes** take the root of the chord playing.
+- **Ducking** is on any text (narration and dialogue), about 3.5 dB.
+- **Typewriter keys for `~paper`** follow the Typewriter blips setting, like the blips.
+- **Added:** `npm run levels` (tools/audio-levels.mjs), a committed version of T10's offline measurement with K-weighted loudness, `--parts` for
+  balancing a band, and `--json`; `tools/browser.mjs`, shared with the e2e; `NOIR.AU`; an e2e audio scenario.
+- **Scene pass (6):** kept small. `~sfx pour` before the eight lines where a drink is poured at the Last Word (the bottle thread, including the coda where
+  Dash pours the last bottle down the sink) and `~sfx lighter` where Lola lights a cigarette with Dash's. No `~amb` was needed: the beds follow the sets.
+- **Performance:** the band costs some CPU. The two full-campaign e2e scenarios at `#speed400` went from about 15 s and 26 s to about 20 s and
+  37 s in one run (they run music the whole way); the whole e2e is still about 90 s. Real play is 400 times slower, so this is well within budget.
+
 **Groundwork for step 10 (written at the end of step 9, 2026-10-04).** What the finished scripts actually use, so the work goes where players hear it:
 - **Moods** (`@mood`, ~625 uses): blue 249, warm 125, red 79, noir 60, gold 50, sick 41, violet 21. `MOOD_MUSIC` maps noir/warm/blue → calm,
   gold → hope, red → dread, sick/violet → tense, so **calm** carries most of the game, then dread, then tense.
@@ -957,7 +1075,7 @@ characters reused across packs are varied rather than repeated (the checker warn
   sounds play at `#speed400`), and give the owner specific scenes to listen to (they approve by ear, as with T10).
 
 - [x] **Bus restructure** (step 5; `ui` follows the Sound effects slider, see §1.8): `music`, `sfx`, `ambience` (rain + beds), `ui` (keys, ticks), each with its own gain under master, wired to the T2 sliders.
-- [ ] **Music scheduler** (lookahead clock pattern) for procedural jazz loops: walking bass (filtered triangle pluck), brushed snare (filtered noise swishes),
+- [x] **Music scheduler** (lookahead clock pattern) for procedural jazz loops: walking bass (filtered triangle pluck), brushed snare (filtered noise swishes),
       ride cymbal (high-passed noise ticks), Rhodes/vibraphone chords (sine + light FM), and muted-trumpet licks (the existing `riff` voice). Loops per mood:
   - calm: slow smoky ballad, ii–V–I in D minor, brushes only
   - tense: minor ostinato, tremolo strings pad, sparse ride
@@ -965,15 +1083,17 @@ characters reused across packs are varied rather than repeated (the checker warn
   - dread: low pedal tone, cluster stabs, no drums
   - plus set-specific variants: **bar** = jukebox loop low-passed "from another room", **apartment** = tinny radio, **station** = big-band echo.
   - Crossfade on mood change instead of hard switches, and duck music under dialogue slightly.
-- [ ] **Sting library** (beyond T10's replacement): `stingLow` (default), `stingWord` (dark minor-second cluster for the villain),
+- [x] **Sting library** (beyond T10's replacement): `stingLow` (default), `stingWord` (dark minor-second cluster for the villain),
       `stingHope` (warm brass swell for green-heavy moments), `stingStamp` (case closed/suspended), and a title theme plus ending themes.
       Add script commands `~sting name`, `~music name`, `~amb name` (validated by the checker).
-- [ ] **New SFX:** wet footsteps, door creak/slam, match strike, lighter clink, glass clink and pour, typewriter clatter (for `~paper`),
+- [x] **New SFX:** wet footsteps, door creak/slam, match strike, lighter clink, glass clink and pour, typewriter clatter (for `~paper`),
       newspaper rustle, record crackle, car pass and tires on wet street, horn, gulls and lapping water (docks), crowd murmur (bar/station),
       station bell and PA, neon buzz (synced with `flicker`), wind (rooftop), clock tick (final guess), handcuff click (win), a distant gunshot (rare).
-- [ ] **Location ambience beds:** add an `ambience` key to each set module so `@set` changes the bed automatically.
-- [ ] Jazz loops start procedural (D4).
-- [ ] **Future: all audio moves to recorded files (D4).** Design every sound behind a named-cue API now (`AU.play('sting.low')`, `AU.music('calm')`,
+- [x] **Location ambience beds:** add an `ambience` key to each set module so `@set` changes the bed automatically.
+- [x] Jazz loops start procedural (D4).
+- [x] **Named-cue API** (the first half of the item below): `AU.play(name)`, `AU.music(mode)`, `AU.amb(name)`. Swapping a voice for a file means
+      replacing its `SFX` entry (or a loop/bed) with a buffer player; no script or game code changes.
+- [ ] **Future: all audio moves to recorded files (D4).** (The API is done, above; the files are not.) Design every sound behind a named-cue API now (`AU.play('sting.low')`, `AU.music('calm')`,
       `AU.amb('docks')`), so each procedural voice can later be swapped for a file without touching scripts. Recommended formats:
       - Keep **`.wav` masters** outside `public/` (lossless source, not deployed).
       - Ship compressed files under `public/audio/`. Either **`.m4a` (AAC)**, which plays in every browser, or **`.ogg` (Opus)**, which is smaller
@@ -1022,7 +1142,7 @@ structure that holds it is settled.
 | 7 ✓ | **Story bible** (approved 2026-10-04) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |
 | 8 ✓ | **Campaign framework + vertical slice** | T6, T7, T2 (rest) | Chapter flow, attempts and loss rollback, retry scene variety, story flags, continue, chapter select, dossier, endings logic with placeholder endings. Chapters 1–2 get fresh minimum coverage (2 scenes per slot, so retries can differ) to prove the whole loop end to end. |
 | 9 ✓ | **Content production, chapter by chapter** | T8, T7 | Write each chapter fresh to ~146 scenes, in story order, then the 6 endings plus the easter egg. |
-| 10 | **Audio expansion** | T9 | Runs in parallel with step 9: jazz scheduler, stings, SFX, ambience beds, script commands. |
+| 10 ✓ | **Audio expansion** (built; awaiting the owner's ear check) | T9 | Jazz scheduler, stings, SFX, ambience beds, script commands. |
 
 ## 2.4 Decisions
 

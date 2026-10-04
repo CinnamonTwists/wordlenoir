@@ -4,6 +4,7 @@ import { svg } from '../svg.js';
 export default {
   rain: 'off',
   indoor: true,
+  ambience: 'morgue',
   draw(v) {
     let tile = '', drawers = '';
     for (let y = 0; y < 640; y += 40) for (let x = 0; x < 1600; x += 40) tile += `<rect x="${x + 1}" y="${y + 1}" width="38" height="38" fill="#1d2226"/>`;

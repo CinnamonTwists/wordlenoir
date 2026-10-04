@@ -13,7 +13,7 @@ export const CAST = {
   PETE:   { name: 'LUCKY PETE', color: '#e08a5a', bust: { hat: 'cap', build: .92 } },
   KOW:    { name: 'MRS. KOWALSKI', color: '#c0aca4', bust: { hair: 'bun', build: 1.1 } },
   FENN:   { name: 'DOC FENN', color: '#93c9c2', bust: { hair: 'bald', glasses: true } },
-  WORD:   { name: 'THE WORD', color: '#ff2a35', bust: { hat: 'fedora', eyes: true, coat: true } },
+  WORD:   { name: 'THE WORD', color: '#ff2a35', bust: { hat: 'fedora', eyes: true, coat: true }, sting: 'word' },
   NICKEL: { name: 'NICKEL', color: '#e6d36a', bust: { hat: 'cap', build: .78 } },
   LOLA:   { name: 'LOLA VANCE', color: '#ff6f91', bust: { hair: 'bob' } },
   // story mode (docs/story/bible.md §5)

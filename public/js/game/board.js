@@ -38,16 +38,16 @@ export function updateStatus() {
 export function setMemo(t) { memo.textContent = t; }
 let toastT;
 export function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2200); }
-export function shakeRow() { const row = grid.children[S.guesses.length]; if (!row) return; row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake'); AU.thud(); }
+export function shakeRow() { const row = grid.children[S.guesses.length]; if (!row) return; row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake'); AU.play('thud'); }
 
 // The interrogation: dims the other rows and flips one tile at a time.
 export async function revealRow(r, fb) {
   const row = grid.children[r];
   board.classList.add('interrogate'); [...grid.children].forEach((x, i) => x.classList.toggle('focus', i === r));
-  setMemo('Under the lamp...'); AU.heart(); await sleep(1100);
+  setMemo('Under the lamp...'); AU.play('heart'); await sleep(1100);
   for (let i = 0; i < 5; i++) {
-    if (i === 4) { setMemo('One letter left to talk...'); AU.heart(); await sleep(1300); }
-    const t = row.children[i]; t.classList.add('flip'); await sleep(320); t.dataset.s = ['gray', 'yellow', 'green'][fb[i]]; t.classList.remove('filled'); AU.flip(fb[i]); await sleep(560);
+    if (i === 4) { setMemo('One letter left to talk...'); AU.play('heart'); await sleep(1300); }
+    const t = row.children[i]; t.classList.add('flip'); await sleep(320); t.dataset.s = ['gray', 'yellow', 'green'][fb[i]]; t.classList.remove('filled'); AU.play('flip', fb[i]); await sleep(560);
   }
   await sleep(500);
 }

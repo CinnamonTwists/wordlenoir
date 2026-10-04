@@ -1,6 +1,6 @@
 import { sleep, SKIP } from '../core/timing.js';
 import { $ } from '../core/dom.js';
-import { AU } from '../audio/audio.js';
+import { AU, SFX_WAIT } from '../audio/audio.js';
 import { RAIN } from '../fx/rain.js';
 import { getSet } from '../art/sets/index.js';
 import { parseScript, condOK, fill } from '../script/parser.js';
@@ -26,10 +26,13 @@ async function runLine(raw, ctx) {
       case 'black': hideText(); return blackIn(900);
       case 'shake': return shake();
       case 'flash': flashFx(); return sleep(300);
-      case 'lightning': await lit(); flashFx(.85); await sleep(140); flashFx(.6); await sleep(500); AU.thunder(); return sleep(700);
-      case 'heart': AU.heart(); C.vig.classList.remove('pulse'); void C.vig.offsetWidth; C.vig.classList.add('pulse'); return sleep(1300);
+      case 'lightning': await lit(); flashFx(.85); await sleep(140); flashFx(.6); await sleep(500); AU.play('thunder'); return sleep(700);
+      case 'heart': AU.play('heart'); C.vig.classList.remove('pulse'); void C.vig.offsetWidth; C.vig.classList.add('pulse'); return sleep(1300);
       case 'rain': RAIN.set(arg); AU.setRain(arg, getSet(C.set).indoor); return;
-      case 'sfx': if (AU[arg]) AU[arg](); return sleep(arg === 'ring' ? 2600 : arg === 'hangup' ? 900 : arg === 'whistle' ? 1400 : arg === 'telegraph' ? 1200 : 400);
+      case 'sting': AU.play('sting', arg || undefined); return sleep(300);
+      case 'music': AU.music(arg); return;   // until the next @mood or ~music
+      case 'amb': AU.amb(arg); return;       // until the next @set or ~amb
+      case 'sfx': AU.play(arg); return sleep(SFX_WAIT[arg] ?? 400);
       case 'wait': return sleep(+arg || 1000);
       case 'flag': ctx.flags[arg] = 1; return;
       case 'story': if (ctx.story) ctx.story[arg] = 1; return;   // campaign-scoped (roadmap T6); kept only if the chapter is won
@@ -49,7 +52,8 @@ async function runLine(raw, ctx) {
   return narrate(line);
 }
 
-// A skipped line still changes state (roadmap T3): flags (case and story), the set, the mood, rain and the letterbox, so the next segment starts right.
+// A skipped line still changes state (roadmap T3): flags (case and story), the set, the mood, rain, music, ambience and the letterbox,
+// so the next segment starts right.
 // Nothing is shown or heard.
 async function runQuiet(raw, ctx) {
   const line = fill(raw, ctx);
@@ -60,6 +64,8 @@ async function runQuiet(raw, ctx) {
   if (cmd === 'flag') ctx.flags[arg] = 1;
   else if (cmd === 'story') { if (ctx.story) ctx.story[arg] = 1; }
   else if (cmd === 'rain') { RAIN.set(arg); AU.setRain(arg, getSet(C.set).indoor); }
+  else if (cmd === 'music') AU.music(arg);
+  else if (cmd === 'amb') AU.amb(arg);
   else if (cmd === 'tight') C.el.classList.add('tight');
   else if (cmd === 'loose') C.el.classList.remove('tight');
 }
@@ -78,7 +84,8 @@ export function skipNow() {
 const endSkip = () => { P.skipping = SKIP.on = AU.quiet = false; P.skippable = false; skipBtn.hidden = true; };
 
 // Takes over the screen, plays the segments, then hands back to the board.
-// segments: a script string, or [{ id, src }] (roadmap T3). opts: { skip(id) → 'ask' | 'auto' | false, onSegment(id) after each one finishes }.
+// segments: a script string, or [{ id, src }] (roadmap T3).
+// opts: { skip(id) → 'ask' | 'auto' | false, onStart(id) before each segment plays, onSegment(id) after each one finishes }.
 export async function play(segments, ctx, opts = {}) {
   const segs = typeof segments === 'string' ? [{ id: null, src: segments }] : segments.filter(Boolean);
   C.black.style.transition = 'none'; C.black.style.opacity = 1; C.blackOn = true; hideText();
@@ -86,6 +93,7 @@ export async function play(segments, ctx, opts = {}) {
   C.el.hidden = false; RAIN.attach($('#crain')); await sleep(400);
   try {
     for (const seg of segs) {
+      opts.onStart?.(seg.id);
       const how = seg.id && opts.skip ? opts.skip(seg.id) : false;
       P.skippable = !!how; skipBtn.hidden = how !== 'ask';
       if (how === 'auto') skipNow();
@@ -100,5 +108,5 @@ export async function play(segments, ctx, opts = {}) {
   } finally { endSkip(); }
   hideText(); await blackIn(1000);
   C.el.hidden = true; C.fx.innerHTML = ''; C.bgA.innerHTML = C.bgB.innerHTML = ''; C.front = null;
-  RAIN.attach($('#rain')); RAIN.set('light'); AU.setRain('window', 1);
+  RAIN.attach($('#rain')); RAIN.set('light'); AU.setRain('window', 1); AU.amb('board');
 }

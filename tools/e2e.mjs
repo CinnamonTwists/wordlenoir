@@ -8,10 +8,10 @@
 //   CHROME=/path/to/browser npm run e2e    use a specific Chromium-based browser
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
-import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findBrowser, freePort } from './browser.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2), opt = (k, d) => { const i = args.indexOf('--' + k); return i < 0 ? d : args[i + 1] === undefined || args[i + 1].startsWith('--') ? true : args[i + 1]; };
@@ -20,18 +20,6 @@ const WAIT = 60000 * Math.max(1, 400 / SPEED);   // per-step timeout, scaled for
 
 if (typeof WebSocket === 'undefined') { console.error('e2e needs Node 22 or newer (global WebSocket).'); process.exit(1); }
 
-// ---------- browser ----------
-function findBrowser() {
-  if (process.env.CHROME) return process.env.CHROME;
-  const pf = [process.env.PROGRAMFILES, process.env['PROGRAMFILES(X86)'], process.env.LOCALAPPDATA].filter(Boolean);
-  const list = process.platform === 'win32'
-    ? pf.flatMap(p => [path.join(p, 'Google/Chrome/Application/chrome.exe'), path.join(p, 'Microsoft/Edge/Application/msedge.exe')])
-    : process.platform === 'darwin'
-      ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge', '/Applications/Chromium.app/Contents/MacOS/Chromium']
-      : ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser', 'microsoft-edge'].flatMap(b => ['/usr/bin/', '/usr/local/bin/', '/snap/bin/'].map(d => d + b));
-  return list.find(p => fs.existsSync(p));
-}
-const freePort = () => new Promise(r => { const s = net.createServer().listen(0, () => { const { port } = s.address(); s.close(() => r(port)); }); });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 // ---------- DevTools Protocol ----------
@@ -281,6 +269,33 @@ test('settings: saved, applied, and survive a reload; hard mode enforces clues',
   for (let i = 0; i < 5; i++) await key('Backspace');
   await guess(answer); await checkReport(answer, true, 2);
   return `${answer} (${first} then refused ${bad})`;
+});
+test('audio: sets and moods drive the beds and music; a skipped scene is silent; every cue, loop and bed plays', async () => {
+  await toMenu();   // AU needs the title gesture
+  const r = await ev(`(async () => {
+    const AU = NOIR.AU, A = await import('/js/audio/audio.js'), M = await import('/js/audio/music.js'), B = await import('/js/audio/beds.js');
+    const menu = { ctx: !!AU.ctx, loop: AU.loop?.name, bed: AU.bedName };
+    const at = [], rings = [];
+    const ring = A.CUES.ring; A.CUES.ring = (...a) => { rings.push(1); return ring(...a); };
+    const segs = [{ id: 'X', src: '@set bar!\\n@mood noir\\n> In the bar.' }, { id: 'Y', src: '@set station!\\n> At the station.' },
+                  { id: 'Z', src: '@set precinct!\\n@mood red\\n> Trouble.' }, { id: 'S', src: '@set docks!\\n@mood noir\\n~sfx ring\\n> Skipped.' },
+                  { id: 'H', src: '@set street!\\n~sfx ring\\n> Heard.' },
+                  { id: 'Q', src: '@set office!\\n~music radio\\n~amb vault\\n> Quiet.' }, { id: 'W', src: '~sting word\\n@mood gold\\n> Hope.' }];
+    await NOIR.play(segs, { vars: {}, flags: {} }, { skip: id => id === 'S' || id === 'Q' ? 'auto' : false, onSegment: id => at.push([id, AU.bedName, AU.loop?.name, rings.length]) });
+    A.CUES.ring = ring;
+    const after = { bed: AU.bedName };
+    for (const k of Object.keys(A.CUES)) AU.play(k, k === 'flip' ? 2 : undefined);
+    for (const k of Object.keys(M.LOOPS)) { AU.music(k); AU.pump(1); }
+    for (const k of Object.keys(B.BEDS)) { AU.amb(k); AU.pump(1); }
+    AU.music('title'); AU.amb('street');
+    return { menu, at, after };
+  })()`);
+  if (!r.menu.ctx || r.menu.loop !== 'title' || r.menu.bed !== 'street') throw new Error(`menu sound: ${JSON.stringify(r.menu)}`);
+  const want = [['X', 'bar', 'jukebox', 0], ['Y', 'station', 'bigband', 0], ['Z', 'precinct', 'dread', 0], ['S', 'docks', 'calm', 0], ['H', 'street', 'calm', 1],
+    ['Q', 'vault', 'radio', 1], ['W', 'vault', 'hope', 1]];   // ~music and ~amb apply even when skipped; @mood takes over from ~music
+  if (JSON.stringify(r.at) !== JSON.stringify(want)) throw new Error(`bed/loop per segment ${JSON.stringify(r.at)}, expected ${JSON.stringify(want)}`);
+  if (r.after.bed !== 'board') throw new Error(`after a scene the bed is ${r.after.bed}, expected the board's`);
+  return 'bar → jukebox, station → bigband, red → dread, skipped ring silent, ~music/~amb';
 });
 test('settings: clear all data', async () => {
   await toMenu(); await click('#mSettings');

@@ -5,6 +5,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'off',
   indoor: false,
+  ambience: 'ballpark',
   draw(v) {
     const r = rng(137);
     let crowd = '';

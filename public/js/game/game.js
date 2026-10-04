@@ -27,14 +27,16 @@ import { snapshot, restore } from './snapshot.js';
 // Set by main.js: where "Main menu" on the report goes.
 export const hooks = { toMenu: () => {} };
 
-// Plays a scene's segments, then restores the board's background music.
+// Plays a scene's segments, then restores the board's sound.
 async function playScene(segments, ctx) {
   await play(segments, ctx, { skip: skipPolicy, onSegment: id => {
     mode.seen([id]);
     if (S.pending.includes(id)) { S.pending = S.pending.filter(x => x !== id); checkpoint(); }
   } });
-  AU.setMusic(S.g >= 4 ? 'tense' : 'calm');
+  boardSound();
 }
+// The board between scenes: calm music (tense from the fourth suspect on) and the office, whose clock comes up for the last suspect.
+export function boardSound() { AU.music(S.g >= 4 ? 'tense' : 'calm'); AU.amb(S.g >= 5 && !S.over ? 'board.last' : 'board'); }
 export function skipPolicy(id, isSeen = mode.isSeen) {
   const how = store.get('settings.skipSeen');
   return how !== 'never' && isSeen(id) ? (how === 'always' ? 'auto' : 'ask') : false;
@@ -48,8 +50,8 @@ const report = () => showReport(mode.next ? () => mode.next(S) : newCase, { onMe
 export function press(k) {
   if (S.busy || S.over || !$('#pause').hidden || !$('#modal').hidden || !$('#notes').hidden) return;
   if (k === 'Enter') return submit();
-  if (k === 'Backspace') { if (S.cur.length) { S.cur = S.cur.slice(0, -1); renderRow(); AU.key(); } return; }
-  if (/^[a-z]$/i.test(k) && S.cur.length < 5) { S.cur += k.toLowerCase(); renderRow(); AU.key(); }
+  if (k === 'Backspace') { if (S.cur.length) { S.cur = S.cur.slice(0, -1); renderRow(); AU.play('key'); } return; }
+  if (/^[a-z]$/i.test(k) && S.cur.length < 5) { S.cur += k.toLowerCase(); renderRow(); AU.play('key'); }
 }
 export function attachKeyboard() {
   addEventListener('keydown', e => { if (e.metaKey || e.ctrlKey || e.altKey) return; if (board.hidden) return; if (e.key === 'Enter' || e.key === 'Backspace' || /^[a-zA-Z]$/.test(e.key)) { e.preventDefault(); press(e.key); } });
@@ -75,9 +77,10 @@ async function submit() {
     if (win) { ctx.vars.clockH = S.times[g][0]; ctx.vars.clockM = S.times[g][1]; } else { ctx.vars.clockH = 6; ctx.vars.clockM = 0; }
     const sc = mode.endScript(win, g, b, ctx);
     S.pending = sc.segments.map(s => s.id); checkpoint();
-    if (win) AU.riff();
+    if (win) { AU.music('off'); AU.play('cuffs'); AU.play('riff'); }   // the cuffs, then the riff alone; the ending's moods bring the music back
     await playScene(sc.segments, ctx);
-    if (!win) AU.piano([311.13, 293.66, 261.63, 196], .7);
+    AU.music(win ? 'hope' : 'off');                    // the report: hopeful after a catch, silence for the falling piano after an escape
+    if (!win) AU.play('lament');
     S.pending = []; mode.clear();
     updateStatus(); report(); return;
   }
@@ -124,7 +127,7 @@ export function resumeCase() {
   $('#report').hidden = true; $('#modal').hidden = true; $('#pause').hidden = true;
   buildGrid(); buildKB(press); paintRows(); updateKB(); updateStatus(); setCaseHeader(); updateNotes();
   if (S.pending.length) { mode.seen(S.pending); S.pending = []; }   // interrupted mid-scene: it still counts as seen
-  AU.setMusic(S.g >= 4 ? 'tense' : 'calm');
+  boardSound();
   if (S.over) { record(); mode.clear(); S.busy = true; setMemo(''); report(); return true; }
   checkpoint();
   $('#menuBtn').disabled = false;

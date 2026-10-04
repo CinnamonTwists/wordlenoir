@@ -4,6 +4,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'light',
   indoor: false,
+  ambience: 'station',
   draw(v) {
     const h = (v && v.clockH != null) ? v.clockH : 5, m = (v && v.clockM != null) ? v.clockM : 58;
     const ma = m * 6, ha = (h % 12) * 30 + m * .5;

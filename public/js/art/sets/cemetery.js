@@ -5,6 +5,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'off',
   indoor: false,
+  ambience: 'cemetery',
   draw(v) {
     const r = rng(149);
     let snow = '', stones = '';

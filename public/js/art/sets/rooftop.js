@@ -4,6 +4,7 @@ import { skyline, figure } from '../props.js';
 export default {
   rain: 'light',
   indoor: false,
+  ambience: 'rooftop',
   draw(v) {
     const r = rng(41);
     return svg(`<rect width="1600" height="900" fill="url(#nSky)"/>
