@@ -39,7 +39,7 @@ export const CHAPTERS = [
     deadline: 'the fuse burns down', why: 'At 6:00 the Hall of Records goes up, and the city\'s missing files with it.',
     associates: 'The Lexicon (an Entry). Army surplus. Canaries.', quote: 'Nothing personal. Everything final.',
     bust: { hat: 'cap', build: 1.15, color: '#c9a35a' } },
-  { n: 7, title: 'Wire Transfer', date: 'November 9, 1948', written: false,
+  { n: 7, title: 'Wire Transfer', date: 'November 9, 1948', written: true,
     culprit: 'Mirabel Quist', alias: 'the Forger', crime: 'forged deeds to the city\'s own records',
     mo: 'Perfect paper. She can\'t resist signing her work somewhere hidden.',
     deadline: 'the wire window opens', why: 'At 6:00 the wire clears and the city\'s records legally belong to a shell company.',
