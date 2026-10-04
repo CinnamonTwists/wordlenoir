@@ -11,6 +11,7 @@ Requires [Node.js](https://nodejs.org) 18+. Nothing to install.
 ```sh
 npm run dev      # http://localhost:8788  (add #speed10 to the URL to fast-forward scenes)
 npm run check    # validate every scene script and word list
+npm run e2e      # play a win, a loss and more in headless Chrome/Edge (Node 22+)
 npm run preview  # optional: run under Cloudflare's real runtime via wrangler
 ```
 
@@ -41,7 +42,7 @@ public/                     ← everything that gets deployed
     content/                  the story: cast, names
       scenes/                 intros, rounds (cores/), informants, win/loss endings, closers
     game/                     rules and flow: state, scoring, board UI, case generation, informants, report
-tools/                      dev server and scene validator (not deployed)
+tools/                      dev server, scene validator, e2e test (not deployed)
 docs/                       development guide + roadmap (DEVELOPMENT.md), scene-script reference
 wrangler.jsonc              Cloudflare config
 ```

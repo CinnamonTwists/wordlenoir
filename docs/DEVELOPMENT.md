@@ -28,6 +28,7 @@ Related docs: [README.md](../README.md) (quick start), [scene-scripts.md](scene-
 ```sh
 npm run dev      # zero-dep static server for public/ on :8788 (tools/dev-server.mjs)
 npm run check    # validates all scenes, cast stings, cut-in budget + word lists (tools/check-scenes.mjs), exit 1 on errors
+npm run e2e      # plays real cases in headless Chrome/Edge (tools/e2e.mjs), exit 1 on failure. Needs Node ≥ 22
 npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on first run
 ```
 
@@ -35,9 +36,15 @@ npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on fi
 - **URL `#speedN`** (e.g. `#speed20`) scales every scripted delay. `#speed400` plays a full case in about a second.
 - **Console hook `window.NOIR`**: `S` (state), `speed`, `forceAnswer`, `forceInf` (true = informant every round, false = never),
   `press(key)`, `play(src, ctx)`, `score`, `stats()`, `parseScript`, `ANSWERS`, `ALLOWED`, `VT` (virtual ms played), `MISSING` (unfilled `{vars}`).
-- **End-to-end check used so far**: headless Chrome driven over the DevTools Protocol, setting `#speed400`,
-  `NOIR.forceAnswer`, and typing guesses via `NOIR.press`, then asserting the win/loss report and that there are no console errors.
-  It is not in the repo yet (roadmap F4).
+- **End-to-end test (`npm run e2e`, about 7 s)**: zero dependencies. It starts the dev server on a free port and launches local Chrome or Edge
+  headless (`CHROME=/path` overrides the browser) with `--remote-debugging-port=0` and a throwaway profile. It drives the page over the
+  DevTools Protocol at `#speed400` with real clicks and key presses, using `NOIR` to force answers and informants and to read state.
+  - Scenarios: title → first case (an invalid word is refused, then a first-guess win), a loss with an informant every round, a win on guess 3.
+    `--cases N` adds N random cases (random answer, random win guess or loss, random informant setting) for scene coverage.
+  - Every scenario asserts the report (verdict, answer tiles, one table row per guess), no exceptions, no `console.error`, no failed same-origin requests,
+    and an empty `NOIR.MISSING`. The first failure stops the run.
+  - Google Fonts and the analytics beacon are blocked, so it runs offline. `--headed` shows the browser and `--speed N` slows it down.
+  - When a new mode or screen lands, add a scenario here (F4's second item).
 - **Deploy**: `wrangler.jsonc` publishes only `public/`. `name` must stay `raspy-term-4561` or Workers Builds fails.
   The dashboard deploy command must be the default `npx wrangler deploy`.
 - The Cloudflare Web Analytics beacon is hard-coded at the bottom of `public/index.html`. Locally it 404s on `/cdn-cgi/rum`. That's expected.
@@ -82,7 +89,7 @@ public/js/
     game.js               press, attachKeyboard, submit, newCase, playScene (play + restore music)
 public/css/               base, title, board, cinema, effects, overlays, ambient (link order = cascade order)
 public/data/words/        answers.txt, allowed.txt (one word per line, # comments allowed)
-tools/                    dev-server.mjs, check-scenes.mjs
+tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs
 ```
 
 **Dependency direction:** `main → game → cinema → (art, audio, fx, script, content) → core`. Nothing imports `game/` except `main.js`
@@ -333,7 +340,14 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
 ### F4. Automated smoke test
 **Why first:** this roadmap rewrites most of `game/`. A one-command regression check pays for itself immediately.
 
-- [ ] `tools/e2e.mjs` (zero-dep, Node ≥ 22 has a global WebSocket): starts the dev server, launches local Chrome/Edge headless with
+**Status: first item done (step 2).** Implementation in §1.2. Deviations from the plan:
+- Input goes through real CDP mouse clicks and key events instead of `NOIR.press`, so the keyboard listener and button wiring are covered too.
+  `NOIR` is only used to force answers and informants and to read state.
+- Beyond the planned win and loss, it also covers an invalid word (toast shown, row kept, Backspace clears) and offers `--cases N` random cases for scene coverage.
+- External requests (Google Fonts, the analytics beacon) are blocked so the run doesn't depend on the network.
+- `engines` in package.json stays at Node ≥ 18 because `dev` and `check` still run there. Only `e2e` needs Node 22, and it says so if run on older versions.
+
+- [x] `tools/e2e.mjs` (zero-dep, Node ≥ 22 has a global WebSocket): starts the dev server, launches local Chrome/Edge headless with
       `--remote-debugging-port`, then plays a win and a loss at `#speed400` via `NOIR`. It asserts the report, no console errors, and no `NOIR.MISSING`.
       Add the script `npm run e2e`.
 - [ ] Extend as modes land: random mode, a full campaign at speed with forced answers (to reach every ending, including the easter egg), save/resume, import/export round-trip.
@@ -543,7 +557,7 @@ structure that holds it is settled.
 | # | Step | Items | Why here |
 |---|---|---|---|
 | 1 ✓ | **Deeper sting + cut-in cooldown** | T10 | Small, isolated, and directly fixes playtester feedback. Ships alone. |
-| 2 | **Smoke test in repo** | F4 | Safety net before the big refactors. |
+| 2 ✓ | **Smoke test in repo** | F4 | Safety net before the big refactors. |
 | 3 | **Scene registry + chapter tags** | F2, T1 | Every later feature keys off stable scene IDs and packs. |
 | 4 | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |
 | 5 | **Screens + modes refactor, Random Case mode, main menu shell, settings** | F3, T5, T2 (partial) | Today's game becomes "Random Case" behind a real menu. Story entries show as "coming soon". Settings land with audio buses (start of T9). |
