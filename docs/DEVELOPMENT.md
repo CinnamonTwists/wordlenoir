@@ -513,7 +513,7 @@ or from the Random Case pool. All of it should be noir, funny, and consistent wi
 ### T10. Deeper, less frequent intense-moment sting
 **Goal:** playtesters find the cut-in sting too sharp and overused. Make it lower and deeper.
 
-**Status: built (step 1, branch `step-1-deeper-sting`), pending the by-ear check.** Implementation in §1.8. Deviations from the plan:
+**Status: done (step 1). Verified by ear 2026-10-03.** Implementation in §1.8. Deviations from the plan:
 - "Peak roughly half today's level" is measured at the master output, after the compressor, with the compressor already settled. A render at t=0
   reads about 4 dB low because Chrome's compressor starts in gain reduction. On that measure the cut-in variants peak at 0.23–0.25 vs the old 0.47.
 - Halving the peak also lowered the 120–200 Hz phone-speaker body by about 6 dB. If the hit gets lost on phones, raise the saw level in `hit()`
@@ -532,8 +532,8 @@ or from the Random Case pool. All of it should be noir, funny, and consistent wi
 - [x] Audit current scripts for cut-in density (11 cut-ins + 5 versus across 101 scenes) and keep T8's cut-in budget.
       Result: 11 of 101 scenes (11%), none with more than one `!!`. The two back-to-back cases (intro tail and win climax 2: versus, then cut-in)
       are handled by the cooldown. `npm run check` now enforces the budget.
-- [ ] Verify by ear at several volumes and on phone speakers (where low frequencies vanish, so keep a 120–200 Hz body so the hit still reads).
-      Measured offline (§1.8), but the by-ear and phone-speaker checks are still outstanding.
+- [x] Verify by ear at several volumes and on phone speakers (where low frequencies vanish, so keep a 120–200 Hz body so the hit still reads).
+      Measured offline (§1.8) and approved by ear.
 
 ## 2.3 Recommended build order
 
@@ -542,7 +542,7 @@ structure that holds it is settled.
 
 | # | Step | Items | Why here |
 |---|---|---|---|
-| 1 ✓ | **Deeper sting + cut-in cooldown** (built, awaiting ear check) | T10 | Small, isolated, and directly fixes playtester feedback. Ships alone. |
+| 1 ✓ | **Deeper sting + cut-in cooldown** | T10 | Small, isolated, and directly fixes playtester feedback. Ships alone. |
 | 2 | **Smoke test in repo** | F4 | Safety net before the big refactors. |
 | 3 | **Scene registry + chapter tags** | F2, T1 | Every later feature keys off stable scene IDs and packs. |
 | 4 | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |
