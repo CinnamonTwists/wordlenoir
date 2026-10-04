@@ -659,7 +659,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
-| 2026-10-04 | 10: T9 | `step-10-audio` | Audio expansion. Every sound by name (`AU.play/music/amb`); `audio/` split into synth, foley, SFX, stings, beds, music. Ambience beds for every set (and the board, whose clock comes up for the last suspect). A procedural jazz band scheduled on AudioContext time: calm/tense/hope/dread loops, the bar's jukebox, the apartment's radio, the station's big band, a title theme, four ending themes; crossfades and ducking. Sting library (`word`, `hope`, `stamp`) and `~sting`/`~music`/`~amb`. New SFX (the phone, a typewriter for `~paper`, handcuffs on a win, foley cues). `npm run levels` measures everything offline. 40 unit tests, 20 e2e scenarios. Awaiting the owner's ear check. |
+| 2026-10-04 | 10: T9 | `step-10-audio` | Audio expansion. Every sound by name (`AU.play/music/amb`); `audio/` split into synth, foley, SFX, stings, beds, music. Ambience beds for every set (and the board, whose clock comes up for the last suspect). A procedural jazz band scheduled on AudioContext time: calm/tense/hope/dread loops, the bar's jukebox, the apartment's radio, the station's big band, a title theme, four ending themes; crossfades and ducking. Sting library (`word`, `hope`, `stamp`) and `~sting`/`~music`/`~amb`. New SFX (the phone, a typewriter for `~paper`, handcuffs on a win, foley cues). `npm run levels` measures everything offline. 40 unit tests, 20 e2e scenarios. Approved by ear. **This completes the roadmap (T1–T10, F1–F4).** |
 | 2026-10-04 | 9: T8 + T7 | `step-9-content` | The whole story. Chapters 3–10 written at the full T8 budget and chapters 1–2 grown to it (153 scenes each; 150 for chapter 10), every interlude, the real endings (six case endings + the egg, twelve codas, the close) replacing the placeholders, ending replays in Chapter Select. 16 new characters, 11 new sets. Chapter dates follow the bible's "tomorrow" hooks. The checker validates endings and catches a stray `NAME?` line. 40 unit tests, 19 e2e scenarios including two full campaigns. |
 | 2026-10-04 | 8: T6 + T7 (logic) + T2 (rest) | `step-8-campaign-slice` | The campaign: New Game, Continue, chapter attempts with D1 rollback and retry variety, `~story` flags, outro beats, interludes (kept/late/missed), the "Strike that" retelling, Chapter Select replays (D2), the Dossier, ending logic with placeholder endings, save v2. Chapters 1 "Stop the Presses" and 2 "Last Call" written at 2 scenes per slot (82 scenes each), with their interludes; new sets hearing, pressroom, hospital, restaurant, gangway. Bible amendment recorded (escape consequences move to the near miss). The title screen's stale "scenes can't be skipped" fine print is replaced by a fan-game disclaimer (not affiliated with The New York Times). 38 unit tests, 17 e2e scenarios. |
 | 2026-10-04 | 7: T6 (bible approved) | `step-7-story-bible` | Owner's final OK; bible marked approved and its §11 folded into T6/T7/T8. Revision 2: the Editor is Sal, Dash's best friend (the Professor becomes the red herring); four personal threads (Pop, Vera, Nora and Tommy, the bottle) in nine interludes with kept/late/missed variants driven by each chapter's guess count, resolved in per-thread ending codas. |
@@ -677,6 +677,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 # Part 2: Roadmap
 
 Requested items are **T1–T10** (in the order they were given). **F1–F4** are foundations several of them need.
+**All of them are done (steps 1–10, 2026-10-03 to 2026-10-04).** What's left is the backlog (§2.5) and T9's "future: recorded audio files" (D4).
 Each item has: goal, design notes, tasks, dependencies. The recommended order is in §2.3 and open decisions are in §2.4.
 
 ## 2.1 Foundations
@@ -1027,7 +1028,7 @@ characters reused across packs are varied rather than repeated (the checker warn
 ### T9. More audio
 **Goal:** unique stings, jazzy loops, and more sounds that make the world feel alive.
 
-**Status: built (step 10), awaiting the owner's ear check.** Implementation in §1.8. Built in the groundwork note's order, one commit each:
+**Status: done (step 10). Approved by ear by the owner 2026-10-04.** Implementation in §1.8. Built in the groundwork note's order, one commit each:
 the named-cue API (no audible change), ambience beds, the music scheduler, the sting library and its commands, the new SFX, then a light scene pass.
 Deviations from the plan:
 - **Module split.** `audio.js` became `audio/`: synth, foley, sfx, stings, beds, music. The `ALWAYS` wrapper is gone: the quiet gate lives in
@@ -1142,7 +1143,7 @@ structure that holds it is settled.
 | 7 ✓ | **Story bible** (approved 2026-10-04) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |
 | 8 ✓ | **Campaign framework + vertical slice** | T6, T7, T2 (rest) | Chapter flow, attempts and loss rollback, retry scene variety, story flags, continue, chapter select, dossier, endings logic with placeholder endings. Chapters 1–2 get fresh minimum coverage (2 scenes per slot, so retries can differ) to prove the whole loop end to end. |
 | 9 ✓ | **Content production, chapter by chapter** | T8, T7 | Write each chapter fresh to ~146 scenes, in story order, then the 6 endings plus the easter egg. |
-| 10 ✓ | **Audio expansion** (built; awaiting the owner's ear check) | T9 | Jazz scheduler, stings, SFX, ambience beds, script commands. |
+| 10 ✓ | **Audio expansion** (approved by ear 2026-10-04) | T9 | Jazz scheduler, stings, SFX, ambience beds, script commands. |
 
 ## 2.4 Decisions
 
@@ -1171,5 +1172,5 @@ No open decisions right now. Add new ones here as they come up.
   repetition across a single playthrough, and pacing, and a playtest of a few real runs (not forced) to feel the interludes land. The checker
   catches structure, not prose.
 - **B5. Dossier extras** (T2's optional tabs, not built): an allies page, and the Editor's page, redacted until an ending has been found.
-- **B6. Release.** `main` holds steps 1–9 locally; production (wordlenoir.com) still runs the pre-roadmap build. Pushing `main` deploys
+- **B6. Release.** `main` holds steps 1–10 locally; production (wordlenoir.com) still runs the pre-roadmap build. Pushing `main` deploys
   everything at once. The owner decides when; a playtest (B4) first is the cautious path.
