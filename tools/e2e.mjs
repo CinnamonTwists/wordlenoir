@@ -429,12 +429,12 @@ test('story: a lost chapter is retold (attempt 2 avoids its scenes), Continue re
   const r = doc.campaign.results.find(x => x.chapter === 2);
   if (r?.guesses !== 2 || r.attempts !== 2 || doc.dossier[2]?.status !== 'apprehended') throw new Error(`result: ${JSON.stringify(r)}`);
   await click('#rNew');
-  await until(`NOIR.screen === 'menu'`, 'the menu (chapter 3 is not written yet)');
-  await toastSays('/typist/');
+  await until(STORY_READY(3), 'chapter 3 to begin after the interlude');
   doc = await saved();
   if (!doc.seen['c02.inter.late'] || doc.seen['c02.inter.kept']) throw new Error(`a retried 2-suspect win should play "late": ${storySeen(doc, 2).filter(k => k.includes('inter'))}`);
+  await toMenu();
   const sub = await ev(`document.querySelector('#mContinueSub').textContent`);
-  if (doc.campaign.chapter !== 3 || !/^Chapter 3: Dead Man's Sentence · coming soon/.test(sub)) throw new Error(`after chapter 2: chapter ${doc.campaign.chapter}, Continue "${sub}"`);
+  if (doc.campaign.chapter !== 3 || !/^Chapter 3: Dead Man's Sentence · suspect 1 of 6/.test(sub)) throw new Error(`after chapter 2: chapter ${doc.campaign.chapter}, Continue "${sub}"`);
   return `${a2} escaped, ${ans} on attempt 2 → late`;
 });
 test('story: Chapter Select replays without touching the run; the dossier shows who was caught', async () => {
@@ -443,7 +443,7 @@ test('story: Chapter Select replays without touching the run; the dossier shows 
   await click('#mChapters');
   await until(`NOIR.screen === 'chapters'`, 'Chapter Select');
   const locked = await ev(`[...document.querySelectorAll('#chList .item')].map(b => b.classList.contains('locked'))`);
-  if (locked.join() !== 'false,false,true,true,true,true,true,true,true,true') throw new Error(`chapter locks: ${locked}`);
+  if (locked.join() !== 'false,false,false,true,true,true,true,true,true,true') throw new Error(`chapter locks: ${locked}`);
   const ans = (await randomWords(1, ''))[0];
   await ev(`NOIR.forceAnswer = ${JSON.stringify(ans)}`);
   await click('#chList .item[data-ch="1"]');
@@ -457,12 +457,12 @@ test('story: Chapter Select replays without touching the run; the dossier shows 
   await until(`NOIR.screen === 'dossier'`, 'the dossier');
   const page = () => ev(`({ h: document.querySelector('#doPage h3').textContent, st: document.querySelector('#doPage .status').textContent, idx: document.querySelector('#doIdx').textContent })`);
   const pages = [await page()];
-  await click('#doNext'); pages.push(await page());
-  await click('#doNext'); pages.push(await page());
-  const [p1, p2, p3] = pages;
+  for (let i = 0; i < 3; i++) { await click('#doNext'); pages.push(await page()); }
+  const [p1, p2, p3, p4] = pages;
   if (p1.h !== 'Linus Pell' || p1.st !== 'Apprehended · 1 suspect' || p1.idx !== 'Chapter 1 of 10') throw new Error(`dossier page 1: ${JSON.stringify(p1)}`);
   if (p2.h !== 'Della Marsh' || p2.st !== 'Apprehended · 2 suspects') throw new Error(`dossier page 2: ${JSON.stringify(p2)}`);
-  if (p3.st !== 'Classified' || /Fairweather/.test(p3.h)) throw new Error(`dossier page 3 should be redacted: ${JSON.stringify(p3)}`);
+  if (p3.h !== 'Augustin Fairweather' || p3.st !== 'At large') throw new Error(`dossier page 3 (reached, not caught): ${JSON.stringify(p3)}`);
+  if (p4.st !== 'Classified' || /Avery/.test(p4.h)) throw new Error(`dossier page 4 should be redacted: ${JSON.stringify(p4)}`);
   await key('Escape');
   await until(`NOIR.screen === 'menu'`, 'Esc back to the menu');
   return ans;
@@ -488,8 +488,57 @@ test('story: New Game asks before replacing a run; every ending plays from force
   if (await ev(`/Chapter/.test(document.querySelector('#mContinueSub').textContent)`)) throw new Error('a finished run is still offered by Continue');
   await click('#mChapters');
   if (!await ev(`/6 of 6/.test(document.querySelector('#chNote').textContent)`)) throw new Error('Chapter Select does not list the endings found');
+  for (const id of ['end.a', 'end.b', 'end.c', 'end.d', 'end.bad', 'end.egg', 'end.close']) if (!doc.seen[id]) throw new Error(`ending scene ${id} was not marked seen`);
+  if (Object.keys(doc.seen).filter(k => k.startsWith('end.coda.')).length < 4) throw new Error('codas were not marked seen');
+  if (await ev(`document.querySelectorAll('#chEndings button').length`) !== 6) throw new Error('Chapter Select should offer six ending replays');
+  await ev(`(() => { window.__cine = false; const c = document.querySelector('#cinema');
+    new MutationObserver(() => { if (!c.hidden) window.__cine = true; }).observe(c, { attributes: true, attributeFilter: ['hidden'] }); })()`);
+  await click('#chEndings button[data-end="A"]');
+  await until(`window.__cine && NOIR.screen === 'chapters' && document.querySelector('#cinema').hidden`, 'the ending replay to play and return to Chapter Select');
   await key('Escape');
-  return 'egg, A, B, C, D, bad';
+  return 'egg, A, B, C, D, bad; replayed A';
+});
+// A whole campaign at speed: New Game → ten chapters, each won on suspect winAt → every interlude → the ending. Returns the save.
+async function playRun(winAt) {
+  await ev(`NOIR.save.update(d => { for (const k of Object.keys(d.seen)) if (k.startsWith('end.')) delete d.seen[k]; })`);   // so we can see which ending scenes this run played
+  let [ans] = await randomWords(1, '');
+  await ev(`NOIR.forceAnswer = ${JSON.stringify(ans)}; NOIR.forceInf = false`);
+  await toMenu(); await click('#mNewGame');
+  await wait(50); if (await ev(`!document.querySelector('#modal').hidden`)) await click('#mDrop');   // "Start over?"
+  for (let n = 1; n <= 10; n++) {
+    await until(`NOIR.S.answer === ${JSON.stringify(ans)} && ${STORY_READY(n)}`, `chapter ${n} to begin`);
+    for (const w of await randomWords(winAt - 1, ans)) await guess(w);
+    await guess(ans);
+    await checkStoryReport(ans, true, winAt, n < 10 ? `Next: Chapter ${n + 1}` : 'The verdict');
+    if (n < 10) { [ans] = await randomWords(1, ''); await ev(`NOIR.forceAnswer = ${JSON.stringify(ans)}`); }
+    await click('#rNew');
+  }
+  await until(`NOIR.screen === 'menu'`, 'the menu after the ending');
+  await toastSays('/Ending found/');
+  return saved();
+}
+const FLAGS_CATCH = ['index_half', 'records_saved', 'lola_caught'], FLAGS_NEAR = ['notary_free', 'dooley_hurt', 'briggs_out', 'penny_free', 'vera_saved_herself'];
+test('campaign: all ten chapters on the first suspect → every interlude kept, the catch flags, and the easter egg', async () => {
+  const doc = await playRun(1);
+  const flags = Object.keys(doc.campaign.storyFlags).sort();
+  if (flags.join() !== [...FLAGS_CATCH].sort().join()) throw new Error(`story flags: ${flags}`);
+  if (doc.campaign.finished !== 'egg' || !doc.story.endings.egg || !doc.seen['end.egg']) throw new Error(`ending: ${doc.campaign.finished}`);
+  for (let n = 1; n <= 9; n++) if (!doc.seen[`c0${n}.inter.kept`]) throw new Error(`chapter ${n}'s kept interlude did not play`);
+  if (doc.campaign.results.length !== 10 || doc.campaign.results.some(r => r.guesses !== 1 || r.attempts !== 1)) throw new Error(`results: ${JSON.stringify(doc.campaign.results)}`);
+  const ends = Object.keys(doc.seen).filter(k => k.startsWith('end.'));
+  if (ends.join() !== 'end.egg') throw new Error(`the egg should play alone (no codas, no close): ${ends}`);
+  return 'egg; flags ' + flags.join(', ');
+});
+test('campaign: all ten chapters at dawn (suspect 6) → every interlude missed, the near-miss flags, and the bad ending', async () => {
+  const doc = await playRun(6);
+  const flags = Object.keys(doc.campaign.storyFlags).sort();
+  if (flags.join() !== [...FLAGS_NEAR].sort().join()) throw new Error(`story flags: ${flags}`);
+  if (doc.campaign.finished !== 'bad' || !doc.seen['end.bad'] || !doc.seen['end.close']) throw new Error(`ending: ${doc.campaign.finished}`);
+  for (let n = 1; n <= 9; n++) if (!doc.seen[`c0${n}.inter.missed`]) throw new Error(`chapter ${n}'s missed interlude did not play`);
+  const ends = Object.keys(doc.seen).filter(k => k.startsWith('end.')).sort().join();
+  const want = ['end.bad', 'end.close', ...['pop', 'vera', 'nora', 'bottle'].map(t => `end.coda.${t}.worst`)].sort().join();
+  if (ends !== want) throw new Error(`ending scenes played: ${ends}; expected ${want}`);
+  return 'bad; flags ' + flags.join(', ');
 });
 test('transfer: export → clear all data → import gives back the same files; a bad paste is refused', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wordlenoir-dl-'));

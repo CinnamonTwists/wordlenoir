@@ -22,5 +22,21 @@ export const CAST = {
   NORA:   { name: 'NORA HEALY', color: '#e0a07a', bust: { hair: 'long', build: .92 } },
   PELL:   { name: 'LINUS PELL', color: '#c9b98f', bust: { hair: 'short', glasses: true, build: .88 } },
   FOREMAN: { name: 'THE FOREMAN', color: '#a89a84', bust: { hat: 'cap', build: 1.22, cig: true } },   // the Gazette's press foreman (ch 1 bit part)
+  TOMMY:  { name: 'TOMMY HEALY', color: '#f0c27a', bust: { hat: 'cap', build: .7 } },
+  WALT:   { name: 'WALT KESSLER', color: '#a9b8a0', bust: { hat: 'fedora', glasses: true, build: 1.04 } },
+  MAGS:   { name: 'MAGS DELGADO', color: '#7fd0c8', bust: { hair: 'bob', glasses: true, build: .94 } },
+  EDDIE:  { name: 'EDDIE RUIZ', color: '#d9b36a', bust: { hat: 'cap', build: 1.16 } },
+  PENNY:  { name: 'OFFICER ASHCROFT', color: '#9fb0d9', bust: { hat: 'cap', hair: 'bun', build: .9 } },
+  // chapters 3–10's culprits (docs/story/bible.md §6; Lola Vance, ch 9, is LOLA above)
+  GUS:    { name: 'GUS FAIRWEATHER', color: '#b7a6c9', bust: { hair: 'bald', glasses: true, build: 1.05, coat: true } },
+  CELESTE: { name: 'CELESTE AVERY', color: '#e07a8f', bust: { hair: 'long', cig: true } },
+  BRANDT: { name: 'TOMAS BRANDT', color: '#8fb0c9', bust: { hat: 'fedora', coat: true, build: .95 } },
+  PIKE:   { name: 'WENDELL PIKE', color: '#c9a35a', bust: { hat: 'cap', build: 1.15 } },
+  QUIST:  { name: 'MIRABEL QUIST', color: '#9fc98f', bust: { hair: 'bob', glasses: true } },
+  GREY:   { name: 'SILAS GREY', color: '#a0a0a8', bust: { hair: 'short', build: .9, coat: true } },
+  THORNE: { name: 'ELLERY THORNE', color: '#d8d8d8', bust: { hat: 'fedora', coat: true }, sting: 'minor' },
+  // bit parts
+  WARDEN: { name: 'THE WARDEN', color: '#8d94a3', bust: { hair: 'bald', build: 1.2, coat: true } },
+  ROSA:   { name: 'ROSA RUIZ', color: '#e0a0b0', bust: { hat: 'scarf', build: .9 } },
   DELLA:  { name: 'DELLA MARSH', color: '#d49a7a', bust: { hair: 'bun', build: 1.12 } }
 };

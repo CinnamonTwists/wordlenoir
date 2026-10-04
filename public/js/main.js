@@ -15,7 +15,7 @@ import { RandomMode } from './game/modes/random.js';
 import { store } from './save/store.js';
 import { show, back, screen, onShow } from './ui/screens.js';
 import { initMenu, refreshMenu, continueTarget } from './ui/menu.js';
-import { initCampaign, hasRun, newGame, continueGame, startReplay, playEnding } from './ui/campaign.js';
+import { initCampaign, hasRun, newGame, continueGame, startReplay, playEnding, replayEnding } from './ui/campaign.js';
 import { renderChapters, renderDossier, dossierStep } from './ui/casefiles.js';
 import { ask, answer, isOpen } from './ui/dialog.js';
 import { chapterInfo } from './content/chapters/index.js';
@@ -95,7 +95,7 @@ initMenu({
   },
   onSettings: () => show('settings')
 });
-onShow('chapters', () => renderChapters(n => startReplay(n)));
+onShow('chapters', () => renderChapters(n => startReplay(n), k => replayEnding(k)));
 onShow('dossier', () => renderDossier());
 $('#chBack').addEventListener('click', () => show('menu'));
 $('#doBack').addEventListener('click', () => show('menu'));
@@ -163,7 +163,7 @@ window.NOIR = {
   save: store,                                                  // NOIR.save.get() is the save document
   setting: setSetting,                                          // NOIR.setting('textSpeed', 'fast'): saved and applied like the Settings screen
   get screen() { return screen(); },
-  campaign: { playEnding, continueGame, newGame },               // e.g. set campaign.results, then NOIR.campaign.playEnding()
+  campaign: { playEnding, replayEnding, continueGame, newGame },             // e.g. set campaign.results, then NOIR.campaign.playEnding()
   get ANSWERS() { return WORDS.answers; }, get ALLOWED() { return WORDS.allowed; },
   stats: () => stats(WORDS.answers, S.guesses, S.fb)
 };

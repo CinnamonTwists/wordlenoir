@@ -94,6 +94,10 @@ html[data-motion="reduced"] .skip{animation:none}
 
 /* Chapter Select */
 .folder .note{font-family:var(--f-type);font-size:12px;color:#5b5140;line-height:1.5;margin:12px 2px 0}
+.folder .endings{display:flex;flex-wrap:wrap;gap:6px;margin:8px 2px 0}
+.folder .endings[hidden]{display:none}
+.folder .endings button{font-family:var(--f-type);font-size:12px;padding:5px 9px;background:#efe4c8;color:#2a2318;border:1px solid #8a7a5a;border-radius:2px;cursor:pointer}
+.folder .endings button:hover,.folder .endings button:focus-visible{background:#f7eed8}
 
 /* Dossier: one page per culprit (a police file with a mugshot) */
 .dossier{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:18px 22px;position:relative;min-height:340px;padding:6px 2px 4px}

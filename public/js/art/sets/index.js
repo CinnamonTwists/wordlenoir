@@ -16,9 +16,21 @@ import pressroom from './pressroom.js';
 import hospital from './hospital.js';
 import restaurant from './restaurant.js';
 import gangway from './gangway.js';
+import penitentiary from './penitentiary.js';
+import morgue from './morgue.js';
+import studio from './studio.js';
+import records from './records.js';
+import vault from './vault.js';
+import ferry from './ferry.js';
+import warehouse from './warehouse.js';
+import kitchen from './kitchen.js';
+import ballpark from './ballpark.js';
+import ruins from './ruins.js';
+import cemetery from './cemetery.js';
 import voidSet from './void.js';
 
-export const SETS = { office, street, bar, precinct, alley, rooftop, apartment, phonebooth, station, docks, hearing, pressroom, hospital, restaurant, gangway, void: voidSet };
+export const SETS = { office, street, bar, precinct, alley, rooftop, apartment, phonebooth, station, docks, hearing, pressroom, hospital, restaurant, gangway,
+  penitentiary, morgue, studio, records, vault, ferry, warehouse, kitchen, ballpark, ruins, cemetery, void: voidSet };
 
 // Unknown names fall back to the empty void stage.
 export const getSet = name => SETS[name] || SETS.void;

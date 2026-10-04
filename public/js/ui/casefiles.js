@@ -1,7 +1,7 @@
 import { $ } from '../core/dom.js';
 import { bust } from '../art/portraits.js';
 import { CHAPTERS } from '../content/chapters/index.js';
-import { ENDING_NAMES, ENDING_ORDER } from '../content/endings/index.js';
+import { ENDING_NAMES, ENDING_ORDER } from '../content/endings/names.js';
 import { store } from '../save/store.js';
 import { toast } from '../game/board.js';
 
@@ -11,7 +11,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const reached = n => store.get('story.reached') >= n;
 
 // ---------- Chapter Select ----------
-export function renderChapters(onPick) {
+// onPick(n) replays chapter n; onEnding(key) replays an ending already found (listed under the chapters).
+export function renderChapters(onPick, onEnding) {
   const best = store.get('story.best'), list = $('#chList');
   list.innerHTML = CHAPTERS.map(c => {
     const open = reached(c.n), b = best[c.n];
@@ -29,6 +30,10 @@ export function renderChapters(onPick) {
   const st = store.get('story'), found = ENDING_ORDER.filter(k => st.endings[k]);
   $('#chNote').textContent = `Replays don't change your run. Endings found: ${found.length} of ${ENDING_ORDER.length}`
     + (found.length ? ` (${found.map(k => ENDING_NAMES[k]).join(', ')})` : '') + (st.fastest ? ` · Fastest run: ${st.fastest} suspects` : '') + '.';
+  const box = $('#chEndings');
+  box.innerHTML = found.map(k => `<button type="button" data-end="${k}">Replay: ${esc(ENDING_NAMES[k])}</button>`).join('');
+  box.hidden = !found.length;
+  for (const b of box.querySelectorAll('button')) b.onclick = () => onEnding?.(b.dataset.end);
 }
 
 // ---------- Dossier: one page per culprit ----------

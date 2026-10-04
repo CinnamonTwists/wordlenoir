@@ -16,13 +16,13 @@ Related docs: [README.md](../README.md) (quick start), [scene-scripts.md](scene-
 
 | | |
 |---|---|
-| What it is | Wordle variant: one five-letter answer, six guesses, a noir cutscene after every guess. A main menu leads to the **story campaign** (New Game / Continue; chapters 1–2 written,
-3–10 "still at the typist"), **Chapter Select** (replays), the **Dossier**, **Random Case** (with a win record) and **Settings**. Scenes you've seen can be skipped,
-informant clues collect in **case notes**, and saves can be exported and imported. Endings are placeholders until step 9 writes them. |
+| What it is | Wordle variant: one five-letter answer, six guesses, a noir cutscene after every guess. A main menu leads to the **story campaign** (New Game / Continue; all ten
+chapters, nine interludes and six endings plus the easter egg), **Chapter Select** (replays chapters and endings found), the **Dossier**, **Random Case** (with a win record) and
+**Settings**. Scenes you've seen can be skipped, informant clues collect in **case notes**, and saves can be exported and imported. |
 | Stack | Vanilla JS (native ES modules), CSS, inline SVG art, Web Audio synthesis. No framework, no dependencies, **no build step**. |
 | Hosting | Cloudflare Workers Builds, Worker `raspy-term-4561`, domain wordlenoir.com. Push to `main` deploys. |
 | Persistence | One localStorage key, `wordlenoir.save` (§1.12): settings, seen scenes, the Random Case in progress, the campaign run (chapter attempts, results, story flags), and records that outlive runs (dossier, best results, endings found). |
-| Content | Random Case pack (`rnd`): 101 scenes + 31 one-liners. Story packs `c01` "Stop the Presses" and `c02` "Last Call": 82 scenes + 23 one-liners each (step 8's minimum: 2 per slot, 1 per interlude variant). Placeholder endings. 19 characters, 16 locations, 2,309 answers, 12,546 extra valid guesses. |
+| Content | Random Case pack (`rnd`): 101 scenes + 31 one-liners. Story packs `c01`–`c10`: 153 scenes each (150 for chapter 10, which has no interlude), at the T8 budget, with ~40 one-liners each. Endings: 6 case endings + the egg, 12 life codas, 1 close (19 scenes). About 1,650 story scenes in all. 35 characters, 27 locations, 2,309 answers, 12,546 extra valid guesses. |
 | Average scene | ~357 characters of script. |
 
 ## 1.2 Run, test, deploy
@@ -60,8 +60,11 @@ npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on fi
     and a real export → clear all data → import round trip through the downloaded file (plus a malformed paste being refused).
     Step 8 added four story scenarios: New Game → chapter 1 won on suspect 2 (seen marks staged until the win, then committed; the result, dossier and
     answer obfuscation) → the "kept" interlude → chapter 2; a lost chapter retold (rollback, `usedScenes`, no seen marks, the retry avoiding the failed
-    attempt's scenes), then reload → Continue → won on attempt 2 → the "late" interlude → the "still at the typist" stop at chapter 3; a Chapter Select
+    attempt's scenes), then reload → Continue → won on attempt 2 → the "late" interlude → chapter 3; a Chapter Select
     replay that leaves the run untouched (D2) plus the dossier's pages; and New Game's "Start over?" guard plus all six endings from forced results.
+    Step 9 added a Chapter Select ending replay and **two full campaigns at speed**: all ten chapters won on the first suspect (every interlude
+    kept, the catch flags, the easter egg playing alone) and all ten at dawn on suspect 6 (every interlude missed, every near-miss flag, the bad
+    ending with the four worst codas and the close). Between them every story flag is exercised both ways. About 85 s in all.
     `--cases N` adds N random cases (random answer, random win guess or loss, random informant setting) for scene coverage.
   - Every scenario asserts the report (verdict, answer tiles, one table row per guess, the record panel, the Main menu button), no exceptions, no `console.error`, no failed same-origin requests,
     and an empty `NOIR.MISSING`. The first failure stops the run.
@@ -105,22 +108,26 @@ public/js/
                           cores/suspect-1..5, informants, win, loss, closers
     chapters/index.js     CHAPTERS: the ten chapters' fixed facts from the bible (culprit, alias, crime, deadline, dossier text, mugshot),
                           `written` flags, chapterInfo(n), isWritten(n), chapterVars(n)
-    chapters/cNN/         story chapter packs (c01, c02 so far): index, intros (openings + tail), cores, informants, endings (win/loss),
+    chapters/cNN/         story chapter packs c01–c10: index (assembles the pack), intros (openings + tail), cores1..5 (one file per suspect
+                          number; c01/c02 instead have the step-8 cores.js plus cores-more*.js and more.js), informants, endings (win/loss),
                           beats (outro beats + interlude), lines (openers/closers)
-    endings/index.js      ENDING_NAMES, ENDING_ORDER, endingScript(ending, tiers): PLACEHOLDER endings (title cards stating the bible's gist)
+    chapters/merge.js     mergePools(...maps): joins pool maps slot by slot (packs written in more than one batch)
+    endings/names.js      ENDING_NAMES, ENDING_ORDER (what the menu needs, without loading the scripts)
+    endings/index.js      the ending scenes (end.a … end.bad, end.egg, end.coda.<thread>.<tier>, end.close), endingScenes(ending, tiers),
+                          ALL_ENDING_SCENES; loaded on demand by ui/campaign.js
   save/                   Persistence (§1.12)                                               [DOM-free]
     store.js              createStore(), store: load, get(path), update(fn), flush, replace(doc), reset, status, onStatus
     schema.js             VERSION, defaults(), migrate(doc)
     codec.js              hide(word) / reveal(str): answer obfuscation (D6)
     transfer.js           exportText, exportName, parseImport (validate everything first), summarize (roadmap T4)
     progress.js           markSeen, isSeen, recordRandom; campaign: newCampaign, beginAttempt, winAttempt, loseAttempt, avoidFor (D1/D7);
-                          story: interludeTier, THREADS, threadTiers, endingFor, noteChapterStart/Result, noteRunFinished
+                          story: interludeTier, THREADS, threadTiers, endingFor, endingVars, noteChapterStart/Result, noteRunFinished
   ui/                     Screens around the game (§1.13)
     screens.js            show(name), back(), screen(), onShow(name, fn): one visible screen, a back trail, focus
     menu.js               initMenu(handlers), refreshMenu(stats), continueTarget(): the case-file main menu
     dialog.js             ask({ title, text, yes, no }) → Promise<boolean>: the one yes/no dialog (#modal)
-    campaign.js           newGame, continueGame, startChapter, afterWin → interlude → next chapter, startReplay, playEnding, campaignSummary
-    casefiles.js          renderChapters(onPick) (Chapter Select), renderDossier / dossierStep (one page per culprit)
+    campaign.js           newGame, continueGame, startChapter, afterWin → interlude → next chapter, startReplay, playEnding, replayEnding, campaignSummary
+    casefiles.js          renderChapters(onPick, onEnding) (Chapter Select, with ending replays), renderDossier / dossierStep (one page per culprit)
     settings.js           SPEC, applySettings(), setSetting(k, v), onChange, buildSettings/syncSettings (the form), shouldMuteHidden
   game/
     state.js              S (live binding) + setState, mode/setMode (the active mode), pack() (its scene pack), used (no-repeat sets), DEBUG
@@ -250,6 +257,8 @@ retire a scene by deleting it, never by giving its ID to different text. Scheme 
 | win/loss epilogue | `<pack>.win.epi.<g>.<a…>`, `<pack>.loss.epi.<bucket>.<a…>` | `rnd.win.epi.4.b` |
 | outro beat (chapters) | `<pack>.beat.<result>.<a…>` | `c01.beat.fast.a` |
 | interlude (chapters 1–9) | `<pack>.inter.<kept\|late\|missed>` | `c02.inter.late` |
+| ending (case script, egg, close) | `end.<a\|b\|c\|d\|bad\|egg\|close>` | `end.bad` |
+| ending coda | `end.coda.<pop\|vera\|nora\|bottle>.<best\|middle\|worst>` | `end.coda.vera.middle` |
 
 `npm run check` enforces this: IDs match `<pack>.<slot>…`, are unique across all packs, every scene's `chapter` matches its pack, every pool the
 game draws from exists, and **no scene text appears in two packs** (normalized-text comparison, an error). A prose line of 40+ characters
@@ -285,8 +294,21 @@ and `pos` (likeliest letter in an unsolved slot) only when computable.
 - The ending adds an **outro beat**: `fast` (won on guess 1–2), `slow` (3–4), `near` (5–6), or `escaped` after a loss (the retelling).
 - After a won chapter's report, its **interlude** plays (ui/campaign.js): `interlude[interludeTier(result).tier][0]`.
 
-**Flags in use:** `warned`, `suspended`, `vera_upset`, `vera_soft`, `vera_gone`, `evicted` (all case-scoped, Random Case). Story flags (`~story`):
-none yet, since chapters 1–2 set none in the bible. The first is `notary_free` (chapter 3's near miss).
+- After chapter 10's report ("The verdict"), the **ending** plays: `endingScenes(endingFor(results), threadTiers(results))` as segments, with the
+  vars from `endingVars()` (§1.12). Each is marked seen when it finishes, so a replay from Chapter Select can skip it.
+
+**Flags in use:** `warned`, `suspended`, `vera_upset`, `vera_soft`, `vera_gone`, `evicted` (all case-scoped, Random Case). Story flags (`~story`),
+all set in outro beats, so a skipped beat still sets them (bible §10 rule 7 and its amendment):
+
+| Flag | Set by | Read by |
+|---|---|---|
+| `notary_free` | ch 3 near beat | ch 4 (the Notary's 4 AM appointment), ch 10 (his phone call) |
+| `index_half` | ch 5 fast/slow beats | ch 6 (an opening), ch 10 (the Index pages) |
+| `dooley_hurt` | ch 6 near beat | ch 7–10 (the sling), endings A, D, bad |
+| `records_saved` | ch 7 fast/slow beats | ch 10 |
+| `briggs_out`, `penny_free` | ch 7 near beat | ch 8–10 (Briggs suspended until ch 9; Penny at large) |
+| `vera_saved_herself` | ch 8 near beat | ch 9–10, the Vera coda |
+| `lola_caught` | ch 9 fast/slow beats | ch 10 (her messages from a cell, or a postcard) |
 
 **Interpolation happens per line at play time** (`fill`), so vars set mid-way would apply to later lines. Unknown `{vars}` are left
 literally in the text and recorded in `NOIR.MISSING`.
@@ -377,9 +399,15 @@ reads on phone speakers that drop the sub.
 All current scenes become the Random Case pool (decision D3). Story mode starts fresh with new scenes. Characters, setting and tone
 below may carry into the story, but no existing scene text will. **Story mode's canon is [story/bible.md](story/bible.md) (approved 2026-10-04).**
 Where the bible adds to a character (Sal is Dash's best friend and secretly the Editor; Vera is a *Gazette* proofreader), the bible wins in story
-chapters, while Random Case scenes keep the lighter versions below. Story-only cast so far: `RUTH` (the stenographer), `POP`, `NORA`, `PELL` and `DELLA`
-(chapters 1–2's culprits), and `FOREMAN` (the *Gazette*'s press foreman, a chapter 1 bit part). Story-only sets: `hearing`, `pressroom`, `hospital`,
-`restaurant` (Luigi's), `gangway` (the *Lindqvist* at her pier).
+chapters, while Random Case scenes keep the lighter versions below. Story-only cast: `RUTH` (the stenographer), `POP`, `NORA`, `TOMMY`, `WALT`, `MAGS`,
+`EDDIE`, `PENNY`; the culprits `PELL`, `DELLA`, `GUS`, `CELESTE`, `BRANDT`, `PIKE`, `QUIST`, `GREY`, `THORNE` (Lola is `LOLA`); and three bit parts not in
+the bible's cast tables: `FOREMAN` (ch 1's press foreman), `WARDEN` and `ROSA` (Eddie's wife, ch 3). Story-only sets: `hearing`, `pressroom`, `hospital`,
+`restaurant` (Luigi's), `gangway`, `penitentiary`, `morgue`, `studio` (WKRN), `records` (Hall of Records), `vault`, `ferry`, `warehouse`, `kitchen`
+(Pop's), `ballpark`, `ruins` (the burned waterfront warehouse), `cemetery`.
+
+**Story dates.** The manifest (`content/chapters/index.js`) dates the chapters so the bible's "tomorrow" hooks hold: chapter 3 is the night after
+chapter 2 (Eddie dies "at dawn tomorrow"), 5 the night after 4 ("the 6:00 train, tomorrow"), 9 the night after 8 ("certifies the next morning").
+Oct 4 · Oct 11 · Oct 12 · Oct 20 · Oct 21 · Nov 1 · Nov 9 · Dec 1 · Dec 2 · Dec 15, 1948. The frame is February 1949.
 
 
 - **Setting:** an unnamed rain-soaked American city, 1946–1949. Union Station's **6:00 AM train** is the deadline. Bars: The Last Word. Hotel Grammatica. Pier numbers. The Varga crime family.
@@ -472,6 +500,8 @@ replays update `best` and the dossier but never the run. **Migration 1 → 2** o
 - **Story records** (bible §7–§8): `interludeTier({ guesses, attempts })` (1–2 kept, 3–4 late, 5–6 missed, one step worse after a retry),
   `threadTiers(results)` (best ≥ ⅔ of the thread's maximum, worst ≤ ⅓), `endingFor(results)` (egg, then bands A–D/bad by average, D5/D7),
   `noteChapterStart/Result` (reached, best, dossier; an arrest is never undone by a later loss) and `noteRunFinished` (endings found, fastest run).
+  `endingVars(ending, results)` gives the ending scripts `popTold` / `popHalf` / `popLetter` (chapter 8's interlude tier: kept, late, missed),
+  `veraWorst`, `endBad` and `total` (the run's guesses).
 - **Export / import** (`transfer.js`, T4, used by Settings → Data): `exportText(doc)` = the document plus `{ app: 'wordle-noir', exportedAt }`,
   downloaded as `wordle-noir-save-YYYY-MM-DD.json` (Blob + temporary `<a download>`), or copied as text. `parseImport(text)` parses, checks the app
   marker and version, migrates, then checks the Random Case record adds up and the seen list is well-formed. It throws a readable message on any
@@ -494,13 +524,15 @@ best results and the dossier are kept), Chapter Select, Random Case (with a one-
 
 **Chapter Select** (`ui/casefiles.js`): ten folders. A chapter is open once reached in any run (`story.reached`), shows its best result, and replays
 with `startReplay(n)` (D2: never touches the run). Unreached chapters are stamped *Classified*, unwritten ones *Coming soon*. The footer lists endings
-found and the fastest run. **Dossier**: one page per culprit from `CHAPTERS` (mugshot via `bust()`, name, alias, wanted for, M.O., why six guesses,
+found and the fastest run, with a "Replay:" button for each ending found. **Dossier**: one page per culprit from `CHAPTERS` (mugshot via `bust()`, name, alias, wanted for, M.O., why six guesses,
 associates, a quote) with status At large / Apprehended (best guesses) / Escaped; unreached pages are redacted. ◂ ▸ or the arrow keys page; Esc returns.
 
 **The campaign** (`ui/campaign.js`): `startChapter(n)` begins (or keeps) the attempt, builds a story mode whose `next`/`nextLabel` drive the report's main
 button, and resumes or starts the case. A win → "Next: Chapter n+1" → `afterWin`: the interlude, then the next chapter (or the ending after 10).
-A loss → "Tell it again" → a new case in the new attempt. An unwritten chapter stops at the menu with a toast ("still at the typist"); the run waits there.
-`playEnding()` plays `endingScript(endingFor(results), threadTiers(results))`, records it, and closes the run (`campaign.finished`).
+A loss → "Tell it again" → a new case in the new attempt. (An unwritten chapter would stop at the menu with a "still at the typist" toast; since step 9
+every chapter is written.) After chapter 10, `playEnding()` loads `content/endings/index.js`, plays the ending's scenes as segments, records it,
+and closes the run (`campaign.finished`). `replayEnding(key)` replays a found ending from Chapter Select: with the current run's life if that run
+found it, else a middling one (every chapter on guess 3).
 
 **Modes** (`game/modes/random.js`, `game/modes/story.js`). The session runner (game.js) gets everything mode-specific from `mode`:
 
@@ -539,6 +571,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
+| 2026-10-04 | 9: T8 + T7 | `step-9-content` | The whole story. Chapters 3–10 written at the full T8 budget and chapters 1–2 grown to it (153 scenes each; 150 for chapter 10), every interlude, the real endings (six case endings + the egg, twelve codas, the close) replacing the placeholders, ending replays in Chapter Select. 16 new characters, 11 new sets. Chapter dates follow the bible's "tomorrow" hooks. The checker validates endings and catches a stray `NAME?` line. 40 unit tests, 19 e2e scenarios including two full campaigns. |
 | 2026-10-04 | 8: T6 + T7 (logic) + T2 (rest) | `step-8-campaign-slice` | The campaign: New Game, Continue, chapter attempts with D1 rollback and retry variety, `~story` flags, outro beats, interludes (kept/late/missed), the "Strike that" retelling, Chapter Select replays (D2), the Dossier, ending logic with placeholder endings, save v2. Chapters 1 "Stop the Presses" and 2 "Last Call" written at 2 scenes per slot (82 scenes each), with their interludes; new sets hearing, pressroom, hospital, restaurant, gangway. Bible amendment recorded (escape consequences move to the near miss). The title screen's stale "scenes can't be skipped" fine print is replaced by a fan-game disclaimer (not affiliated with The New York Times). 38 unit tests, 17 e2e scenarios. |
 | 2026-10-04 | 7: T6 (bible approved) | `step-7-story-bible` | Owner's final OK; bible marked approved and its §11 folded into T6/T7/T8. Revision 2: the Editor is Sal, Dash's best friend (the Professor becomes the red herring); four personal threads (Pop, Vera, Nora and Tommy, the bottle) in nine interludes with kept/late/missed variants driven by each chapter's guess count, resolved in per-thread ending codas. |
 | 2026-10-04 | 7: T6 (bible draft) | `step-7-story-bible` | `docs/story/bible.md` drafted: the Lexicon, the Editor, the grand-jury frame, ten chapters with culprits, deadlines, beats and hooks, the arc map, endings and easter-egg seeds. Not approved yet; no story content or campaign code written. |
@@ -672,11 +705,12 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
 - [x] `tools/e2e.mjs` (zero-dep, Node ≥ 22 has a global WebSocket): starts the dev server, launches local Chrome/Edge headless with
       `--remote-debugging-port`, then plays a win and a loss at `#speed400` via `NOIR`. It asserts the report, no console errors, and no `NOIR.MISSING`.
       Add the script `npm run e2e`.
-- [ ] Extend as modes land: random mode, a full campaign at speed with forced answers (to reach every ending, including the easter egg), ~~save/resume~~ (done in step 4), import/export round-trip.
+- [x] Extend as modes land: random mode, a full campaign at speed with forced answers (to reach every ending, including the easter egg), ~~save/resume~~ (done in step 4), import/export round-trip.
       ~~random mode~~, menu, in-game menu and settings scenarios landed in step 5. ~~import/export round-trip~~, skip and case notes landed in step 6.
       Step 8 added the campaign: chapters 1–2 played for real (win, interlude, loss + retelling + retry, Continue after a reload), Chapter Select,
       the dossier, and every ending (including the egg) reached by forcing `campaign.results` and calling `NOIR.campaign.playEnding()`.
-      Still to come: all ten chapters played at speed once they're written (step 9).
+      Step 9 added two full campaigns at speed (all first-suspect wins → the egg; all dawn wins → the bad ending), which also exercise every story flag
+      both ways. Every band in between is still reached by forced results, since a real run can't hit a fractional average without many runs.
 
 ## 2.2 Requested items
 
@@ -806,8 +840,10 @@ must be caught within six guesses, plus character arcs for Dash, his allies, and
   - Opening variants live in `intros` (two per chapter in the slice) and the retry picker covers them, the cores, climaxes, epilogues and beats.
     Informants keep Random Case's once-per-case rule rather than avoiding failed attempts' informants (they're chance-driven anyway).
   - Replays (D2) run the same mode with `{ replay: true }`: no checkpoints, seen marks held in memory and committed only if the replay is won.
-  - An unwritten chapter (3–10 for now) stops the run at the menu with a "still at the typist" toast; Continue picks it up once it's written.
-  - Chapter 1 adds a bit-part `FOREMAN` to `CAST` (the press foreman), which isn't in the bible's cast tables.
+  - An unwritten chapter would stop the run at the menu with a "still at the typist" toast (all ten are written since step 9).
+  - Bit parts not in the bible's cast tables: `FOREMAN` (ch 1), `WARDEN` and `ROSA` (ch 3).
+  - **Step 9:** the near miss also lets some culprits get out a door after being named (the Notary in ch 3, Lola in ch 9), which is how
+    `notary_free` and "she bows and is gone" work under the amendment. Chapter dates moved to fit the bible's "tomorrow" hooks (§1.10).
   - Chapter = one case. Per-chapter vars available to scripts: `{chapterNo} {chapterTitle} {culprit} {alias} {crime} {deadline}`.
   - **Story flags** persist across chapters (`campaign.storyFlags`). Proposal: keep `~flag` case-scoped, add `~story name` for campaign-scoped flags,
     and let conditions read both. `check-scenes` validates both.
@@ -829,9 +865,15 @@ must be caught within six guesses, plus character arcs for Dash, his allies, and
 ### T7. Endings
 **Goal:** the ending depends on the average guesses per solved chapter. A secret ending exists for a perfect run.
 
-**Status: logic done (step 8), scripts are placeholders.** `endingFor`, `threadTiers` and the records are in save/progress.js (§1.12) and unit-tested;
-`content/endings/index.js` plays each ending as title cards stating the bible's gist plus the four codas' tiers. They have no scene IDs, so nothing
-in the save depends on them. Step 9 replaces them with written ending packs.
+**Status: done (steps 8–9).** Logic in save/progress.js (§1.12), scripts in `content/endings/` (§1.3, §1.6). Deviations:
+- The endings are one on-demand module (`endings/index.js`) rather than a pack per ending; `endings/names.js` keeps the names apart so the menu
+  never loads the scripts. Each scene still has a permanent ID and plays as its own segment.
+- After the four codas comes one more scene, `end.close`: the hearing room, Ruth's last question, and the record closed (stamped INSUFFICIENT
+  RECORD in the bad ending). The egg has no codas and no close, as the bible says.
+- Sal's last 1931 line in A–D is answered three ways by `popTold` / `popHalf` / `popLetter` (chapter 8's interlude); the Pop codas use them too,
+  so "Dash heard it from Pop himself" only says so when he did.
+- Ending D chooses badge or marriage by the Vera thread (`veraWorst`: he keeps the badge and loses Vera; otherwise the inquiry takes the badge),
+  and Dooley inherits it, stays a sergeant, or leaves the force by `dooley_hurt`.
 
 - [x] Compute after chapter 10 from the current run's `results`. Since a chapter must be won to advance (D1), every chapter has a guess count from 1 to 6.
       **Scoring (D7):** each chapter contributes the guesses of its winning attempt. Failed attempts are counted in `results[].attempts` but don't affect the average.
@@ -847,20 +889,24 @@ in the save depends on them. Step 9 replaces them with written ending packs.
   | D | 4.5 ≤ avg < 5.5 | Pyrrhic: Dash loses something big (badge, Vera, a friend) |
   | **Bad: "Last Train Out"** | avg ≥ 5.5 | Crime lord gets away on the 6:00 train |
 
-- [ ] Endings live in `content/endings/` as packs (lazy-loaded). Each is a long script and may use story flags for variations.
+- [x] Endings live in `content/endings/` (lazy-loaded). Each is a long script and may use story flags for variations.
       **Bible §8:** an ending = the band's case script + four life codas (Pop, Vera, Nora and Tommy, the bottle), each best / middle / worst
-      by the thread's total marks (best ≥ ⅔ of the maximum, worst ≤ ⅓). Ending packs gain `coda: { pop, vera, nora, bottle } × { best, middle, worst }`
-      (IDs `end.coda.pop.best` …). The easter egg replaces the codas. (Step 8: a placeholder module, not lazy packs yet; the codas are chosen.)
+      by the thread's total marks (best ≥ ⅔ of the maximum, worst ≤ ⅓). Codas have IDs `end.coda.pop.best` …. The easter egg replaces the codas.
 - [x] Unlock record per ending in the save (viewable from the menu once seen) and a "fastest run" stat. (`story.endings`, `story.fastest`; shown under
-      Chapter Select. Replaying a seen ending from the menu waits for the real scripts.)
-- [x] e2e: forced answers that reach every band, including the easter egg. (Forced `campaign.results` + `NOIR.campaign.playEnding()`; playing all ten
-      chapters at speed comes when they exist.)
+      Chapter Select, with a replay button per ending found.)
+- [x] e2e: forced answers that reach every band, including the easter egg. (Forced `campaign.results` + `NOIR.campaign.playEnding()` for every band;
+      two real ten-chapter runs reach the egg and the bad ending.)
 
 ### T8. ~150 unique random scenes per chapter
 **Goal:** every chapter gets its own full pool, structured like today's Random Case scenes but bigger, all written fresh. No reuse across chapters
 or from the Random Case pool. All of it should be noir, funny, and consistent with both the chapter and the overall story.
 
-- [ ] **Per-chapter budget** (about 146 scenes, which hits the ~150 target while weighting common outcomes):
+**Status: done (step 9).** Every chapter meets every row below (`npm run check -- --coverage` shows no gaps): 153 scenes each (150 for chapter 10,
+which has no interlude), with 2 outro beats per result rather than 1 so a retry can differ (enforced by `npm test`). Writing notes: one Sal clue
+and at most one easter-egg seed per chapter (bible §10 rule 8), midpoints in every guess-3 core, no case talk in interludes. Lines of 40+
+characters reused across packs are varied rather than repeated (the checker warns), including Ruth's retelling refrain.
+
+- [x] **Per-chapter budget** (about 146 scenes, which hits the ~150 target while weighting common outcomes):
 
   | Slot | Count | Note |
   |---|---|---|
@@ -875,10 +921,11 @@ or from the Random Case pool. All of it should be noir, funny, and consistent wi
   | Openers, closers | ~20 lines each | one-liners, not counted |
 
   Plus 12 ending codas (bible §8). 10 chapters is about 1,460 scenes (+27 interludes). At today's ~360 chars average, that's roughly 0.5–0.6 MB of scripts total, loaded about 60 KB per chapter.
-- [ ] Produce chapter by chapter, in batches (beats → cores per guess number → informants → endings). Run `npm run check` after each batch.
-      Step 8 wrote chapters 1–2 at the slice's minimum (2 per slot, 4 informants, 1 per interlude variant: 82 scenes each, `--coverage` marks the gaps).
-      Step 9 grows them to the full budget alongside chapters 3–10.
-- [ ] **Writing constraints** (enforce in review and partly in the checker):
+- [x] Produce chapter by chapter, in batches (beats → cores per guess number → informants → endings). Run `npm run check` after each batch.
+      Step 8 wrote chapters 1–2 at the slice's minimum; step 9 wrote chapters 3–10 in story order, then the endings, then grew chapters 1–2
+      (their additions live in `cores-more*.js` and `more.js`, merged by `chapters/merge.js`, so the step-8 IDs never moved).
+- [x] **Writing constraints** (enforce in review and partly in the checker; step 9 added an error for a lone `NAME` or `NAME?` line, which would
+      otherwise show as narration):
   - Works for any guess/answer. Use `{GUESS}`, `{hitsN}` etc. and never assume letters.
   - 4–9 lines per core scene, using a spread of sets and moods per chapter.
   - **Cut-in budget:** at most 1 `!!` per scene and in about 20% of scenes (ties into T10). At most 1 `**` heavy line per scene.
@@ -956,7 +1003,7 @@ structure that holds it is settled.
 | 6 ✓ | **Skip seen scenes + case notes, export/import** | T3, T4 | Both are small once F1/F2 exist, and they make testing long content faster. |
 | 7 ✓ | **Story bible** (approved 2026-10-04) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |
 | 8 ✓ | **Campaign framework + vertical slice** | T6, T7, T2 (rest) | Chapter flow, attempts and loss rollback, retry scene variety, story flags, continue, chapter select, dossier, endings logic with placeholder endings. Chapters 1–2 get fresh minimum coverage (2 scenes per slot, so retries can differ) to prove the whole loop end to end. |
-| 9 | **Content production, chapter by chapter** | T8, T7 | Write each chapter fresh to ~146 scenes, in story order, then the 6 endings plus the easter egg. |
+| 9 ✓ | **Content production, chapter by chapter** | T8, T7 | Write each chapter fresh to ~146 scenes, in story order, then the 6 endings plus the easter egg. |
 | 10 | **Audio expansion** | T9 | Runs in parallel with step 9: jazz scheduler, stings, SFX, ambience beds, script commands. |
 
 ## 2.4 Decisions

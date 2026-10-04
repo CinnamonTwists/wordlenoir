@@ -105,3 +105,11 @@ export function noteRunFinished(doc, ending, results, now = Date.now()) {
   if (doc.story.fastest === null || total < doc.story.fastest) doc.story.fastest = total;
   return doc;
 }
+// The vars an ending's scripts read (content/endings/index.js, checked by tools/check-scenes.mjs): how chapter 8's interlude went for Pop
+// (kept: he confessed; late: he got halfway; missed: the sealed letter), whether Vera's thread ended worst, whether this is the bad ending,
+// and the run's total guesses. Flags are 1 or 0.
+export function endingVars(ending, results) {
+  const r8 = results.find(r => r.chapter === 8), pop = r8 ? interludeTier(r8).tier : 'missed', b = x => (x ? 1 : 0);
+  return { popTold: b(pop === 'kept'), popHalf: b(pop === 'late'), popLetter: b(pop === 'missed'), veraWorst: b(threadTiers(results).vera.tier === 'worst'),
+    endBad: b(ending === 'bad'), total: String(results.reduce((s, r) => s + r.guesses, 0)) };
+}
