@@ -58,12 +58,13 @@ test('attempts: a loss retries the same chapter, a win advances and records how 
   winAttempt(d, { guesses: 3, answer: 'crane' });
   assert.equal(d.campaign.chapter, 2); assert.equal(d.campaign.results[0].attempts, 2);
 });
-test('the chapter manifest matches the bible: ten chapters, complete facts, chapters 1–2 written', () => {
+test('the chapter manifest matches the bible: ten chapters, complete facts, all ten written', () => {
   assert.equal(CHAPTERS.length, 10);
   for (const c of CHAPTERS) for (const k of ['title', 'date', 'culprit', 'alias', 'crime', 'mo', 'deadline', 'why', 'associates', 'quote', 'bust']) assert.ok(c[k], `chapter ${c.n} needs ${k}`);
-  assert.deepEqual(CHAPTERS.filter(c => c.written).map(c => c.n), [1, 2]);
+  assert.deepEqual(CHAPTERS.filter(c => c.written).map(c => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.deepEqual(Object.keys(chapterVars(1)), ['chapterNo', 'chapterTitle', 'culprit', 'alias', 'crime', 'deadline']);
-  assert.equal(isWritten(3), false);
+  assert.equal(isWritten(10), true);
+  assert.equal(isWritten(11), false);
 });
 test('retries play different scenes: the picker skips avoided ids until a pool runs out (D1)', async () => {
   const { pickFresh } = await import('../public/js/game/modes/story.js');
@@ -83,4 +84,29 @@ test('written chapters have at least two scenes in every slot a retry draws from
     for (const [k, list] of Object.entries(pools)) assert.ok(list?.length >= 2, `${at}: ${k} has ${list?.length ?? 0} scene(s), needs 2 so a retry can differ`);
     if (c.n < 10) for (const k of ['kept', 'late', 'missed']) assert.equal(P.interlude[k]?.length, 1, `${at}: interlude.${k}`);
   }
+});
+test('every ending plays its case script, four codas by tier and the close; the egg plays alone', async () => {
+  const { endingScenes, ALL_ENDING_SCENES, ENDING_ORDER } = await import('../public/js/content/endings/index.js');
+  const ids = ALL_ENDING_SCENES.map(x => x.id);
+  assert.equal(new Set(ids).size, ids.length, 'ending ids are unique');
+  assert.equal(ids.length, 6 + 12 + 1);
+  const tiers = threadTiers(run([1, 6, 3, 4, 2, 5, 1, 6, 3, 2]));
+  for (const e of ENDING_ORDER) {
+    const got = endingScenes(e, tiers).map(x => x.id);
+    if (e === 'egg') { assert.deepEqual(got, ['end.egg']); continue; }
+    assert.deepEqual(got, [`end.${e.toLowerCase()}`, ...['pop', 'vera', 'nora', 'bottle'].map(t => `end.coda.${t}.${tiers[t].tier}`), 'end.close']);
+  }
+});
+test('ending vars: Pop told, half-told or the letter comes from chapter 8\'s interlude; a retry costs a step', async () => {
+  const { endingVars } = await import('../public/js/save/progress.js');
+  const withCh8 = (guesses, attempts = 1) => run(Array(10).fill(3)).map(r => (r.chapter === 8 ? { ...r, guesses, attempts } : r));
+  const pick = v => ['popTold', 'popHalf', 'popLetter'].filter(k => v[k]);
+  assert.deepEqual(pick(endingVars('A', withCh8(1))), ['popTold']);
+  assert.deepEqual(pick(endingVars('A', withCh8(4))), ['popHalf']);
+  assert.deepEqual(pick(endingVars('A', withCh8(6))), ['popLetter']);
+  assert.deepEqual(pick(endingVars('A', withCh8(2, 2))), ['popHalf']);
+  assert.equal(endingVars('bad', run(Array(10).fill(6))).endBad, 1);
+  assert.equal(endingVars('bad', run(Array(10).fill(6))).veraWorst, 1);
+  assert.equal(endingVars('A', run(Array(10).fill(1))).veraWorst, 0);
+  assert.equal(endingVars('C', run(Array(10).fill(4))).total, '40');
 });

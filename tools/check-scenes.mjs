@@ -29,6 +29,8 @@ const SCOPE = { intro: new Set(BASE), round: new Set([...BASE, ...GUESS]), infor
 const CHAPTER = Object.keys(chapterVars(1));
 const STORY_SCOPE = Object.fromEntries(Object.entries(SCOPE).map(([k, v]) => [k, new Set([...v, ...CHAPTER])]));
 STORY_SCOPE.interlude = new Set(CHAPTER);
+// endings (content/endings/index.js) see only the ending vars that ui/campaign.js endingVars() supplies (plus story flags in conditions)
+STORY_SCOPE.ending = new Set(['popTold', 'popHalf', 'popLetter', 'veraWorst', 'endBad', 'total']);
 const SLOT_SCOPE = { intro: 'intro', tail: 'intro', inf: 'informant', inter: 'interlude' };   // everything else (cores, endings, beats) is a round scene
 
 const TILDE = new Set(['fade', 'black', 'shake', 'flash', 'lightning', 'heart', 'rain', 'sfx', 'wait', 'flag', 'story', 'stamp', 'gstamp', 'paper', 'clue', 'legend', 'tight', 'loose', 'push']);
@@ -89,6 +91,20 @@ for (const P of PACKS) {
     if (!SETS[set]) err(`${at} openers.${set}`, 'not a known set');
     lines.forEach((l, i) => add(`${pid} openers.${set}[${i}]`, l, 'round', pid, false));
   }
+}
+
+// ---------- the endings (roadmap T7): ids end.<band> / end.coda.<thread>.<tier> / end.close, every band and coda present ----------
+const { ALL_ENDING_SCENES, ENDING_ORDER, THREAD_ORDER, endingScenes } = await import('../public/js/content/endings/index.js');
+for (const x of ALL_ENDING_SCENES) {
+  const where = x?.id ? `"${x.id}"` : 'an ending scene';
+  if (!x || typeof x.s !== 'string' || !x.s.trim()) { err(where, 'needs { id, s }'); continue; }
+  if (!/^end\.[a-z]+(\.[a-z]+)*$/.test(x.id)) err(where, 'id must look like end.<band> or end.coda.<thread>.<tier>');
+  if (ids.has(x.id)) err(where, `duplicate id (also in ${ids.get(x.id)})`); ids.set(x.id, 'end');
+  add(where, x.s, 'ending', 'end', true, 'end');
+}
+const anyTiers = tier => Object.fromEntries(THREAD_ORDER.map(t => [t, { tier }]));
+for (const e of ENDING_ORDER) for (const tier of ['best', 'middle', 'worst']) {
+  try { if (endingScenes(e, anyTiers(tier)).some(x => !x?.s)) err(`ending ${e}`, `a scene is missing for tier ${tier}`); } catch (x) { err(`ending ${e}`, x.message); }
 }
 
 for (const { src } of allScripts) for (const { line } of parseScript(src)) {

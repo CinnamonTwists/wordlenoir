@@ -3,9 +3,9 @@ import { AU } from '../audio/audio.js';
 import { play } from '../cinema/player.js';
 import { loadPack } from '../content/registry.js';
 import { chapterInfo, chapterVars, isWritten } from '../content/chapters/index.js';
-import { endingScript, ENDING_NAMES } from '../content/endings/index.js';
+import { ENDING_NAMES } from '../content/endings/names.js';
 import { store } from '../save/store.js';
-import { markSeen, newCampaign, beginAttempt, interludeTier, threadTiers, endingFor, noteRunFinished } from '../save/progress.js';
+import { markSeen, newCampaign, beginAttempt, interludeTier, threadTiers, endingFor, endingVars, noteRunFinished } from '../save/progress.js';
 import { setMode } from '../game/state.js';
 import { toast } from '../game/board.js';
 import { newCase, resumeCase, skipPolicy } from '../game/game.js';
@@ -70,10 +70,29 @@ async function playInterlude(n) {
 // After chapter 10: the band (or the egg) plus the four life codas, then the run is closed and the ending unlocked.
 export async function playEnding() {
   const c = campaign(), ending = endingFor(c.results);
-  await play(endingScript(ending, threadTiers(c.results)), { vars: {}, flags: {}, story: structuredClone(c.storyFlags) });
+  try { await runEnding(ending, c.results, structuredClone(c.storyFlags)); }
+  catch { toast('The last pages didn\'t arrive. Check your connection; your run is saved.'); show('menu'); return null; }
   store.update(d => { noteRunFinished(d, ending, d.campaign.results); d.campaign.finished = ending; });
   show('menu'); toast(`Ending found: ${ENDING_NAMES[ending]}.`);
   return ending;
+}
+
+// Plays an ending's scenes as segments: each is marked seen when it finishes, so a replay can skip it.
+async function runEnding(ending, results, story) {
+  const { endingScenes } = await import('../content/endings/index.js');
+  const scenes = endingScenes(ending, threadTiers(results));
+  await play(scenes.map(x => ({ id: x.id, src: x.s })), { vars: endingVars(ending, results), flags: {}, story },
+    { skip: id => skipPolicy(id, isSeen), onSegment: id => store.update(d => markSeen(d, [id])) });
+  AU.setMusic('calm');
+}
+
+// Chapter Select: replay an ending you've found, with the life of the run that found it if that's the current run, else a middling one.
+export async function replayEnding(ending) {
+  const c = campaign(), own = c?.finished === ending && c.results.length === 10;
+  const results = own ? c.results : Array.from({ length: 10 }, (_, i) => ({ chapter: i + 1, guesses: 3, attempts: 1 }));
+  try { await runEnding(ending, results, own ? structuredClone(c.storyFlags) : {}); }
+  catch { toast('The last pages didn\'t arrive. Check your connection.'); }
+  show('chapters');
 }
 
 // Chapter Select (D2): a replay never touches the run, only best results and the dossier.
