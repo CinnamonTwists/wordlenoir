@@ -4,6 +4,7 @@ import { skyline, figure, smoke, rainStreaks } from '../props.js';
 export default {
   rain: 'window',
   indoor: true,
+  ambience: 'office',
   draw(v) {
     const r = rng(11);
     let slats = '', stripes = '';

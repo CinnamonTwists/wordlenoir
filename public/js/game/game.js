@@ -27,14 +27,16 @@ import { snapshot, restore } from './snapshot.js';
 // Set by main.js: where "Main menu" on the report goes.
 export const hooks = { toMenu: () => {} };
 
-// Plays a scene's segments, then restores the board's background music.
+// Plays a scene's segments, then restores the board's sound.
 async function playScene(segments, ctx) {
   await play(segments, ctx, { skip: skipPolicy, onSegment: id => {
     mode.seen([id]);
     if (S.pending.includes(id)) { S.pending = S.pending.filter(x => x !== id); checkpoint(); }
   } });
-  AU.music(S.g >= 4 ? 'tense' : 'calm');
+  boardSound();
 }
+// The board between scenes: calm music (tense from the fourth suspect on) and the office, whose clock comes up for the last suspect.
+export function boardSound() { AU.music(S.g >= 4 ? 'tense' : 'calm'); AU.amb(S.g >= 5 && !S.over ? 'board.last' : 'board'); }
 export function skipPolicy(id, isSeen = mode.isSeen) {
   const how = store.get('settings.skipSeen');
   return how !== 'never' && isSeen(id) ? (how === 'always' ? 'auto' : 'ask') : false;
@@ -124,7 +126,7 @@ export function resumeCase() {
   $('#report').hidden = true; $('#modal').hidden = true; $('#pause').hidden = true;
   buildGrid(); buildKB(press); paintRows(); updateKB(); updateStatus(); setCaseHeader(); updateNotes();
   if (S.pending.length) { mode.seen(S.pending); S.pending = []; }   // interrupted mid-scene: it still counts as seen
-  AU.music(S.g >= 4 ? 'tense' : 'calm');
+  boardSound();
   if (S.over) { record(); mode.clear(); S.busy = true; setMemo(''); report(); return true; }
   checkpoint();
   $('#menuBtn').disabled = false;

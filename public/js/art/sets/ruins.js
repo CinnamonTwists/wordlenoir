@@ -5,6 +5,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'light',
   indoor: false,
+  ambience: 'ruins',
   draw(v) {
     const r = rng(139);
     let brick = '', debris = '';

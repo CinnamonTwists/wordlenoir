@@ -4,6 +4,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'light',
   indoor: false,
+  ambience: 'docks',
   draw(v) {
     const r = rng(71);
     let shim = '';

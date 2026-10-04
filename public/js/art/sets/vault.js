@@ -5,6 +5,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'off',
   indoor: true,
+  ambience: 'vault',
   draw(v) {
     let boxes = '';
     for (let y = 80; y < 600; y += 52) for (let x = 40; x < 600; x += 70) boxes += `<rect x="${x}" y="${y}" width="64" height="46" fill="#2a2b2e" stroke="#121315" stroke-width="3"/><circle cx="${x + 32}" cy="${y + 23}" r="4" fill="#9a8a5a"/>`;

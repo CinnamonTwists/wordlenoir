@@ -9,6 +9,7 @@ import { parseScript } from '../public/js/script/parser.js';
 import { SETS } from '../public/js/art/sets/index.js';
 import { MOOD_MUSIC } from '../public/js/cinema/moods.js';
 import { CUES, STINGS } from '../public/js/audio/audio.js';
+import { BEDS } from '../public/js/audio/beds.js';
 import { CAST } from '../public/js/content/cast.js';
 import { parseWordList } from '../public/js/game/words.js';
 import { loadPack, packId, scenesOf } from '../public/js/content/registry.js';
@@ -112,6 +113,8 @@ for (const { src } of allScripts) for (const { line } of parseScript(src)) {
   m = line.match(/^~story\s+(\w+)/); if (m) STORY.add(m[1]);
 }
 
+// every set names an ambience bed (or null for silence)
+for (const [k, v] of Object.entries(SETS)) if (v.ambience !== null && !BEDS[v.ambience]) err(`set ${k}`, `ambience "${v.ambience}" is not a bed in audio/beds.js (use null for silence)`);
 for (const [k, v] of Object.entries(CAST)) if (v.sting !== undefined && !STINGS[v.sting]) err(`CAST.${k}`, `unknown sting "${v.sting}"`);
 
 // ---------- text reuse (roadmap T1): no scene is reused across packs; long prose lines shouldn't be either ----------

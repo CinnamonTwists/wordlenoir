@@ -5,6 +5,7 @@ import { lamp } from '../props.js';
 export default {
   rain: 'light',
   indoor: false,
+  ambience: 'records',
   draw(v) {
     let cols = '', win = '';
     for (let i = 0; i < 6; i++) { const x = 330 + i * 190; cols += `<rect x="${x}" y="300" width="64" height="380" fill="#1b1f28"/><rect x="${x + 10}" y="300" width="6" height="380" fill="#2a303c"/><rect x="${x + 40}" y="300" width="6" height="380" fill="#10131a"/><rect x="${x - 10}" y="290" width="84" height="18" fill="#232834"/>`; }

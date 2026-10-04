@@ -1,6 +1,6 @@
 // Every location a script can `@set`. To add one: create a file here exporting
-// { rain, indoor, draw(vars) } and register it below. `rain` is off|window|light|heavy;
-// `indoor` muffles the rain audio. draw() returns a 1600x900 SVG string (see ../svg.js).
+// { rain, indoor, ambience, draw(vars) } and register it below. `rain` is off|window|light|heavy;
+// `indoor` muffles the rain audio; `ambience` names its sound bed in audio/beds.js (null for silence; `npm run check` validates it). draw() returns a 1600x900 SVG string (see ../svg.js).
 import office from './office.js';
 import street from './street.js';
 import bar from './bar.js';

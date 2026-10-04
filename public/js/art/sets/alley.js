@@ -4,6 +4,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'heavy',
   indoor: false,
+  ambience: 'alley',
   draw(v) {
     const r = rng(31);
     let esc = '';

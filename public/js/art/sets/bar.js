@@ -4,6 +4,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'off',
   indoor: true,
+  ambience: 'bar',
   draw(v) {
     const r = rng(23);
     let bottles = '';

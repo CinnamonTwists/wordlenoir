@@ -13,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findBrowser, freePort } from './browser.mjs';
+import { BEDS } from '../public/js/audio/beds.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const filters = process.argv.slice(2).filter(a => !a.startsWith('--'));
@@ -34,6 +35,7 @@ const ITEMS = [
   sfx('card', `AU.play('card')`), sfx('lament', `AU.play('lament')`, 7),
   { group: 'music', name: 'riff', code: `AU.play('riff')`, dur: 9, mute: ['ambience'], pre: `AU.music('off')` },
   ...['calm', 'tense', 'hope', 'dread'].map(m => ({ group: 'music', name: `music ${m}`, code: `AU.music('${m}'); AU.pump?.(30)`, dur: 30, from: 8, mute: ['sfx', 'ambience'] })),
+  ...Object.keys(BEDS).map(b => ({ group: 'beds', name: `bed ${b}`, code: `AU.amb('${b}'); AU.pump(40)`, dur: 40, from: 5, mute: ['sfx', 'music'], pre: `AU.setRain('none'); AU.rainG.gain.value = 0` })),
   ...['off', 'window', 'light', 'heavy'].flatMap(r => [0, 1].map(i => ({ group: 'amb', name: `rain ${r}${i ? ' indoor' : ''}`, code: `AU.setRain('${r}', ${i})`, dur: 12, from: 6, mute: ['sfx', 'music'] })))
 ];
 
@@ -60,8 +62,10 @@ async function measure(items) {
     for (const k of it.mute || []) AU.vol[k] = 0;
     AU.init(ctx);
     if (it.pre) new Function('AU', it.pre)(AU);
-    ctx.suspend(at).then(() => { new Function('AU', it.code)(AU); ctx.resume(); });
+    let failed = null;   // a cue that throws must still let the render finish, or startRendering() never resolves
+    ctx.suspend(at).then(() => { try { new Function('AU', it.code)(AU); } catch (e) { failed = e; } ctx.resume(); });
     const buf = await ctx.startRendering();
+    if (failed) throw failed;
     const from = Math.floor(RATE * (it.from ?? at)), L = buf.getChannelData(0).subarray(from), R = buf.getChannelData(1).subarray(from);
     const mono = new Float32Array(L.length); for (let i = 0; i < L.length; i++) mono[i] = (L[i] + R[i]) / 2;
     let peak = 0, sum = 0, loud = 0; const W = RATE * .4;
@@ -101,19 +105,18 @@ try {
   await send('Network.enable'); await send('Network.setBlockedURLs', { urls: ['*cloudflareinsights.com*', '*fonts.googleapis.com*', '*fonts.gstatic.com*', '*/cdn-cgi/*'] });
   await send('Page.navigate', { url: base + '/' });
   for (let i = 0; i < 200; i++) { const r = await send('Runtime.evaluate', { expression: '!!window.NOIR', returnByValue: true }); if (r.result.value) break; await wait(50); }
-  const r = await send('Runtime.evaluate', { expression: `(${measure})(${JSON.stringify(items)})`, awaitPromise: true, returnByValue: true });
-  if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
-  const rows = r.result.value;
-  if (JSON_OUT) console.log(JSON.stringify(rows, null, 1));
-  else {
-    const f = v => (v === null || !isFinite(v) ? '   -∞' : v.toFixed(1).padStart(6));
-    console.log('cue'.padEnd(22) + 'peak'.padStart(6) + ' (lin)'.padStart(8) + 'loud'.padStart(7) + 'rms'.padStart(7) + '>1k'.padStart(7) + 'lufs'.padStart(7) + 'mLufs'.padStart(7));
-    let g;
-    for (const x of rows) {
-      if (x.group !== g) { g = x.group; console.log(`-- ${g}`); }
-      console.log(x.name.padEnd(22) + f(x.peak) + x.peakLin.toFixed(3).padStart(8) + ' ' + f(x.loud) + ' ' + f(x.rms) + ' ' + f(x.hi) + ' ' + f(x.lufs) + ' ' + f(x.mlufs));
-    }
+  const rows = [], f = v => (v === null || !isFinite(v) ? '   -∞' : v.toFixed(1).padStart(6));
+  if (!JSON_OUT) console.log('cue'.padEnd(22) + 'peak'.padStart(6) + ' (lin)'.padStart(8) + 'loud'.padStart(7) + 'rms'.padStart(7) + '>1k'.padStart(7) + 'lufs'.padStart(7) + 'mLufs'.padStart(7));
+  let g;
+  for (const it of items) {   // one render per call, so progress shows as it goes
+    const r = await send('Runtime.evaluate', { expression: `(${measure})(${JSON.stringify([it])})`, awaitPromise: true, returnByValue: true });
+    if (r.exceptionDetails) throw new Error(`${it.name}: ${r.exceptionDetails.exception?.description || r.exceptionDetails.text}`);
+    const x = r.result.value[0]; rows.push(x);
+    if (JSON_OUT) continue;
+    if (x.group !== g) { g = x.group; console.log(`-- ${g}`); }
+    console.log(x.name.padEnd(22) + f(x.peak) + x.peakLin.toFixed(3).padStart(8) + ' ' + f(x.loud) + ' ' + f(x.rms) + ' ' + f(x.hi) + ' ' + f(x.lufs) + ' ' + f(x.mlufs));
   }
+  if (JSON_OUT) console.log(JSON.stringify(rows, null, 1));
 } catch (e) { console.error('levels failed: ' + e.message); code = 1; }
 finally {
   try { await Promise.race([send('Browser.close'), wait(2000)]); } catch {}

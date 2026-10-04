@@ -5,6 +5,7 @@ import { smoke } from '../props.js';
 export default {
   rain: 'off',
   indoor: true,
+  ambience: 'kitchen',
   draw(v) {
     let check = '';
     for (let x = 420; x < 1180; x += 38) for (let y = 610; y < 650; y += 19) if (((x - 420) / 38 + (y - 610) / 19) % 2 < 1) check += `<rect x="${x}" y="${y}" width="38" height="19" fill="#2f4a6a" opacity=".55"/>`;

@@ -100,5 +100,5 @@ export async function play(segments, ctx, opts = {}) {
   } finally { endSkip(); }
   hideText(); await blackIn(1000);
   C.el.hidden = true; C.fx.innerHTML = ''; C.bgA.innerHTML = C.bgB.innerHTML = ''; C.front = null;
-  RAIN.attach($('#rain')); RAIN.set('light'); AU.setRain('window', 1);
+  RAIN.attach($('#rain')); RAIN.set('light'); AU.setRain('window', 1); AU.amb('board');
 }

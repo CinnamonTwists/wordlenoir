@@ -6,6 +6,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'off',
   indoor: true,
+  ambience: 'hearing',
   draw(v) {
     const r = rng(71);
     let snow = '', panels = '';

@@ -25,7 +25,7 @@ export async function setScene(name, ctx) {
   const set = getSet(name);
   const back = C.front === C.bgA ? C.bgB : C.bgA;
   back.innerHTML = set.draw(ctx.vars); back.className = 'bg ' + (R() < .5 ? 'kb1' : 'kb2');
-  RAIN.set(set.rain); AU.setRain(set.rain, set.indoor); C.set = name;
+  RAIN.set(set.rain); AU.setRain(set.rain, set.indoor); AU.amb(set.ambience); C.set = name;
   if (C.blackOn) { back.classList.add('on'); if (C.front) C.front.classList.remove('on'); C.front = back; await sleep(60); return; }
   hideText(); back.classList.add('on'); if (C.front) C.front.classList.remove('on'); C.front = back; await sleep(900);
 }

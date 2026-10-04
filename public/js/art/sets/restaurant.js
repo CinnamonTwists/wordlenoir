@@ -5,6 +5,7 @@ import { figure, smoke } from '../props.js';
 export default {
   rain: 'window',
   indoor: true,
+  ambience: 'restaurant',
   draw(v) {
     const r = rng(97);
     let check = '', streaks = '';

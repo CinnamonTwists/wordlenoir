@@ -5,6 +5,7 @@ import { figure } from '../props.js';
 export default {
   rain: 'off',
   indoor: true,
+  ambience: 'studio',
   draw(v) {
     let baffles = '';
     for (let x = 0; x < 1600; x += 64) baffles += `<rect x="${x + 4}" y="0" width="56" height="620" fill="${(x / 64) % 2 ? '#15121a' : '#191520'}"/>`;

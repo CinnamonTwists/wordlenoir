@@ -52,12 +52,12 @@ function setBackdrop(name) {
   $('#backdrop').innerHTML = SETS[name].draw({}); $('#backdrop').className = name === 'office' ? 'dim' : 'title';
 }
 const overlaysOff = () => { answer(false); for (const id of ['#pause', '#report', '#notes']) $(id).hidden = true; };
-onShow('menu', () => { overlaysOff(); setBackdrop('street'); RAIN.set('heavy'); AU.setRain('heavy', 0); AU.music('calm'); document.body.className = ''; refreshMenu(RandomMode.stats()); });
+onShow('menu', () => { overlaysOff(); setBackdrop('street'); RAIN.set('heavy'); AU.setRain('heavy', 0); AU.amb('street'); AU.music('calm'); document.body.className = ''; refreshMenu(RandomMode.stats()); });
 onShow('settings', () => syncSettings());
-onShow('game', () => { setBackdrop('office'); RAIN.set('light'); AU.setRain('window', 1); });
+onShow('game', () => { setBackdrop('office'); RAIN.set('light'); AU.setRain('window', 1); AU.amb('board'); });
 
 $('#startBtn').addEventListener('click', async () => {
-  AU.init(); applySettings(); AU.setRain('heavy', 0); AU.play('riff');
+  AU.init(); applySettings(); AU.setRain('heavy', 0); AU.amb('street'); AU.play('riff');
   $('#title').style.transition = 'opacity .9s'; $('#title').style.opacity = 0; await sleep(900);
   show('menu'); saveWarning();
 });

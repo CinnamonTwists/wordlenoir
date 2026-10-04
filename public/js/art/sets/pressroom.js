@@ -5,6 +5,7 @@ import { figure, smoke } from '../props.js';
 export default {
   rain: 'window',
   indoor: true,
+  ambience: 'pressroom',
   draw(v) {
     const r = rng(53);
     let rollers = '', sheets = '', lamps = '';

@@ -4,6 +4,7 @@ import { rainStreaks } from '../props.js';
 export default {
   rain: 'window',
   indoor: true,
+  ambience: 'apartment',
   draw(v) {
     const r = rng(53);
     return svg(`<rect width="1600" height="900" fill="#141118"/>
