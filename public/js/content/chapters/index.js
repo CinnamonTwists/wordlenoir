@@ -45,7 +45,7 @@ export const CHAPTERS = [
     deadline: 'the wire window opens', why: 'At 6:00 the wire clears and the city\'s records legally belong to a shell company.',
     associates: 'The Lexicon (an Entry). A leak inside the precinct.', quote: 'Everything is a copy, darling. I just make better ones.',
     bust: { hair: 'bob', glasses: true, color: '#9fc98f' } },
-  { n: 8, title: 'Next of Kin', date: 'December 1, 1948', written: false,
+  { n: 8, title: 'Next of Kin', date: 'December 1, 1948', written: true,
     culprit: 'Silas Grey', alias: 'the Ghostwriter', crime: 'the kidnapping of Vera Lexington',
     mo: 'Makes people disappear on paper first: farewell letters, resignations, tickets.',
     deadline: 'the ferry leaves for Blackwell Island', why: 'At 6:00 the ferry sails with Vera aboard and a farewell letter in her handwriting.',
