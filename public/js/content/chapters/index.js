@@ -33,7 +33,7 @@ export const CHAPTERS = [
     deadline: 'the 6:00 train leaves Union Station', why: 'At 6:00 the Courier leaves town carrying half of the Lexicon\'s Index.',
     associates: 'The Lexicon (an Entry). Union Station.', quote: 'I don\'t carry anything, Detective. I am carried.',
     bust: { hat: 'fedora', coat: true, build: .95, color: '#8fb0c9' } },
-  { n: 6, title: 'Short Fuse', date: 'November 1, 1948', written: false,
+  { n: 6, title: 'Short Fuse', date: 'November 1, 1948', written: true,
     culprit: 'Wendell Pike', alias: 'the Full Stop', crime: 'a bomb under the Hall of Records',
     mo: 'Every job ends in a period: something that can\'t be undone.',
     deadline: 'the fuse burns down', why: 'At 6:00 the Hall of Records goes up, and the city\'s missing files with it.',
