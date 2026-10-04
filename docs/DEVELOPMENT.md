@@ -476,6 +476,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
+| 2026-10-04 | 7: T6 (bible r2) | `step-7-story-bible` | Revision 2: the Editor is Sal, Dash's best friend (the Professor becomes the red herring); four personal threads (Pop, Vera, Nora and Tommy, the bottle) in nine interludes with kept/late/missed variants driven by each chapter's guess count, resolved in per-thread ending codas. Awaiting final OK. |
 | 2026-10-04 | 7: T6 (bible draft) | `step-7-story-bible` | `docs/story/bible.md` drafted: the Lexicon, the Editor, the grand-jury frame, ten chapters with culprits, deadlines, beats and hooks, the arc map, endings and easter-egg seeds. Not approved yet; no story content or campaign code written. |
 | 2026-10-04 | 6: T3 + T4 | `step-6-skip-notes-transfer` | Scenes play as segments: each is marked seen when it finishes, and seen ones can be skipped (SKIP ▸▸ / Esc / Space; Settings: Ask / Always / Never, plus Replay the briefing). Skipping applies only state, silently. Informant clues go into case notes on the board. Export (file or text) and import (file or paste) with full validation and a confirm summary. 29 unit tests, 13 e2e scenarios. |
 | 2026-10-04 | 5: F3 + T5 + T2 (part) | `step-5-menu-modes-settings` | Main menu (case-file folder), screen manager, in-game menu (Menu button, Esc), Settings screen (volumes on new audio buses, sound, mute-hidden, blips, text speed, reduce motion/flashes, high contrast, hard mode, clear data). The game loop became a mode-driven session runner, with `RandomMode` and a win record (played/won/streak/best/distribution) on the report and menu. 23 unit tests, 9 e2e scenarios. |
@@ -718,7 +719,8 @@ Results are recorded when the final guess is scored, so reloading during the end
 must be caught within six guesses, plus character arcs for Dash, his allies, and an overarching crime lord. Full creative control has been delegated.
 
 - [ ] **Story bible** `docs/story/bible.md` (write first, get sign-off, then everything else follows it):
-      **Drafted in step 7 (branch `step-7-story-bible`), awaiting sign-off.** Six decisions for the owner are listed in its §0.
+      **Drafted in step 7 (branch `step-7-story-bible`). Revision 2 (Sal as the Editor; Dash's personal threads in interludes between chapters,
+      resolved by performance) is awaiting the owner's final OK.** Its §11 lists the changes it makes to T6, T7 and T8; they get folded in here on approval.
   - The organization: name, structure, how it uses words or ciphers, and why each member is effectively "a word on the run".
   - The crime lord: identity hidden until the finale, motive, and how they taunt Dash (the existing `WORD` phone voice is a natural seed).
   - The 10 culprits: name, alias, crime, M.O., personality, **why the 6:00 AM deadline matters in their chapter** (a train, a ship, an execution,
