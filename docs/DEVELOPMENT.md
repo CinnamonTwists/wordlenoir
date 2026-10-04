@@ -476,6 +476,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
+| 2026-10-04 | 7: T6 (bible draft) | `step-7-story-bible` | `docs/story/bible.md` drafted: the Lexicon, the Editor, the grand-jury frame, ten chapters with culprits, deadlines, beats and hooks, the arc map, endings and easter-egg seeds. Not approved yet; no story content or campaign code written. |
 | 2026-10-04 | 6: T3 + T4 | `step-6-skip-notes-transfer` | Scenes play as segments: each is marked seen when it finishes, and seen ones can be skipped (SKIP ▸▸ / Esc / Space; Settings: Ask / Always / Never, plus Replay the briefing). Skipping applies only state, silently. Informant clues go into case notes on the board. Export (file or text) and import (file or paste) with full validation and a confirm summary. 29 unit tests, 13 e2e scenarios. |
 | 2026-10-04 | 5: F3 + T5 + T2 (part) | `step-5-menu-modes-settings` | Main menu (case-file folder), screen manager, in-game menu (Menu button, Esc), Settings screen (volumes on new audio buses, sound, mute-hidden, blips, text speed, reduce motion/flashes, high contrast, hard mode, clear data). The game loop became a mode-driven session runner, with `RandomMode` and a win record (played/won/streak/best/distribution) on the report and menu. 23 unit tests, 9 e2e scenarios. |
 | 2026-10-04 | 4: F1 | `step-4-save-system` | Save system (`save/`): one versioned localStorage document with guarded, debounced writes, migrations, answer obfuscation, snapshots, checkpoints, and resume after reload. Seen marks are recorded, and D1 chapter attempts are built as tested functions. Added `npm test` (18 unit tests) and three save e2e scenarios. |
@@ -717,6 +718,7 @@ Results are recorded when the final guess is scored, so reloading during the end
 must be caught within six guesses, plus character arcs for Dash, his allies, and an overarching crime lord. Full creative control has been delegated.
 
 - [ ] **Story bible** `docs/story/bible.md` (write first, get sign-off, then everything else follows it):
+      **Drafted in step 7 (branch `step-7-story-bible`), awaiting sign-off.** Six decisions for the owner are listed in its §0.
   - The organization: name, structure, how it uses words or ciphers, and why each member is effectively "a word on the run".
   - The crime lord: identity hidden until the finale, motive, and how they taunt Dash (the existing `WORD` phone voice is a natural seed).
   - The 10 culprits: name, alias, crime, M.O., personality, **why the 6:00 AM deadline matters in their chapter** (a train, a ship, an execution,
@@ -854,7 +856,7 @@ structure that holds it is settled.
 | 4 ✓ | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |
 | 5 ✓ | **Screens + modes refactor, Random Case mode, main menu shell, settings** | F3, T5, T2 (partial) | Today's game becomes "Random Case" behind a real menu. Story entries show as "coming soon". Settings land with audio buses (start of T9). |
 | 6 ✓ | **Skip seen scenes + case notes, export/import** | T3, T4 | Both are small once F1/F2 exist, and they make testing long content faster. |
-| 7 | **Story bible** (needs your sign-off) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |
+| 7 … | **Story bible** (needs your sign-off; drafted, awaiting approval) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |
 | 8 | **Campaign framework + vertical slice** | T6, T7, T2 (rest) | Chapter flow, attempts and loss rollback, retry scene variety, story flags, continue, chapter select, dossier, endings logic with placeholder endings. Chapters 1–2 get fresh minimum coverage (2 scenes per slot, so retries can differ) to prove the whole loop end to end. |
 | 9 | **Content production, chapter by chapter** | T8, T7 | Write each chapter fresh to ~146 scenes, in story order, then the 6 endings plus the easter egg. |
 | 10 | **Audio expansion** | T9 | Runs in parallel with step 9: jazz scheduler, stings, SFX, ambience beds, script commands. |
