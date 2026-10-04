@@ -1,0 +1,10 @@
+/* ---------- title ---------- */
+#title{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px 16px;text-align:center}
+.logo{display:flex;flex-direction:column;align-items:center;line-height:.9}
+.logo .w{font-family:var(--f-display);font-size:clamp(56px,13vw,150px);letter-spacing:.06em;color:var(--paper);text-shadow:0 0 30px rgba(217,164,65,.35),0 6px 0 #000}
+.logo .n{margin-top:-.15em;background:var(--blood);color:#fff;font-family:var(--f-impact);font-weight:900;font-size:clamp(40px,9vw,104px);letter-spacing:.42em;padding:.04em .2em .04em .62em;transform:skewX(-14deg) rotate(-3deg);box-shadow:10px 10px 0 #000;animation:titleSlam .9s cubic-bezier(.2,1.6,.4,1) .3s both}
+@keyframes titleSlam{from{transform:skewX(-14deg) rotate(-3deg) scale(2.6);opacity:0}to{transform:skewX(-14deg) rotate(-3deg) scale(1);opacity:1}}
+.tagline{font-family:var(--f-type);font-size:clamp(15px,2vw,20px);letter-spacing:.18em;text-transform:uppercase;color:#cfc7b6;text-wrap:balance}
+.bigbtn{background:transparent;border:2px solid var(--paper);padding:16px 30px;font-family:var(--f-impact);font-weight:900;font-size:clamp(20px,2.6vw,28px);letter-spacing:.2em;text-transform:uppercase;position:relative;transition:background .2s,color .2s}
+.bigbtn:hover{background:var(--paper);color:var(--ink)}
+.fine{font-family:var(--f-type);font-size:13px;color:#a39e93;max-width:46ch;line-height:1.6;text-wrap:balance}

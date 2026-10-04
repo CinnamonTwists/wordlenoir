@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Wordle Noir</title>
+
+<meta name="description" content="For those who play Wordle for the plot.">
+<!-- Open Graph / Facebook / Discord -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://wordlenoir.com">
+<meta property="og:title" content="Wordle Noir">
+<meta property="og:description" content="For those who play Wordle for the plot.">
+<meta property="og:image" content="https://wordlenoir.com/images/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Wordle Noir">
+<!-- Twitter Card (Fallback support) -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Wordle Noir">
+<meta name="twitter:description" content="For those who play Wordle for the plot.">
+<meta name="twitter:image" content="https://wordlenoir.com/images/og-image.png">
+
+<meta name="theme-color" content="#FF2400">
+<link rel="icon" type="image/png" sizes="512x512" href="/images/icon-512.png">
+<link rel="apple-touch-icon" href="/images/icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,500;1,600&family=Courier+Prime:wght@400;700&family=Limelight&family=Special+Elite&display=swap">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/title.css">
+<link rel="stylesheet" href="css/board.css">
+<link rel="stylesheet" href="css/cinema.css">
+<link rel="stylesheet" href="css/effects.css">
+<link rel="stylesheet" href="css/overlays.css">
+<link rel="stylesheet" href="css/ambient.css">
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+
+<div id="backdrop" class="title"></div>
+<canvas id="rain"></canvas>
+
+<section id="title">
+  <div class="logo"><span class="w">WORDLE</span><span class="n">NOIR</span></div>
+  <div class="tagline">Five letters. Six suspects. One night.</div>
+  <button class="bigbtn" id="startBtn">Open the case file</button>
+  <p class="fine">Best with sound on. Scenes play out in full and can't be skipped. A case runs about five to eight minutes.</p>
+</section>
+
+<section id="board" hidden>
+  <header class="bar">
+    <div class="brand">WORDLE<b>NOIR</b></div>
+    <div class="casebox"><div class="caseno" id="caseNo">CASE No. ----</div><div class="casetitle" id="caseTitle">—</div></div>
+    <div class="tools">
+      <button class="tbtn" id="sndBtn" aria-pressed="true">Sound on</button>
+      <button class="tbtn" id="newBtn">New case</button>
+    </div>
+  </header>
+  <div class="status">
+    <div class="clock"><b id="clk">12:00</b><small id="ampm">AM</small><span>Train leaves<br>6:00 AM</span></div>
+    <div class="smokes" id="smokes" aria-label="Guesses remaining"></div>
+  </div>
+  <div class="memo" id="memo"></div>
+  <div id="grid" aria-label="Guess grid"></div>
+  <div id="kb"></div>
+</section>
+
+<section id="cinema" hidden data-mood="noir" aria-live="polite">
+  <div id="cam">
+    <div class="bgs"><div class="bg" id="bgA"></div><div class="bg" id="bgB"></div></div>
+    <canvas id="crain"></canvas>
+    <div id="moodlay"></div>
+    <div id="vig"></div>
+  </div>
+  <div class="lb" id="lbTop"></div><div class="lb" id="lbBot"></div>
+  <div id="narr"></div>
+  <div id="dlg"><div class="portrait" id="portrait"></div><div class="dwrap"><div class="nameplate"><span id="dname"></span></div><div class="dbox" id="dtext"></div></div></div>
+  <div id="fx"></div>
+  <div id="black"></div>
+  <div id="flash"></div>
+</section>
+
+<div id="toast" role="status"></div>
+
+<div class="overlay" id="modal" hidden>
+  <div class="file">
+    <h3>Drop this case?</h3>
+    <div class="meta">The word walks free. Nobody will ever know what it was. Except you.</div>
+    <div class="acts"><button id="mKeep" class="primary">Keep digging</button><button id="mDrop">Drop it</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="report" hidden>
+  <div class="file" id="reportFile"></div>
+</div>
+
+<canvas id="grain" width="160" height="100"></canvas>
+
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"1d891a7619fd407ba43339e730893d0e","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

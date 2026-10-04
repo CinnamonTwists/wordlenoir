@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers Builds deploys this repo on every push to main by running `npx wrangler deploy`,
+  // which reads this file. `name` must match the Worker's name in the Cloudflare dashboard.
+  "name": "raspy-term-4561",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    // Only this folder is published. Everything else in the repo (tools, docs, .git) stays private.
+    "directory": "./public"
+  }
+}

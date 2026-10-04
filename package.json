@@ -1,0 +1,14 @@
+{
+  "name": "wordle-noir",
+  "private": true,
+  "description": "For those who play Wordle for the plot.",
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/dev-server.mjs",
+    "check": "node tools/check-scenes.mjs",
+    "preview": "npx wrangler dev"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

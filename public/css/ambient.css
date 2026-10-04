@@ -1,0 +1,13 @@
+/* svg ambient classes */
+.flicker{animation:flicker 7s infinite}
+@keyframes flicker{0%,18%,22%,25%,53%,57%,100%{opacity:1}20%,24%,55%{opacity:.25}}
+.swing{transform-box:view-box;transform-origin:800px 0;animation:swing 3.6s ease-in-out infinite alternate}
+@keyframes swing{from{transform:rotate(-2.6deg)}to{transform:rotate(2.6deg)}}
+.sweepA{transform-box:view-box;transform-origin:330px 900px;animation:sweep 9s ease-in-out infinite alternate}
+.sweepB{transform-box:view-box;transform-origin:1380px 900px;animation:sweep 11s ease-in-out infinite alternate-reverse}
+@keyframes sweep{from{transform:rotate(-14deg)}to{transform:rotate(16deg)}}
+.rise{animation:rise 6s ease-in-out infinite;opacity:0}
+.rise.d2{animation-delay:2s}.rise.d3{animation-delay:4s}
+@keyframes rise{0%{opacity:0;transform:translateY(0)}30%{opacity:.5}100%{opacity:0;transform:translateY(-120px)}}
+.shim{animation:shim 3.4s ease-in-out infinite alternate}
+@keyframes shim{from{opacity:.15;transform:translateX(-12px)}to{opacity:.5;transform:translateX(12px)}}
