@@ -82,7 +82,7 @@ DOOLEY: They always print it early, Dash. It's cheaper than being late.
 { id: 'c03.core.4-2.01', chapter: 3, s: `
 @set office
 > {GUESS} lit {hitsN}. On the carbon paper under the blotter, I finally read the last appointment Fairweather had kept.
-> Four in the morning, a week from Wednesday. Two words and a letter. I folded the carbon into my hat band for later.
+> Four in the morning, next Wednesday. Two words and a letter. I folded the carbon into my hat band for later.
 DASH: He's booked another job, Dooley. Next week.
 DOOLEY: Then he thinks he's going to be free to do it.
 ` },
