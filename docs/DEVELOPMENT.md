@@ -68,7 +68,8 @@ npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on fi
     ending with the four worst codas and the close). Between them every story flag is exercised both ways.
     Step 10 added an audio scenario: the menu plays the title theme over the street; `@set`/`@mood` drive the bed and the loop (the bar's jukebox, the
     station's big band, red → dread); a skipped scene's `~sfx` stays silent while its `~music`/`~amb` still apply; every cue, loop and bed plays
-    without an error. About 90 s in all.
+    without an error. After 1.0, a mobile scenario: on a 412×915 portrait phone both versus busts fit the screen, and on a 915×412 landscape phone
+    the board's keyboard and grid are fully on screen (and a case still plays). About 90 s in all.
     `--cases N` adds N random cases (random answer, random win guess or loss, random informant setting) for scene coverage.
   - Every scenario asserts the report (verdict, answer tiles, one table row per guess, the record panel, the Main menu button), no exceptions, no `console.error`, no failed same-origin requests,
     and an empty `NOIR.MISSING`. The first failure stops the run.
@@ -150,7 +151,7 @@ public/js/
                           skip policy, case notes (updateNotes, showNotes)
     modes/random.js       RandomMode: the Random Case mode object (scene picks, saving to random.active, stats)
     modes/story.js        createStoryMode(chapter, { replay }): a campaign chapter attempt or a Chapter Select replay; pickFresh (retry picker)
-public/css/               base, title, menu, board, cinema, effects, overlays, ambient, prefs (link order = cascade order)
+public/css/               base, title, menu, board, cinema, effects, overlays, ambient, mobile, prefs (link order = cascade order)
 public/data/words/        answers.txt, allowed.txt (one word per line, # comments allowed)
 tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs, audio-levels.mjs (npm run levels), browser.mjs (shared by those two),
                           migrate-scenes.mjs (one-off, already run)
@@ -476,6 +477,17 @@ T10's own scratch harness (0.23–0.25), which didn't mute the other buses, so c
 - Ambient animation classes (css/ambient.css): `flicker`, `swing`, `sweepA/B`, `rise` (+`d2`/`d3`), `shim`.
 - Portraits: `bust({ hat: fedora|wide|cap|scarf, hair: short|long|bob|bun|bald, build, coat, cig, glasses, eyes, color })` on a 220×260 viewBox.
 - Fonts (Google): Limelight (display), Big Shoulders Display (impact), Cormorant Garamond (narration), Special Elite (typewriter), Courier Prime (dialogue).
+- **Phones (css/mobile.css, after 1.0).** All phone rules live in one sheet, loaded before prefs.css:
+  - *Small screens* (`max-width:820px` or `max-height:500px`): every mood's grading is a little brighter and less contrasty (contrast is what
+    crushed the darks on a dim phone), a softer vignette, a soft "screen" fill light in the middle of the frame (`.bgs::after`), a brighter wash
+    behind dialogue portraits, a brighter board backdrop and visible empty tiles. Silhouettes stay silhouettes; the light behind them changes.
+  - *Portrait* (`max-aspect-ratio:4/5`): a set is shown whole-height in a 16:9 window across the upper screen (about half its width, centred),
+    fading to black above and below, instead of being cropped to its middle quarter. It's centred with the `translate` property so the Ken Burns
+    drift on `transform` still runs. The versus screen stacks: the detective slides down from the top (blue), the word up from the bottom (red),
+    split by a shallow diagonal (the `.vs-line .port` line; desktop uses `.land`).
+  - *Landscape phones* (`max-height:500px` and landscape): the board goes side by side, the grid on the left and the clock, memo and keyboard on
+    the right, so the keyboard no longer falls off the bottom.
+  - Checked with headless screenshots at 412×915, 360×740, 915×412 and 740×360, and by an e2e scenario. Desktop is untouched (none of the queries match).
 
 ## 1.10 Story canon so far (Random Case material)
 
@@ -514,7 +526,7 @@ Oct 4 · Oct 11 · Oct 12 · Oct 20 · Oct 21 · Nov 1 · Nov 9 · Dec 1 · Dec 
   or be recorded outside the scene, the way informant clues go into case notes before the scene plays.
 - New effects must stay silent and invisible while `SKIP.on`: route delays through `sleep()`, sound through `AU`, and flashes/shakes through
   `flashFx`/`shake`.
-- CSS `<link>` order in index.html is the cascade order (base → title → menu → board → cinema → effects → overlays → ambient → prefs).
+- CSS `<link>` order in index.html is the cascade order (base → title → menu → board → cinema → effects → overlays → ambient → mobile → prefs).
 - Settings that CSS needs go on `<html>` as data attributes (`data-hc`, `data-motion`, `data-flashes`). `<body>`'s class is owned by the stakes
   vignette (`updateStatus` overwrites it), so never put settings there.
 - A new setting needs three things: a default in save/schema.js `defaults()`, an entry in ui/settings.js `SPEC` (the form is generated from it),
@@ -659,6 +671,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
+| 2026-10-04 | Mobile polish (after 1.0) | `mobile-polish` | css/mobile.css: brighter, less crushed grading and a soft fill light on small screens; portrait framing of every set; a stacked versus screen on portrait phones (the busts used to be cut off); a side-by-side board on landscape phones (the keyboard used to fall off the bottom). A mobile e2e scenario (21 in all). |
 | 2026-10-04 | **1.0 release** | `main` | Steps 1–10 pushed to `main` and deployed to wordlenoir.com, tagged `v1.0`. Remaining work is the to-do list in §2.6. |
 | 2026-10-04 | 10: T9 | `step-10-audio` | Audio expansion. Every sound by name (`AU.play/music/amb`); `audio/` split into synth, foley, SFX, stings, beds, music. Ambience beds for every set (and the board, whose clock comes up for the last suspect). A procedural jazz band scheduled on AudioContext time: calm/tense/hope/dread loops, the bar's jukebox, the apartment's radio, the station's big band, a title theme, four ending themes; crossfades and ducking. Sting library (`word`, `hope`, `stamp`) and `~sting`/`~music`/`~amb`. New SFX (the phone, a typewriter for `~paper`, handcuffs on a win, foley cues). `npm run levels` measures everything offline. 40 unit tests, 20 e2e scenarios. Approved by ear. **This completes the roadmap (T1–T10, F1–F4).** |
 | 2026-10-04 | 9: T8 + T7 | `step-9-content` | The whole story. Chapters 3–10 written at the full T8 budget and chapters 1–2 grown to it (153 scenes each; 150 for chapter 10), every interlude, the real endings (six case endings + the egg, twelve codas, the close) replacing the placeholders, ending replays in Chapter Select. 16 new characters, 11 new sets. Chapter dates follow the bible's "tomorrow" hooks. The checker validates endings and catches a stray `NAME?` line. 40 unit tests, 19 e2e scenarios including two full campaigns. |

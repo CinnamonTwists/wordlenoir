@@ -591,6 +591,28 @@ test('transfer: export → clear all data → import gives back the same files; 
     return `${file}: ${summary.split('.')[0]}`;
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+test('mobile: the versus fits a portrait phone; a landscape phone shows the whole keyboard', async () => {
+  const phone = (width, height) => send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
+  try {
+    await phone(412, 915); await toMenu();
+    // the versus at real speed, measured once it has slid in
+    const vs = await ev(`(async () => {
+      NOIR.speed = 1; const p = NOIR.play('%%DASH | THE WORD', { vars: {}, flags: {} });
+      await new Promise(r => setTimeout(r, 2600));   // 1.3 s fading in from black, then the slide
+      const out = [...document.querySelectorAll('.vs-half svg')].map(s => { const b = s.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; });
+      NOIR.speed = 400; await p; return { out, w: innerWidth, h: innerHeight };
+    })()`);
+    for (const [i, b] of vs.out.entries()) if (b.r - b.l > vs.w * 1.1 || b.t < 0 || b.b > vs.h + 1) throw new Error(`versus bust ${i} doesn't fit a ${vs.w}×${vs.h} screen: ${JSON.stringify(b)}`);
+    await phone(915, 412);
+    const [answer] = await randomWords(1, '');
+    await openCase(answer, false);
+    await until(READY, 'the board');
+    const kb = await ev(`(() => { const b = document.querySelector('#kb').getBoundingClientRect(), g = document.querySelector('#grid').getBoundingClientRect(); return { kb: b.bottom, grid: g.bottom, h: innerHeight }; })()`);
+    if (kb.kb > kb.h + 1 || kb.grid > kb.h + 1) throw new Error(`landscape board runs off the screen: ${JSON.stringify(kb)}`);
+    await guess(answer); await checkReport(answer, true, 1);
+    return `busts ${vs.out.map(b => Math.round(b.r - b.l)).join('/')} px wide on 412; keyboard ends at ${Math.round(kb.kb)} of 412`;
+  } finally { await send('Emulation.clearDeviceMetricsOverride'); }
+});
 test('save: blocked storage warns and still plays', async () => {
   const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('denied', 'SecurityError'); } });` });
   try {

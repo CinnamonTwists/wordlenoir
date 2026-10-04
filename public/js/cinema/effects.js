@@ -33,7 +33,7 @@ export async function versus(arg) {
   await lit(); hideText();
   const el = document.createElement('div'); el.className = 'versus';
   el.innerHTML = `<div class="vs-half vs-l">${bust(Object.assign({ color: '#7fb2ff' }, CAST.DASH.bust))}<div class="vs-name"><span class="vs-tag">THE DETECTIVE</span></div></div>
-    <div class="vs-half vs-r">${bust(Object.assign({ color: '#ff2a35' }, CAST.WORD.bust))}<div class="vs-name"><span class="vs-tag">THE WORD</span></div></div><svg class="vs-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="58" y1="-2" x2="42" y2="102" stroke="#fff" stroke-width="5" vector-effect="non-scaling-stroke"/></svg>`;
+    <div class="vs-half vs-r">${bust(Object.assign({ color: '#ff2a35' }, CAST.WORD.bust))}<div class="vs-name"><span class="vs-tag">THE WORD</span></div></div><svg class="vs-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line class="land" x1="58" y1="-2" x2="42" y2="102" stroke="#fff" stroke-width="5" vector-effect="non-scaling-stroke"/><line class="port" x1="-2" y1="57" x2="102" y2="45" stroke="#fff" stroke-width="5" vector-effect="non-scaling-stroke"/></svg>`;
   el.querySelector('.vs-l .vs-name').append(l); el.querySelector('.vs-r .vs-name').append(r);
   C.fx.appendChild(el); await sleep(40); el.classList.add('in'); AU.play('versus'); await sleep(500); flashFx(.8); AU.play('thunder'); shake();
   await sleep(3800); el.style.transition = `opacity ${500 / SPEED}ms`; el.style.opacity = 0; await sleep(500); el.remove();
