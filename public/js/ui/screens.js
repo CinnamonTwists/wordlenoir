@@ -4,7 +4,7 @@ import { $ } from '../core/dom.js';
 // so back() (the Back buttons and Esc) returns there. Overlays (#pause, #modal, #report) sit on top and aren't screens.
 // Each screen may register an onShow hook (refresh the menu, swap the backdrop...).
 
-const SCREENS = { title: '#title', menu: '#menu', settings: '#settings', game: '#board' };
+const SCREENS = { title: '#title', menu: '#menu', settings: '#settings', chapters: '#chapters', dossier: '#dossier', game: '#board' };
 const hooks = {};
 let current = 'title';
 const trail = [];

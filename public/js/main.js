@@ -14,7 +14,11 @@ import { press, attachKeyboard, newCase, resumeCase, dropSaved, savedSummary, ho
 import { RandomMode } from './game/modes/random.js';
 import { store } from './save/store.js';
 import { show, back, screen, onShow } from './ui/screens.js';
-import { initMenu, refreshMenu } from './ui/menu.js';
+import { initMenu, refreshMenu, continueTarget } from './ui/menu.js';
+import { initCampaign, hasRun, newGame, continueGame, startReplay, playEnding } from './ui/campaign.js';
+import { renderChapters, renderDossier, dossierStep } from './ui/casefiles.js';
+import { ask, answer, isOpen } from './ui/dialog.js';
+import { chapterInfo } from './content/chapters/index.js';
 import { applySettings, buildSettings, syncSettings, setSetting, onChange, shouldMuteHidden } from './ui/settings.js';
 
 // Entry point: boot, screen wiring (title → menu → game / settings), the in-game menu, and the NOIR console hook.
@@ -47,7 +51,7 @@ function setBackdrop(name) {
   if (backdrop === name) return; backdrop = name;
   $('#backdrop').innerHTML = SETS[name].draw({}); $('#backdrop').className = name === 'office' ? 'dim' : 'title';
 }
-const overlaysOff = () => { for (const id of ['#pause', '#modal', '#report', '#notes']) $(id).hidden = true; };
+const overlaysOff = () => { answer(false); for (const id of ['#pause', '#report', '#notes']) $(id).hidden = true; };
 onShow('menu', () => { overlaysOff(); setBackdrop('street'); RAIN.set('heavy'); AU.setRain('heavy', 0); AU.setMusic('calm'); document.body.className = ''; refreshMenu(RandomMode.stats()); });
 onShow('settings', () => syncSettings());
 onShow('game', () => { setBackdrop('office'); RAIN.set('light'); AU.setRain('window', 1); });
@@ -61,19 +65,42 @@ $('#startBtn').addEventListener('click', async () => {
 // Starts something on the board once the word lists and scenes have arrived.
 async function enterGame(start) {
   try { await ready; } catch (e) { toast('The case files didn\'t arrive. Check your connection and reload.'); return; }
-  show('game'); start();
+  show('game'); await start();
 }
+initCampaign({ enterGame });
 const openRandom = () => enterGame(() => { setMode(RandomMode); newCase(); });
 const continueCase = () => enterGame(() => { setMode(RandomMode); if (!resumeCase()) { toast('That case file was water-damaged. Opening a new one.'); newCase(); } });
 
 initMenu({
-  onContinue: continueCase,
-  // a case already open: confirm dropping it first (it goes in the books as a loss once a suspect has been questioned)
-  onRandom: () => { const s = savedSummary(); if (s && !s.over && s.suspect > 1) { $('#modal').hidden = false; $('#mKeep').focus(); } else openRandom(); },
+  // the story run first, then an open Random Case
+  onContinue: () => (continueTarget()?.kind === 'story' ? continueGame() : continueCase()),
+  onNewGame: async () => {
+    if (hasRun()) {
+      const ch = store.get('campaign.chapter');
+      const ok = await ask({ title: 'Start over?', text: `Your run is at chapter ${ch}, "${chapterInfo(Math.min(ch, 10)).title}". Starting over closes that record for good. Endings, best results and the dossier are kept.`, yes: 'Start over', no: 'Keep my run' });
+      if (!ok) return;
+    }
+    newGame();
+  },
+  onChapters: () => { show('chapters'); },
+  onDossier: () => { show('dossier'); },
+  // a Random Case already open: confirm dropping it first (it goes in the books as a loss once a suspect has been questioned)
+  onRandom: async () => {
+    const s = savedSummary(RandomMode);
+    if (!(s && !s.over && s.suspect > 1)) return openRandom();
+    const drop = await ask({ title: 'Drop this case?', text: 'The word walks free. Nobody will ever know what it was. Except you. It goes in the books as a cold case.', yes: 'Drop it', no: 'Keep digging' });
+    if (!drop) return continueCase();
+    const ans = dropSaved(RandomMode); if (ans) toast(`It was ${ans.toUpperCase()}. It always will be.`);
+    openRandom();
+  },
   onSettings: () => show('settings')
 });
-$('#mKeep').addEventListener('click', () => { $('#modal').hidden = true; if (screen() === 'menu') continueCase(); });
-$('#mDrop').addEventListener('click', () => { $('#modal').hidden = true; const ans = dropSaved(); if (ans) toast(`It was ${ans.toUpperCase()}. It always will be.`); openRandom(); });
+onShow('chapters', () => renderChapters(n => startReplay(n)));
+onShow('dossier', () => renderDossier());
+$('#chBack').addEventListener('click', () => show('menu'));
+$('#doBack').addEventListener('click', () => show('menu'));
+$('#doPrev').addEventListener('click', () => dossierStep(-1));
+$('#doNext').addEventListener('click', () => dossierStep(1));
 
 // settings: Back returns where you came from (and reopens the in-game menu if that's where Settings was opened)
 let settingsFromPause = false;
@@ -114,8 +141,10 @@ soundLabels();
 // Settings; on the board it opens the in-game menu.
 addEventListener('keydown', e => {
   if (!$('#cinema').hidden && (e.key === 'Escape' || e.key === ' ')) { e.preventDefault(); skipNow(); return; }
+  if (screen() === 'dossier' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { dossierStep(e.key === 'ArrowLeft' ? -1 : 1); return; }
   if (e.key !== 'Escape') return;
-  if (!$('#modal').hidden) { $('#modal').hidden = true; return; }
+  if (isOpen()) { answer(false); return; }
+  if (screen() === 'chapters' || screen() === 'dossier') { show('menu'); return; }
   if (!$('#notes').hidden) { $('#notes').hidden = true; $('#notesBtn').focus(); return; }
   if (!$('#pause').hidden) { closePause(); return; }
   if (screen() === 'settings') { leaveSettings(); return; }
@@ -134,6 +163,7 @@ window.NOIR = {
   save: store,                                                  // NOIR.save.get() is the save document
   setting: setSetting,                                          // NOIR.setting('textSpeed', 'fast'): saved and applied like the Settings screen
   get screen() { return screen(); },
+  campaign: { playEnding, continueGame, newGame },               // e.g. set campaign.results, then NOIR.campaign.playEnding()
   get ANSWERS() { return WORDS.answers; }, get ALLOWED() { return WORDS.allowed; },
   stats: () => stats(WORDS.answers, S.guesses, S.fb)
 };

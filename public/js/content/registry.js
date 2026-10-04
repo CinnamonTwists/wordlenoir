@@ -2,7 +2,8 @@
 // The game asks the registry for pools and never imports scene files directly.
 //
 // A pack: { id, chapter, title, intros, tail, cores: { 'g-b': [] }, informants, openers: { set: [lines] },
-//           win: { climax: [], epi: { g: [] } }, loss: { climax: [], epi: { bucket: [] } }, closers: { left: [lines] }, beats? }
+//           win: { climax: [], epi: { g: [] } }, loss: { climax: [], epi: { bucket: [] } }, closers: { left: [lines] },
+//           beats?: { fast, slow, near, escaped: [] }, interlude?: { kept, late, missed: [] } }   (story chapters, roadmap T6)
 // A scene: { id, chapter, s } plus slot fields (intros: title, victimF?; informants: type, who).
 // Ids are save-data keys (roadmap F1): never renumber or reuse one. Scheme in docs/DEVELOPMENT.md §1.6.
 
@@ -30,7 +31,7 @@ export const getPack = ch => loaded.get(packId(ch));
 export const sceneById = id => byId.get(id);
 
 // Every scene in a pack with where it lives: { slot, key, scene }. slot is intro | tail | core | inf | win.climax | win.epi |
-// loss.climax | loss.epi | beat; key is the pool key ('g-b' for cores, g or bucket for epilogues, the beat name).
+// loss.climax | loss.epi | beat | inter; key is the pool key ('g-b' for cores, g or bucket for epilogues, the beat or interlude tier).
 export function scenesOf(pack) {
   const out = [], put = (slot, list, key) => (list || []).forEach(scene => out.push({ slot, key, scene }));
   put('intro', pack.intros);
@@ -42,5 +43,6 @@ export function scenesOf(pack) {
     for (const [k, list] of Object.entries(pack[end]?.epi || {})) put(end + '.epi', list, k);
   }
   for (const [k, list] of Object.entries(pack.beats || {})) put('beat', list, k);
+  for (const [k, list] of Object.entries(pack.interlude || {})) put('inter', list, k);
   return out;
 }

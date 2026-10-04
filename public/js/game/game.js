@@ -35,14 +35,15 @@ async function playScene(segments, ctx) {
   } });
   AU.setMusic(S.g >= 4 ? 'tense' : 'calm');
 }
-function skipPolicy(id) {
+export function skipPolicy(id, isSeen = mode.isSeen) {
   const how = store.get('settings.skipSeen');
-  return how !== 'never' && mode.isSeen(id) ? (how === 'always' ? 'auto' : 'ask') : false;
+  return how !== 'never' && isSeen(id) ? (how === 'always' ? 'auto' : 'ask') : false;
 }
 
 const checkpoint = () => mode.onCheckpoint(snapshot(S, mode.id));
-function record() { if (S.recorded) return; S.recorded = true; mode.onComplete({ won: S.won, guesses: S.guesses.length }); }
-const report = () => showReport(newCase, { onMenu: () => hooks.toMenu(), stats: mode.stats?.() });
+function record() { if (S.recorded) return; S.recorded = true; mode.onComplete({ won: S.won, guesses: S.guesses.length, answer: S.answer }); }
+// The report's main button: the mode's next step (story: next chapter / tell it again), or another case.
+const report = () => showReport(mode.next ? () => mode.next(S) : newCase, { onMenu: () => hooks.toMenu(), stats: mode.stats?.(), newLabel: mode.nextLabel?.(S) });
 
 export function press(k) {
   if (S.busy || S.over || !$('#pause').hidden || !$('#modal').hidden || !$('#notes').hidden) return;
@@ -69,7 +70,7 @@ async function submit() {
   updateKB(); setMemo(`${guess.toUpperCase()}: ${verdictLine(fb)}`); await sleep(2200);
   board.classList.remove('interrogate');
   const b = bucketOf(fb);
-  const ctx = { vars: guessVars(g, guess, fb), flags: S.flags, clue: null };
+  const ctx = { vars: guessVars(g, guess, fb), flags: S.flags, story: S.story, clue: null };
   if (S.over) {
     if (win) { ctx.vars.clockH = S.times[g][0]; ctx.vars.clockM = S.times[g][1]; } else { ctx.vars.clockH = 6; ctx.vars.clockM = 0; }
     const sc = mode.endScript(win, g, b, ctx);
@@ -92,7 +93,7 @@ async function submit() {
 }
 
 function setCaseHeader() {
-  $('#caseNo').textContent = `CASE No. ${S.caseVars.caseNo}${S.hard ? ' · HARD CASE' : ''}`; $('#caseTitle').textContent = S.title;
+  $('#caseNo').textContent = `${S.caseVars.chapterNo ? `CHAPTER ${S.caseVars.chapterNo} · ` : ''}CASE No. ${S.caseVars.caseNo}${S.hard ? ' · HARD CASE' : ''}`; $('#caseTitle').textContent = S.title;
 }
 
 export async function newCase() {
@@ -100,10 +101,10 @@ export async function newCase() {
   mode.clear();
   const cs = mode.newCase();
   setState({ answer: mode.pickAnswer(), guesses: [], fb: [], counts: [], cur: '', busy: true, over: false, won: false, g: 0, flags: {}, times: genTimes(),
-    caseVars: cs.vars, infUsed: new Set(), infLog: [], lastInf: false, title: cs.intro.title, pending: [], recorded: false, hard: !!store.get('settings.hardMode'), notes: [] });
+    caseVars: cs.vars, infUsed: new Set(), infLog: [], lastInf: false, title: cs.intro.title, pending: [], recorded: false, hard: !!store.get('settings.hardMode'), notes: [], story: mode.storyFlags?.() ?? {} });
   buildGrid(); buildKB(press); updateStatus(); setMemo(''); setCaseHeader(); updateNotes();
   $('#menuBtn').disabled = true;
-  const ctx = { vars: baseVars(), flags: S.flags };
+  const ctx = { vars: baseVars(), flags: S.flags, story: S.story };
   ctx.vars.time = ctx.vars.time0;
   await playScene(mode.introScript(cs).segments, ctx);
   checkpoint();
@@ -153,16 +154,16 @@ export function showNotes() {
 
 // Abandons the mode's saved case (Random Case from the menu while one is open). Once a suspect has been questioned it counts as a
 // lost case, since the answer is revealed; a case dropped before any guess just goes back in the drawer. Returns the answer if revealed.
-export function dropSaved() {
-  const snap = mode.saved(); if (!snap) return null;
-  const s = restore(snap); mode.clear();
+export function dropSaved(m = mode) {
+  const snap = m.saved(); if (!snap) return null;
+  const s = restore(snap); m.clear();
   if (!s || !s.guesses.length) return null;
-  if (!s.recorded) mode.onComplete({ won: s.over && s.won, guesses: s.guesses.length });
+  if (!s.recorded) m.onComplete({ won: s.over && s.won, guesses: s.guesses.length, answer: s.answer });
   return s.answer;
 }
 
-// A short description of the saved case for the menu's Continue button, or null.
-export function savedSummary() {
-  const s = restore(mode.saved() || null);
+// A short description of a mode's saved case for the menu's Continue button, or null.
+export function savedSummary(m = mode) {
+  const s = restore(m.saved() || null);
   return s ? { caseNo: s.caseVars.caseNo, title: s.title, suspect: s.guesses.length + 1, over: s.over, hard: s.hard } : null;
 }

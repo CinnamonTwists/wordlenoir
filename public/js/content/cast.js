@@ -15,5 +15,11 @@ export const CAST = {
   FENN:   { name: 'DOC FENN', color: '#93c9c2', bust: { hair: 'bald', glasses: true } },
   WORD:   { name: 'THE WORD', color: '#ff2a35', bust: { hat: 'fedora', eyes: true, coat: true } },
   NICKEL: { name: 'NICKEL', color: '#e6d36a', bust: { hat: 'cap', build: .78 } },
-  LOLA:   { name: 'LOLA VANCE', color: '#ff6f91', bust: { hair: 'bob' } }
+  LOLA:   { name: 'LOLA VANCE', color: '#ff6f91', bust: { hair: 'bob' } },
+  // story mode (docs/story/bible.md §5)
+  RUTH:   { name: 'RUTH ABERNATHY', color: '#c8c2b4', bust: { hair: 'bun', glasses: true, build: .95 } },
+  POP:    { name: 'POP LEXINGTON', color: '#9fb4c9', bust: { hair: 'bald', build: 1.05, coat: true } },
+  NORA:   { name: 'NORA HEALY', color: '#e0a07a', bust: { hair: 'long', build: .92 } },
+  PELL:   { name: 'LINUS PELL', color: '#c9b98f', bust: { hair: 'short', glasses: true, build: .88 } },
+  DELLA:  { name: 'DELLA MARSH', color: '#d49a7a', bust: { hair: 'bun', build: 1.12 } }
 };
