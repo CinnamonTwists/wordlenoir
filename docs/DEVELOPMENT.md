@@ -938,6 +938,24 @@ characters reused across packs are varied rather than repeated (the checker warn
 ### T9. More audio
 **Goal:** unique stings, jazzy loops, and more sounds that make the world feel alive.
 
+**Groundwork for step 10 (written at the end of step 9, 2026-10-04).** What the finished scripts actually use, so the work goes where players hear it:
+- **Moods** (`@mood`, ~625 uses): blue 249, warm 125, red 79, noir 60, gold 50, sick 41, violet 21. `MOOD_MUSIC` maps noir/warm/blue → calm,
+  gold → hope, red → dread, sick/violet → tense, so **calm** carries most of the game, then dread, then tense.
+- **Sets** (`@set`, a candidate key for ambience beds), most used first: precinct 281, street 256, office 190, bar 171, hearing 120, apartment 98,
+  station 79, pressroom 76, alley 71, morgue 61, phonebooth 60, rooftop 49, docks 43, warehouse 40, records 35, studio 33, penitentiary 28,
+  ferry 17, vault 15, gangway 11, then the interlude sets (hospital, restaurant, kitchen, ballpark, cemetery, ruins: 1–7 each). 27 sets in all.
+- **`~sfx`** in scripts: ring 86, hangup 60, whistle 15, boom 5, siren 4, foghorn 4, telegraph 3, thunder 2. `ring`/`hangup` matter most
+  (the Editor's calls). **Cut-ins:** 77 across all packs (5–11% per pack), each with a sting.
+- **Constraints any new sound must respect:** every one-shot goes through `AU` so `AU.quiet` silences it during a skip (§1.7, §1.8); every delay
+  goes through `sleep()`; `AU.init()` only inside a user gesture; music/beds are exempt from quiet (the `ALWAYS` list); new `~` commands must be
+  added to the checker's `TILDE` set and validated like `~sfx`; `#speedN` must not stretch real-time audio (T10's cooldown uses AudioContext time).
+- **Suggested order:** (1) the named-cue API (`AU.play/music/amb`) wrapping today's voices, with no audible change; (2) ambience beds keyed by
+  set (start with the top eight above), crossfading on `@set`; (3) the music scheduler and calm loop, then dread, tense and hope, with mood
+  crossfades and ducking; (4) the sting library and `~sting/~music/~amb`; (5) the new SFX, most-heard first (ring/hangup variants, typewriter for
+  `~paper`, glass and pour for the bar, footsteps, station bell); (6) a pass adding `~sfx`/`~amb` to scenes where it helps (keep restraint).
+- **Verifying audio:** offline-render levels through the real bus chain like T10 did (§1.8), keep the e2e green (no console errors while
+  sounds play at `#speed400`), and give the owner specific scenes to listen to (they approve by ear, as with T10).
+
 - [x] **Bus restructure** (step 5; `ui` follows the Sound effects slider, see §1.8): `music`, `sfx`, `ambience` (rain + beds), `ui` (keys, ticks), each with its own gain under master, wired to the T2 sliders.
 - [ ] **Music scheduler** (lookahead clock pattern) for procedural jazz loops: walking bass (filtered triangle pluck), brushed snare (filtered noise swishes),
       ride cymbal (high-passed noise ticks), Rhodes/vibraphone chords (sine + light FM), and muted-trumpet licks (the existing `riff` voice). Loops per mood:
@@ -1029,3 +1047,9 @@ No open decisions right now. Add new ones here as they come up.
 - **B2. "Thousands of generated scenes."** The F2 pack format is the target output for any generator. Keep generated packs as plain JS modules so there's still no build step.
 - **B3. Server-side features** (cloud saves, daily case, leaderboards) would add a Worker script (`main` in `wrangler.jsonc`) plus KV/D1.
   Not needed for anything above, since all of T1–T10 is client-side.
+- **B4. A read-through and playtest of the story** (noted after step 9). ~1,650 story scenes were written in one pass. Worth a human read for voice,
+  repetition across a single playthrough, and pacing, and a playtest of a few real runs (not forced) to feel the interludes land. The checker
+  catches structure, not prose.
+- **B5. Dossier extras** (T2's optional tabs, not built): an allies page, and the Editor's page, redacted until an ending has been found.
+- **B6. Release.** `main` holds steps 1–9 locally; production (wordlenoir.com) still runs the pre-roadmap build. Pushing `main` deploys
+  everything at once. The owner decides when; a playtest (B4) first is the cautious path.

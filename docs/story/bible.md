@@ -464,3 +464,28 @@ become what happened. Every "Escape" consequence in §6 therefore moves to the *
 culprit is caught with seconds to spare but the cost still lands. The story flags in §10 rule 7 are set by near-miss wins, not escapes
 (`notary_free` → ch 3 near miss, `dooley_hurt` → ch 6, `briggs_out`/`penny_free` → ch 7, `vera_saved_herself` → ch 8). The **escaped**
 outro beat plays only after a loss, as the retelling (§4).
+
+**2026-10-04: what writing the whole story settled (step 9; approved by the owner, who gave the writer a free hand).** None of these changes a
+chapter's culprit, crime, deadline, midpoint or hook. They fill gaps the sections above left open.
+- **Dates.** The hooks say "tomorrow" three times, so chapters 3, 5 and 9 happen the night after chapters 2, 4 and 8: Oct 4 · Oct 11 · Oct 12 ·
+  Oct 20 · Oct 21 · Nov 1 · Nov 9 · Dec 1 · Dec 2 · Dec 15, 1948. Each interlude is the day after its chapter, except "Last Call" (ch 9), which
+  is the night before the finale, two weeks later.
+- **Named, but out the door.** In a near miss a culprit has heard their headword, so the Lexicon is finished with them, but two of them still get
+  away from the police: the Notary (ch 3, hence `notary_free`) and Lola (ch 9, "she bows and is gone"). Everyone else is caught in every win.
+- **Who's who.** Ch 1's murdered night editor is Ned Goss. Ch 2's victim is Benny Fusco, a Varga bagman. Ch 3's dead man is Harold Mercer, a shipping
+  clerk; Eddie's wife is Rosa. Ch 4's engineer is Lou Benning; WKRN belongs to Councilman Haverly. Ch 5's porter is Amos Greer. Ch 6's night clerk is
+  old Mr. Pruitt, and Pike's canary is Beatrice. Ch 7's bank is First Municipal Trust (night manager Fosdick); the shell company is Colophon
+  Holdings. Ch 9's poll watcher is Harvey Bloom. Bit parts with lines: the press FOREMAN (ch 1), the WARDEN and ROSA (ch 3).
+- **How the clues reach Dash.** Ch 5's Index pages come from the porter, who took them from the suitcase before he died. In ch 8, Vera's message is a
+  proofreader's transpose mark swapping "ferry" and "Gazette" in the farewell letter. In ch 10 the Final Edition is hidden inside the Gazette's
+  own delivery bundles, and Thorne gives up which ones when he's named.
+- **The finale.** Chapter 10's won beats all end on Platform Nine at 5:58 with the Professor; the ending decides the rest. In A–D, Dash's answer
+  to Sal's 1931 line depends on chapter 8's interlude: Pop confessed (kept), got halfway (late), or left the sealed letter (missed). In C the line
+  arrives on the last postcard. Ending D takes the badge unless the Vera thread ended worst, in which case Dash keeps the badge and loses Vera.
+  After the four codas, one more scene closes the record in the hearing room (stamped INSUFFICIENT RECORD in the bad ending). The egg has neither.
+- **Seeds and clues as placed** (one of each per chapter, at most): the egg seeds are ch 1 the alias line, 2 "you never look surprised", 3 Ruth's
+  "you never pause before the names", 4 the call arriving before the bell, 5 Pop in "The Good Shoes", 6 the typewriter smudge, 7 Ruth's "you haven't
+  asked what this record is for", 8 Vera's "lists, five letters at a time", 9 Lola's "you always knew my lines before I said them". Sal's clues
+  are ch 1 the rye poured before he sits, 2 the red pencil, 3 the broken radio, 4 the Editor calling the payphone while Sal's in the back,
+  5 gin poured before trains, 6 asking only what time Dash got home, 7 knowing the wire window opens at six, 8 already on his way,
+  9 "it'll come down to the Fourth Ward", 10 Sal's suitcase and the bar closed for the first time in twenty years.
