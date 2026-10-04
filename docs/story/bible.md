@@ -454,3 +454,13 @@ Everything in DEVELOPMENT.md T8 applies (budget, cut-in budget, any-guess scenes
   `coda: { pop, vera, nora, bottle } × { best, middle, worst }` (IDs `end.coda.pop.best` …).
 - **T8 budget:** +3 interlude scenes per chapter 1–9 (27 total) and +12 codas.
 - **Step 8's vertical slice** includes the chapter 1 and 2 interludes, so the kept/late/missed mechanic is proven end to end.
+
+---
+
+## Amendments
+
+**2026-10-04: escapes don't stick (approved by the owner).** Under D1, losing a chapter always rolls it back, so an escape can never
+become what happened. Every "Escape" consequence in §6 therefore moves to the **near miss**: the chapter won on guess 5–6, when the
+culprit is caught with seconds to spare but the cost still lands. The story flags in §10 rule 7 are set by near-miss wins, not escapes
+(`notary_free` → ch 3 near miss, `dooley_hurt` → ch 6, `briggs_out`/`penny_free` → ch 7, `vera_saved_herself` → ch 8). The **escaped**
+outro beat plays only after a loss, as the retelling (§4).
