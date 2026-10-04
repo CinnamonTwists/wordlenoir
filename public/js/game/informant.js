@@ -4,14 +4,14 @@ import { S, DEBUG, pack } from './state.js';
 import { WORDS } from './words.js';
 import { stats } from './scoring.js';
 
-// Maybe returns an informant scene for this round (or ''), filling the clue vars it quotes into ctx.
+// Maybe returns an informant scene object for this round (or null), filling the clue vars it quotes into ctx.
 export function informant(g, b, ctx) {
-  if (DEBUG.forceInf === false) return '';
+  if (DEBUG.forceInf === false) return null;
   let p = [0, .22, .35, .45, .5, .6][g] + (b === 0 ? .15 : 0); if (S.lastInf && g < 5) p *= .4;
-  if (!DEBUG.forceInf && R() > p) { S.lastInf = false; return ''; }
-  const st = stats(WORDS.answers, S.guesses, S.fb); if (st.n < 1) return '';
+  if (!DEBUG.forceInf && R() > p) { S.lastInf = false; return null; }
+  const st = stats(WORDS.answers, S.guesses, S.fb); if (st.n < 1) return null;
   const types = ['n', 'dbl']; if (st.top) types.push('top'); if (st.pos) types.push('pos');
-  const pool = pack().informants.filter(i => types.includes(i.type) && !S.infUsed.has(i.id)); if (!pool.length) return '';
+  const pool = pack().informants.filter(i => types.includes(i.type) && !S.infUsed.has(i.id)); if (!pool.length) return null;
   const inf = pick(pool); S.infUsed.add(inf.id); S.lastInf = true;
   const v = ctx.vars;
   Object.assign(v, { n: st.n, nN: nounN(st.n, 'word', 'words'), NWORDS: `${st.n} ${st.n === 1 ? 'WORD' : 'WORDS'}`, FIT: st.n === 1 ? 'FITS' : 'FIT', dblPct: st.dblPct });
@@ -23,5 +23,5 @@ export function informant(g, b, ctx) {
     : inf.type === 'pos' ? { label: `${nm} · ${ORD[st.pos.i].toUpperCase()} LETTER`, big: `${st.pos.L}`, sub: `${st.pos.pct}% CHANCE IN SPOT ${st.pos.i + 1}` }
     : { label: `${nm} · REPEATED LETTERS`, big: `${st.dblPct}%`, sub: 'CHANCE A LETTER SHOWS UP TWICE' };
   S.infLog.push(inf.id);
-  return inf.s;
+  return inf;
 }

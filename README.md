@@ -12,10 +12,16 @@ Requires [Node.js](https://nodejs.org) 18+. Nothing to install.
 npm run dev      # http://localhost:8788  (add #speed10 to the URL to fast-forward scenes)
 npm run check    # validate every scene pack and word list (add -- --coverage for pool sizes)
 npm run e2e      # play a win, a loss and more in headless Chrome/Edge (Node 22+)
+npm test         # unit tests for the save system and other DOM-free modules
 npm run preview  # optional: run under Cloudflare's real runtime via wrangler
 ```
 
 Opening `public/index.html` straight from disk won't work, because browsers block ES modules on `file://`.
+
+## Saves
+
+Progress lives in the browser (`localStorage`, key `wordlenoir.save`). A case in progress reopens after a reload or a closed tab.
+If the browser won't store anything (some private modes), the game says so and keeps playing without saving.
 
 ## Deploying
 
@@ -42,13 +48,15 @@ public/                     ← everything that gets deployed
     content/                  the story: cast, names, registry.js (loads scene packs, looks up scenes by ID)
       random/                 Random Case pack: intros, tail, rounds (cores/), informants, win/loss endings, openers, closers
       chapters/               story chapter packs (coming)
-    game/                     rules and flow: state, scoring, board UI, case generation, informants, report
+    game/                     rules and flow: state, scoring, board UI, case generation, informants, report, snapshots
+    save/                     browser saves: one versioned localStorage document, migrations, progress rules
 tools/                      dev server, scene validator, e2e test (not deployed)
+tests/                      unit tests (not deployed)
 docs/                       development guide + roadmap (DEVELOPMENT.md), scene-script reference
 wrangler.jsonc              Cloudflare config
 ```
 
-Modules under `script/`, `content/`, `art/`, `game/scoring.js` and `game/words.js` don't touch the DOM
+Modules under `script/`, `content/`, `art/`, `save/`, `game/scoring.js`, `game/snapshot.js` and `game/words.js` don't touch the DOM
 when imported, so Node tools (like `npm run check`) can load them.
 
 ## Adding content
@@ -73,4 +81,5 @@ NOIR.forceInf = true;       // force an informant every round (false = never)
 NOIR.S                      // current case state
 NOIR.MISSING                // {vars} a script referenced but nothing supplied
 NOIR.scene('rnd.tail')      // any loaded scene by ID; NOIR.pack is the Random Case pack
+NOIR.save.get()             // the save document; NOIR.save.reset() wipes it
 ```

@@ -1,7 +1,7 @@
 import { getPack } from '../content/registry.js';
 
 // The current case. `S` is a live binding: importers always see the latest object after setState().
-// This is the natural place to hang save/load once persistence lands.
+// Saved and restored through game/snapshot.js (roadmap F1): a new field must be added to its KEEP list to survive a reload.
 export let S = {};
 export const setState = s => { S = s; };
 

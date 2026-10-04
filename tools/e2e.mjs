@@ -95,11 +95,19 @@ async function checkReport(answer, won, n) {
   if (bad.length) throw new Error('report: ' + bad.join('; '));
 }
 // Starts a case (from the title screen or the report) with a forced answer.
-async function openCase(answer, forceInf, first) {
+async function openCase(answer, forceInf) {
   await ev(`NOIR.forceAnswer = ${JSON.stringify(answer)}; NOIR.forceInf = ${forceInf === undefined ? 'undefined' : forceInf}`);
-  await click(first ? '#startBtn' : '#rNew');
+  await click(await ev(`!document.querySelector('#title').hidden`) ? '#startBtn' : '#rNew');
   await until(`NOIR.S.answer === ${JSON.stringify(answer)} && NOIR.S.guesses.length === 0`, 'a new case');
 }
+// Reloads the page and waits for the new one to boot (a marker on the old window tells them apart).
+async function reload() {
+  await ev('window.__oldPage = 1'); await send('Page.reload');
+  const t = Date.now();
+  while (Date.now() - t < WAIT) { try { if (await ev('!window.__oldPage && !!(window.NOIR && NOIR.pack && NOIR.ANSWERS.length)')) return; } catch { /* mid-navigation */ } await wait(50); }
+  throw new Error('timed out waiting for the page to reload');
+}
+const saved = () => ev(`(NOIR.save.flush(), JSON.parse(localStorage.getItem('wordlenoir.save')))`);
 const randomWords = async (n, not) => ev(`(() => { const out = []; while (out.length < ${n}) { const w = NOIR.ANSWERS[Math.floor(Math.random() * NOIR.ANSWERS.length)]; if (w !== ${JSON.stringify(not)} && !out.includes(w)) out.push(w); } return out; })()`);
 
 // ---------- scenarios ----------
@@ -110,7 +118,7 @@ test('title → first case, invalid word is refused', async () => {
   await until('window.NOIR && NOIR.ANSWERS.length > 0 && NOIR.pack', 'the word lists and the Random Case pack to load');
   if (!await ev(`NOIR.pack.id === 'rnd' && NOIR.scene('rnd.tail') === NOIR.pack.tail`)) throw new Error('scene registry: rnd pack or id lookup is wrong');
   const answer = (await randomWords(1, ''))[0];
-  await openCase(answer, undefined, true);
+  await openCase(answer);
   await until(READY, 'the intro to finish');
   await type('zzzzz'); await key('Enter');
   await until(`document.querySelector('#toast').textContent.trim().length > 0`, 'the "not a word" toast');
@@ -137,6 +145,57 @@ test('win on guess 3', async () => {
   await guess(wrong[0]); await guess(wrong[1]); await guess(answer);
   await checkReport(answer, true, 3);
   return answer;
+});
+test('save: reopen a case after reload', async () => {
+  const [answer, ...wrong] = await randomWords(3, '');
+  await openCase(answer, false);
+  await guess(wrong[0]); await guess(wrong[1]);
+  await until(READY, 'the round to finish');
+  const doc = await saved();
+  if (doc?.random?.active?.guesses?.length !== 2) throw new Error(`checkpoint missing: ${JSON.stringify(doc?.random?.active)}`);
+  if (JSON.stringify(doc).includes(`"${answer}"`)) throw new Error('the answer is readable in the save');
+  if (!doc.seen['rnd.tail'] || Object.keys(doc.seen).filter(k => k.startsWith('rnd.core.')).length < 2) throw new Error(`seen marks missing: ${Object.keys(doc.seen)}`);
+  await reload();
+  if (await ev(`document.querySelector('#startBtn').textContent`) !== 'Reopen the case file') throw new Error('title button does not offer to reopen');
+  await click('#startBtn');
+  await until(`NOIR.S.guesses?.length === 2 && ${READY}`, 'the case to reopen');
+  const s = await ev(`({ painted: document.querySelectorAll('#grid .tile[data-s]').length, memo: document.querySelector('#memo').textContent, answer: NOIR.S.answer, counts: NOIR.S.counts.length })`);
+  if (s.painted !== 10 || !/reopened/i.test(s.memo) || s.answer !== answer || s.counts !== 2) throw new Error(`bad resume: ${JSON.stringify(s)}`);
+  await guess(answer); await checkReport(answer, true, 3);
+  if ((await saved()).random.active !== null) throw new Error('finished case was not cleared from the save');
+  return answer;
+});
+test('save: reload mid-scene keeps the guess', async () => {
+  const [answer, ...wrong] = await randomWords(3, '');
+  await openCase(answer, false);
+  await until(READY, 'the intro to finish');
+  await ev('NOIR.speed = 2');   // slow the next scene down so the reload lands inside it (the reload restores #speed400)
+  await type(wrong[0]); await key('Enter');
+  await until('NOIR.S.pending?.length > 0', 'the round scene to start', 20000);
+  const pending = await ev('[...NOIR.S.pending]');
+  await reload();
+  await click('#startBtn');
+  await until(`NOIR.S.guesses?.length === 1 && ${READY}`, 'the case to reopen after the guess');
+  const doc = await saved();
+  if (!pending.every(id => doc.seen[id])) throw new Error(`interrupted scene not marked seen: ${pending}`);
+  if (doc.random.active.pending.length) throw new Error('pending scenes left in the checkpoint');
+  await guess(wrong[1]); await guess(answer); await checkReport(answer, true, 3);
+  return `${answer}, interrupted ${pending.join(' + ')}`;
+});
+test('save: blocked storage warns and still plays', async () => {
+  const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('denied', 'SecurityError'); } });` });
+  try {
+    await reload();
+    if (await ev('NOIR.save.status.reason') !== 'blocked') throw new Error('store did not notice storage is blocked');
+    const answer = (await randomWords(1, ''))[0];
+    await ev(`NOIR.forceAnswer = ${JSON.stringify(answer)}`);
+    await click('#startBtn');
+    await until(`/isn't keeping/.test(document.querySelector('#toast').textContent)`, 'the "progress won\'t be kept" warning');
+    await until(`NOIR.S.answer === ${JSON.stringify(answer)}`, 'a new case');
+    await guess(answer); await checkReport(answer, true, 1);
+  } finally {
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier }); await reload();
+  }
 });
 for (let i = 1; i <= CASES; i++) test(`random case ${i}/${CASES}`, async () => {
   const [answer, ...wrong] = await randomWords(7, '');

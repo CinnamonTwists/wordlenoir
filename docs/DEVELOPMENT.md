@@ -19,7 +19,7 @@ Related docs: [README.md](../README.md) (quick start), [scene-scripts.md](scene-
 | What it is | Single-mode Wordle variant: one five-letter answer, six guesses, a noir cutscene after every guess. |
 | Stack | Vanilla JS (native ES modules), CSS, inline SVG art, Web Audio synthesis. No framework, no dependencies, **no build step**. |
 | Hosting | Cloudflare Workers Builds, Worker `raspy-term-4561`, domain wordlenoir.com. Push to `main` deploys. |
-| Persistence | None yet. Nothing survives a reload. |
+| Persistence | One localStorage key, `wordlenoir.save` (§1.12): the case in progress (reopens after a reload), seen scenes, and the schema for settings, campaign and dossier. |
 | Content | Random Case pack (`rnd`): 101 scenes with stable IDs + 31 one-liners (21 openers, 10 closers). 13 characters, 11 locations, 2,309 answers, 12,546 extra valid guesses. No story chapters yet. |
 | Average scene | ~357 characters of script. |
 
@@ -30,6 +30,7 @@ npm run dev      # zero-dep static server for public/ on :8788 (tools/dev-server
 npm run check    # validates every scene pack, cast stings, cut-in budget + word lists (tools/check-scenes.mjs), exit 1 on errors
 npm run check -- --coverage   # ...plus per-pack slot counts against the T8 chapter budget
 npm run e2e      # plays real cases in headless Chrome/Edge (tools/e2e.mjs), exit 1 on failure. Needs Node ≥ 22
+npm test         # unit tests (node:test, tests/*.test.mjs): save store, schema, codec, snapshots, chapter attempts
 npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on first run
 ```
 
@@ -37,11 +38,13 @@ npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on fi
 - **URL `#speedN`** (e.g. `#speed20`) scales every scripted delay. `#speed400` plays a full case in about a second.
 - **Console hook `window.NOIR`**: `S` (state), `speed`, `forceAnswer`, `forceInf` (true = informant every round, false = never),
   `press(key)`, `play(src, ctx)`, `score`, `stats()`, `parseScript`, `ANSWERS`, `ALLOWED`, `VT` (virtual ms played), `MISSING` (unfilled `{vars}`),
-  `pack` (the loaded Random Case pack), `scene(id)` (any loaded scene). Audition one with `NOIR.play(NOIR.scene('rnd.core.1-0.02').s, { vars: {}, flags: {} })`.
-- **End-to-end test (`npm run e2e`, about 7 s)**: zero dependencies. It starts the dev server on a free port and launches local Chrome or Edge
+  `pack` (the loaded Random Case pack), `scene(id)` (any loaded scene), `save` (the store: `NOIR.save.get()` is the save document, `NOIR.save.reset()` wipes it). Audition one with `NOIR.play(NOIR.scene('rnd.core.1-0.02').s, { vars: {}, flags: {} })`.
+- **End-to-end test (`npm run e2e`, about 17 s)**: zero dependencies. It starts the dev server on a free port and launches local Chrome or Edge
   headless (`CHROME=/path` overrides the browser) with `--remote-debugging-port=0` and a throwaway profile. It drives the page over the
   DevTools Protocol at `#speed400` with real clicks and key presses, using `NOIR` to force answers and informants and to read state.
-  - Scenarios: title → first case (an invalid word is refused, then a first-guess win), a loss with an informant every round, a win on guess 3.
+  - Scenarios: title → first case (an invalid word is refused, then a first-guess win), a loss with an informant every round, a win on guess 3,
+    and three save scenarios: reopen after a reload (rows repainted, answer not readable in the save, seen marks written, finished case cleared),
+    reload in the middle of a cutscene (the guess survives and the interrupted scene counts as seen), and blocked storage (the warning toast shows and the game still plays).
     `--cases N` adds N random cases (random answer, random win guess or loss, random informant setting) for scene coverage.
   - Every scenario asserts the report (verdict, answer tiles, one table row per guess), no exceptions, no `console.error`, no failed same-origin requests,
     and an empty `NOIR.MISSING`. The first failure stops the run.
@@ -80,6 +83,11 @@ public/js/
     cast.js               CAST: key → { name, color, bust, sting? }
     names.js              NAMES_M, NAMES_F (for {victim}/{singer})
     registry.js           packId, loadPack(ch) (lazy import, cached), getPack(ch), sceneById(id), scenesOf(pack)
+  save/                   Persistence (§1.12)                                               [DOM-free]
+    store.js              createStore(), store: load, get(path), update(fn), flush, reset, status, onStatus
+    schema.js             VERSION, defaults(), migrate(doc)
+    codec.js              hide(word) / reveal(str): answer obfuscation (D6)
+    progress.js           markSeen, isSeen; campaign: newCampaign, beginAttempt, winAttempt, loseAttempt, avoidFor (D1/D7)
     random/               the Random Case pack (chapter 0): index (assembles the pack), intros, tail, openers,
                           cores/suspect-1..5, informants, win, loss, closers
     chapters/cNN/         story chapter packs, same shape (none yet; written fresh from step 8)
@@ -87,14 +95,16 @@ public/js/
     state.js              S (live binding) + setState, pack() (the active scene pack), used (no-repeat sets), DEBUG
     words.js              WORDS {answers, allowed}, loadWords() (fetch), parseWordList        [DOM-free at import]
     scoring.js            score, candidates, stats, bucketOf                                [DOM-free]
-    board.js              grid/keyboard/clock/cigarettes/memo/toast, revealRow, verdictLine
+    board.js              grid/keyboard/clock/cigarettes/memo/toast, revealRow, paintRows (restore), verdictLine
+    snapshot.js           snapshot(S) / restore(snap): case state ⇄ save data                [DOM-free]
     case.js               genTimes, genCase, baseVars, guessVars
-    informant.js          informant(g, bucket, ctx): maybe returns an informant script + sets ctx.clue
+    informant.js          informant(g, bucket, ctx): maybe returns an informant scene object + sets ctx.clue
     report.js             showReport(onNewCase), share text
-    game.js               press, attachKeyboard, submit, newCase, playScene (play + restore music)
+    game.js               press, attachKeyboard, submit, newCase, resumeCase, playScene (play + restore music), checkpoints
 public/css/               base, title, board, cinema, effects, overlays, ambient (link order = cascade order)
 public/data/words/        answers.txt, allowed.txt (one word per line, # comments allowed)
 tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs, migrate-scenes.mjs (one-off, already run)
+tests/                    *.test.mjs unit tests for DOM-free modules (npm test)
 ```
 
 **Dependency direction:** `main → game → cinema → (art, audio, fx, script, content) → core`. Nothing imports `game/` except `main.js`
@@ -106,20 +116,27 @@ tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs, migrate-sce
 ## 1.4 Runtime flow
 
 ```
-page load ─ main.js: loadWords() + loadPack('random') (async), startRain/Grain, keyboard listener, street backdrop, heavy rain
+page load ─ main.js: store.load(), loadWords() + loadPack('random') (async), startRain/Grain, keyboard listener, street backdrop, heavy rain
+   │         (a saved case in progress renames the button "Reopen the case file")
    │
-"Open the case file" click ─ AU.init() (needs this user gesture), riff, await words + pack, fade title, office backdrop
+"Open the case file" click ─ AU.init() (needs this user gesture), riff, await words + pack, fade title, office backdrop,
+   │         toast if saves aren't being kept; resumeCase() if random.active holds up, else newCase()
    │
+resumeCase() ─ restore(snapshot) → paint the board → back to typing (or straight to the report if that case had ended)
 newCase()  ─ genCase() picks from pack().intros (no repeat until all 12 used) + vars; setState({...}); build grid/kb
    │         play(intro.s + pack().tail.s)       ← tail = rules legend + "SIX SUSPECTS" + first title card
+   │         ✓ seen: intro + tail · ✓ checkpoint
    ▼
 board: player types ─ press() ─ submit()
    │   invalid length/word → shake + toast (the row keeps its letters)
+   │   guess recorded → ✓ checkpoint (reloading can't take a guess back)
    │   revealRow (interrogation flip) → S.counts.push(candidates) → memo verdict
+   │   scenes picked → S.pending = their IDs → ✓ checkpoint
    ├─ win  → riff, play(win.climax + win.epi[g]) → report
    ├─ g==6 → play(loss.climax + loss.epi[bucket]) → piano → report
    └─ else → play(cores['g-b'] with opener + maybe informant + "## {nextTime} | closer")
-              → back to board, memo "Suspect g+1 of 6"
+              → ✓ seen: pending · ✓ checkpoint → back to board, memo "Suspect g+1 of 6"
+   (win and loss: ✓ seen: climax + epilogue, then random.active is cleared before the report)
 ```
 
 `play()` always: black screen → run lines → fade to black → hide cinema → reattach rain to the board canvas.
@@ -147,8 +164,10 @@ board: player types ─ press() ─ submit()
 | `caseVars` | caseNo, date (1946–49), victim, singer, pier, caseTitle |
 | `infUsed` (Set), `infLog[]`, `lastInf` | informant bookkeeping |
 | `title` | case title |
+| `pending[]` | IDs of the round's scenes while they play; marked seen when they finish (or when an interrupted case is reopened) |
 
 `used.intro` / `used.core` hold scene IDs and live outside `S`, so no-repeat works across cases in one session. They are not persisted.
+`busy` and `cur` are transient; every other field is saved by `snapshot()` (game/snapshot.js `KEEP` list).
 
 **Script context `ctx`:** `{ vars, flags, clue }`. `vars` come from `baseVars()` (intro) or `guessVars()` (rounds).
 `informant()` mutates `ctx.vars` and sets `ctx.clue = { label, big, sub }` before `play()`. `flags` is `S.flags` itself, so `~flag` writes into the case.
@@ -296,13 +315,55 @@ below may carry into the story, but no existing scene text will.
 - Pickers (`pickUnused`) reset a pool once it is exhausted. With bigger pools, repeats get rarer for free.
 - `pack()` / `getPack()` are synchronous and return `undefined` until `loadPack()` has resolved. Anything that starts a case must await the pack first (main.js does this for `random`).
 - Scene IDs are permanent (see §1.5). The checker catches duplicate and malformed IDs, but not an ID quietly moved onto new text. Don't do that.
+- Change persisted state only through `store.update(fn)`, never by editing `store.get()` results. A new `S` field must join `KEEP` in game/snapshot.js
+  to survive a reload. Any change to the save's shape means bumping `VERSION` and adding a `MIGRATIONS` step in save/schema.js.
+- Reset local saves while testing with `NOIR.save.reset()` (or clear site data). The e2e test always starts from a fresh browser profile.
 
-## 1.12 Change log
+## 1.12 Save system (save/)
+
+**One document, one key.** `localStorage['wordlenoir.save']` holds a JSON document versioned by `v` (currently 1, save/schema.js):
+
+```js
+{ v: 1, createdAt, updatedAt,
+  settings: { master, music, sfx, ambience, sound, muteHidden, textSpeed, motion, flashes, skipSeen, highContrast, hardMode, textBlips },
+  seen: { [sceneId]: 1 },
+  campaign: null | { runId, startedAt, chapter, results: [{ chapter, guesses, attempts, answer, at }], storyFlags,
+                     attempt: { chapter, n, startFlags, pendingSeen, active } | null, usedScenes: { [chapter]: [sceneId] } },
+  random: { stats: { played, won, dist[6], streak, best }, active: Snapshot | null },
+  dossier: {} }
+```
+
+- **Store** (`store.js`): `load()` at boot, `get('a.b')`, `update(d => …)` (debounced 300 ms), `flush()` (main.js calls it on `pagehide` and when the tab
+  is hidden), and `reset()` (also removes corrupt-file backups). Every storage call is guarded. `status = { persistent, reason, recovered }`:
+  - `blocked`: no storage, or storage that refuses writes. The game runs on the in-memory copy and the player gets a toast.
+  - `quota`: a write failed. It recovers by itself if a later write succeeds.
+  - `future`: the save came from a newer build. It is never written over, and the player is told to reload.
+  - An unreadable save is copied to `wordlenoir.save.corrupt.<time>` (`recovered`) before a fresh one starts.
+- **Schema** (`schema.js`): `migrate(doc)` runs `MIGRATIONS[v]` steps up to `VERSION`, then fills any missing or mistyped field from `defaults()`
+  (unknown keys are kept). It throws for newer versions and non-saves.
+- **Answers are obfuscated** (`codec.js`, D6): `hide()` shifts each letter by a fixed salt and base64s the result with an `n1.` tag, so neither
+  the save nor its base64 decoding shows the word. `reveal()` returns null for anything else.
+- **Snapshots** (`game/snapshot.js`): `S` minus `busy`/`cur`, Sets as arrays, answer hidden. `restore()` rejects a snapshot whose answer doesn't
+  decode, whose guesses aren't five-letter dictionary words, or that continues after a win. It **recomputes feedback and the end state** from the
+  answer instead of trusting the save.
+- **Checkpoints** (game.js, Random Case): after the intro, the moment a guess is scored, when that round's scenes are picked, and when they finish.
+  Reopening resumes on the board after the last checkpoint. Interrupted scenes count as seen, and missing candidate counts are recomputed.
+  A case that had ended goes straight to its report. Finishing a case clears `random.active`.
+- **Seen marks** (`progress.js`): Random Case commits them as soon as a scene completes. Story chapters will stage them in `campaign.attempt.pendingSeen`
+  through `markSeen(d, ids, { story: true })`.
+- **Chapter attempts (D1/D7)** are pure functions, unit-tested and ready for the campaign (step 8):
+  - `newCampaign` and `beginAttempt` start a run and an attempt.
+  - `winAttempt` commits the staged marks, records `{ chapter, guesses, attempts, answer: hide(...) }`, and advances the chapter.
+  - `loseAttempt` restores `storyFlags` from `startFlags`, adds the attempt's scenes to `usedScenes[chapter]`, discards its marks, and starts attempt n+1.
+  - `avoidFor` gives the retry picker its avoid-set.
+
+## 1.13 Change log
 
 What each roadmap step changed, newest first. Details live in the sections above and in each item's **Status** note in Part 2.
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
+| 2026-10-04 | 4: F1 | `step-4-save-system` | Save system (`save/`): one versioned localStorage document with guarded, debounced writes, migrations, answer obfuscation, snapshots, checkpoints, and resume after reload. Seen marks are recorded, and D1 chapter attempts are built as tested functions. Added `npm test` (18 unit tests) and three save e2e scenarios. |
 | 2026-10-04 | 3: F2 + T1 | `step-3-scene-registry` | All 101 scenes became `{ id, chapter, s }` objects in the Random Case pack (`content/random/`, chapter 0). Added `content/registry.js` (lazy pack loading, lookup by ID), the game reads pools only through it, the checker enforces IDs/chapters/no cross-pack reuse, and `--coverage` was added. |
 | 2026-10-03 | 2: F4 | `step-2-smoke-test` | `npm run e2e`: zero-dependency headless Chrome/Edge test that plays real cases (invalid word, loss with informants, win, `--cases N`). |
 | 2026-10-03 | 1: T10 | `step-1-deeper-sting` | Cut-in sting replaced with low brass-hit variants, an 8 s cooldown, and a heavier versus hit. Per-character `CAST[key].sting`, checker cut-in budget. Verified by ear. |
@@ -320,10 +381,26 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
 ### F1. Save system (browser storage)
 **Needed by:** T2 (continue, settings, clear data), T3, T4, T6/T7 campaign, dossier.
 
-- [ ] `public/js/save/store.js`: a single namespaced key (`wordlenoir.save`) holding a versioned JSON document. All access goes through
+**Status: done (step 4).** Implementation in §1.12. Deviations from the plan:
+- **An extra checkpoint is taken the moment a guess is scored**, plus one when the round's scenes are picked. With only "after the scene finishes",
+  reloading during the reveal or cutscene would erase the guess, letting a player see a word's feedback and then take it back.
+- **Resume UI is interim:** until the menu (step 5) has Continue, the title button becomes "Reopen the case file" and reopens `random.active`.
+  "New case" still drops it.
+- **Settings schema** adds `sound` (the existing sound toggle) and `muteHidden` (T2's "mute when the tab is hidden"). `motion` and `flashes`
+  are `'os' | 'full' | 'reduced'`, so "follow the OS" is an explicit default.
+- `results[]` entries also record `at` (a timestamp, for a future "fastest run"). `attempt` gains `n`, its attempt number in the chapter, which feeds
+  `results[].attempts` (D7).
+- **Obfuscation:** a salted per-letter shift *then* base64, rather than base64 of salt + word, so decoding the base64 doesn't reveal the answer either.
+- **Snapshots** don't store `fb`. It's recomputed from the answer on restore, so a tampered save can't fake feedback.
+- **Seen marks** are recorded per round for now, because `play()` still takes one string. Per-segment marking arrives with T3.
+- D1 attempts are implemented and unit-tested as save functions. The campaign that calls them is step 8.
+- Added `npm test` (`node --test`, zero dependencies) with 18 unit tests. Writing those tests found a bug: storage that reads but refuses
+  writes was reported as "full" instead of "blocked". It's fixed.
+
+- [x] `public/js/save/store.js`: a single namespaced key (`wordlenoir.save`) holding a versioned JSON document. All access goes through
       `load()`, `get(path)`, `update(fn)`, and `reset()`. Debounced writes. Every `localStorage` call wrapped in try/catch (private mode or quota
       errors fall back to in-memory and the UI says progress won't be kept).
-- [ ] Schema v1 (draft):
+- [x] Schema v1 (draft):
   ```js
   {
     v: 1, createdAt, updatedAt,
@@ -340,13 +417,13 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
     dossier: { [culpritId]: { status, unlockedAt } }
   }
   ```
-- [ ] `migrate(doc)` chain keyed by `v`. Unknown future versions are refused rather than clobbered.
-- [ ] **Answer obfuscation (D6):** every stored answer (snapshots, `results`, exports) goes through `hide(word)`/`reveal(str)` (base64 + a fixed salt),
+- [x] `migrate(doc)` chain keyed by `v`. Unknown future versions are refused rather than clobbered.
+- [x] **Answer obfuscation (D6):** every stored answer (snapshots, `results`, exports) goes through `hide(word)`/`reveal(str)` (base64 + a fixed salt),
       so the solution isn't readable at a glance in devtools or an exported file.
-- [ ] **Snapshot** = serializable case state: `S` minus transient fields (`busy`, `cur`), with Sets converted to arrays. Save at checkpoints:
+- [x] **Snapshot** = serializable case state: `S` minus transient fields (`busy`, `cur`), with Sets converted to arrays. Save at checkpoints:
       after the intro finishes, and after each round's scene finishes. Quitting mid-scene resumes on the board after the last checkpoint.
       That scene is then "seen", so it can be skipped on replay.
-- [ ] **Chapter attempts (D1):** a story chapter runs as an *attempt*. Scenes seen during it go to `attempt.pendingSeen` and merge into `seen`
+- [x] **Chapter attempts (D1):** a story chapter runs as an *attempt*. Scenes seen during it go to `attempt.pendingSeen` and merge into `seen`
       only when the chapter is won. A loss throws the attempt away: pending seen marks are discarded, story flags revert to `startFlags`,
       the played scene IDs are added to `usedScenes[chapter]`, and the player restarts at the chapter's beginning.
       Random Case commits `seen` as soon as each segment completes.
@@ -405,7 +482,7 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
 - [x] `tools/e2e.mjs` (zero-dep, Node ≥ 22 has a global WebSocket): starts the dev server, launches local Chrome/Edge headless with
       `--remote-debugging-port`, then plays a win and a loss at `#speed400` via `NOIR`. It asserts the report, no console errors, and no `NOIR.MISSING`.
       Add the script `npm run e2e`.
-- [ ] Extend as modes land: random mode, a full campaign at speed with forced answers (to reach every ending, including the easter egg), save/resume, import/export round-trip.
+- [ ] Extend as modes land: random mode, a full campaign at speed with forced answers (to reach every ending, including the easter egg), ~~save/resume~~ (done in step 4), import/export round-trip.
 
 ## 2.2 Requested items
 
@@ -480,7 +557,7 @@ All existing scenes go to the Random Case pool from the start (D3). The story st
 
 - [ ] `modes/random.js` wraps the current flow (F3) and uses the `rnd` pack (today's scenes, see D3).
 - [ ] Track stats (played, won, guess distribution, streaks) in `random.stats` and show them on the report and in a small stats panel.
-- [ ] Resumable via `random.active` checkpoint.
+- [ ] Resumable via `random.active` checkpoint. (Checkpointing and resume work since step 4 via the title button. T5 adds Continue to the menu.)
 - [ ] Keeps the share report ("WORDLE NOIR · Case No. ####").
 
 ### T6. Ten-chapter story with an overarching plot
@@ -622,7 +699,7 @@ structure that holds it is settled.
 | 1 ✓ | **Deeper sting + cut-in cooldown** | T10 | Small, isolated, and directly fixes playtester feedback. Ships alone. |
 | 2 ✓ | **Smoke test in repo** | F4 | Safety net before the big refactors. |
 | 3 ✓ | **Scene registry + chapter tags** | F2, T1 | Every later feature keys off stable scene IDs and packs. |
-| 4 | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |
+| 4 ✓ | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |
 | 5 | **Screens + modes refactor, Random Case mode, main menu shell, settings** | F3, T5, T2 (partial) | Today's game becomes "Random Case" behind a real menu. Story entries show as "coming soon". Settings land with audio buses (start of T9). |
 | 6 | **Skip seen scenes + case notes, export/import** | T3, T4 | Both are small once F1/F2 exist, and they make testing long content faster. |
 | 7 | **Story bible** (needs your sign-off) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |

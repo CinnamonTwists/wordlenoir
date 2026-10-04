@@ -23,6 +23,10 @@ export function updateKB() {
   S.guesses.forEach((g, gi) => S.fb[gi].forEach((v, i) => { best[g[i]] = Math.max(best[g[i]] ?? -1, v); }));
   kb.querySelectorAll('.key').forEach(b => { const v = best[b.dataset.k]; if (v != null) b.dataset.s = ['gray', 'yellow', 'green'][v]; else delete b.dataset.s; });
 }
+// Fills in every submitted row without animation (used when a saved case is reopened).
+export function paintRows() {
+  S.guesses.forEach((w, r) => [...grid.children[r].children].forEach((t, i) => { t.textContent = w[i]; t.dataset.s = ['gray', 'yellow', 'green'][S.fb[r][i]]; }));
+}
 export function renderRow() { const row = grid.children[S.guesses.length]; if (!row) return; [...row.children].forEach((t, i) => { const ch = S.cur[i] || ''; if (t.textContent !== ch) { t.textContent = ch; t.classList.toggle('filled', !!ch); if (ch) { t.classList.remove('pop'); void t.offsetWidth; t.classList.add('pop'); } } }); }
 export function updateStatus() {
   const g = S.guesses.length, nt = S.times[Math.min(g + 1, 6)];
