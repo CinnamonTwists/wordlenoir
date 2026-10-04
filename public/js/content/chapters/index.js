@@ -57,7 +57,7 @@ export const CHAPTERS = [
     deadline: 'the election count is certified', why: 'At 6:00 the count is certified, and a Lexicon slate takes City Hall.',
     associates: 'The Lexicon (an Entry). Every stage in town.', quote: 'I was never lying to you, Dash. I was rehearsing.',
     bust: { hair: 'bob', color: '#ff6f91' } },
-  { n: 10, title: 'Final Edition', date: 'December 15, 1948', written: false,
+  { n: 10, title: 'Final Edition', date: 'December 15, 1948', written: true,
     culprit: 'Ellery Thorne', alias: 'the Proofreader', crime: 'eleven corrections, none of them survivable',
     mo: 'Corrections. He never improvises.',
     deadline: 'the Final Edition hits the streets', why: 'At 6:00 a counterfeit Gazette rewrites the city\'s record, and the Editor boards the 6:00 train.',
