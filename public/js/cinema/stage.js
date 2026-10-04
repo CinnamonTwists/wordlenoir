@@ -29,4 +29,4 @@ export async function setScene(name, ctx) {
   if (C.blackOn) { back.classList.add('on'); if (C.front) C.front.classList.remove('on'); C.front = back; await sleep(60); return; }
   hideText(); back.classList.add('on'); if (C.front) C.front.classList.remove('on'); C.front = back; await sleep(900);
 }
-export function setMood(m) { C.el.dataset.mood = m; AU.setMusic(MOOD_MUSIC[m] || 'calm'); }
+export function setMood(m) { C.el.dataset.mood = m; AU.music(MOOD_MUSIC[m] || 'calm'); }

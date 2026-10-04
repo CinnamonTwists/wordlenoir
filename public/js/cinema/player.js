@@ -26,10 +26,10 @@ async function runLine(raw, ctx) {
       case 'black': hideText(); return blackIn(900);
       case 'shake': return shake();
       case 'flash': flashFx(); return sleep(300);
-      case 'lightning': await lit(); flashFx(.85); await sleep(140); flashFx(.6); await sleep(500); AU.thunder(); return sleep(700);
-      case 'heart': AU.heart(); C.vig.classList.remove('pulse'); void C.vig.offsetWidth; C.vig.classList.add('pulse'); return sleep(1300);
+      case 'lightning': await lit(); flashFx(.85); await sleep(140); flashFx(.6); await sleep(500); AU.play('thunder'); return sleep(700);
+      case 'heart': AU.play('heart'); C.vig.classList.remove('pulse'); void C.vig.offsetWidth; C.vig.classList.add('pulse'); return sleep(1300);
       case 'rain': RAIN.set(arg); AU.setRain(arg, getSet(C.set).indoor); return;
-      case 'sfx': if (AU[arg]) AU[arg](); return sleep(arg === 'ring' ? 2600 : arg === 'hangup' ? 900 : arg === 'whistle' ? 1400 : arg === 'telegraph' ? 1200 : 400);
+      case 'sfx': AU.play(arg); return sleep(arg === 'ring' ? 2600 : arg === 'hangup' ? 900 : arg === 'whistle' ? 1400 : arg === 'telegraph' ? 1200 : 400);
       case 'wait': return sleep(+arg || 1000);
       case 'flag': ctx.flags[arg] = 1; return;
       case 'story': if (ctx.story) ctx.story[arg] = 1; return;   // campaign-scoped (roadmap T6); kept only if the chapter is won

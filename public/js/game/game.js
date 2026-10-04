@@ -33,7 +33,7 @@ async function playScene(segments, ctx) {
     mode.seen([id]);
     if (S.pending.includes(id)) { S.pending = S.pending.filter(x => x !== id); checkpoint(); }
   } });
-  AU.setMusic(S.g >= 4 ? 'tense' : 'calm');
+  AU.music(S.g >= 4 ? 'tense' : 'calm');
 }
 export function skipPolicy(id, isSeen = mode.isSeen) {
   const how = store.get('settings.skipSeen');
@@ -48,8 +48,8 @@ const report = () => showReport(mode.next ? () => mode.next(S) : newCase, { onMe
 export function press(k) {
   if (S.busy || S.over || !$('#pause').hidden || !$('#modal').hidden || !$('#notes').hidden) return;
   if (k === 'Enter') return submit();
-  if (k === 'Backspace') { if (S.cur.length) { S.cur = S.cur.slice(0, -1); renderRow(); AU.key(); } return; }
-  if (/^[a-z]$/i.test(k) && S.cur.length < 5) { S.cur += k.toLowerCase(); renderRow(); AU.key(); }
+  if (k === 'Backspace') { if (S.cur.length) { S.cur = S.cur.slice(0, -1); renderRow(); AU.play('key'); } return; }
+  if (/^[a-z]$/i.test(k) && S.cur.length < 5) { S.cur += k.toLowerCase(); renderRow(); AU.play('key'); }
 }
 export function attachKeyboard() {
   addEventListener('keydown', e => { if (e.metaKey || e.ctrlKey || e.altKey) return; if (board.hidden) return; if (e.key === 'Enter' || e.key === 'Backspace' || /^[a-zA-Z]$/.test(e.key)) { e.preventDefault(); press(e.key); } });
@@ -75,9 +75,9 @@ async function submit() {
     if (win) { ctx.vars.clockH = S.times[g][0]; ctx.vars.clockM = S.times[g][1]; } else { ctx.vars.clockH = 6; ctx.vars.clockM = 0; }
     const sc = mode.endScript(win, g, b, ctx);
     S.pending = sc.segments.map(s => s.id); checkpoint();
-    if (win) AU.riff();
+    if (win) AU.play('riff');
     await playScene(sc.segments, ctx);
-    if (!win) AU.piano([311.13, 293.66, 261.63, 196], .7);
+    if (!win) AU.play('lament');
     S.pending = []; mode.clear();
     updateStatus(); report(); return;
   }
@@ -124,7 +124,7 @@ export function resumeCase() {
   $('#report').hidden = true; $('#modal').hidden = true; $('#pause').hidden = true;
   buildGrid(); buildKB(press); paintRows(); updateKB(); updateStatus(); setCaseHeader(); updateNotes();
   if (S.pending.length) { mode.seen(S.pending); S.pending = []; }   // interrupted mid-scene: it still counts as seen
-  AU.setMusic(S.g >= 4 ? 'tense' : 'calm');
+  AU.music(S.g >= 4 ? 'tense' : 'calm');
   if (S.over) { record(); mode.clear(); S.busy = true; setMemo(''); report(); return true; }
   checkpoint();
   $('#menuBtn').disabled = false;

@@ -15,7 +15,7 @@ export async function typeInto(el, text, perChar, ticks) {
   if (SPEED > 20 || !TEXT.type) { segs.forEach(([sp, t]) => sp.textContent = t); await sleep(text.length * perChar * TEXT.type); return; }
   perChar *= TEXT.type;
   let k = 0;
-  for (const [sp, t] of segs) for (const ch of t) { sp.textContent += ch; if (ticks && TEXT.blips && ch !== ' ' && (k++ % 2 === 0)) AU.tick(); await sleep(ch === '.' || ch === ',' || ch === '?' ? perChar * 4 : perChar); }
+  for (const [sp, t] of segs) for (const ch of t) { sp.textContent += ch; if (ticks && TEXT.blips && ch !== ' ' && (k++ % 2 === 0)) AU.play('tick'); await sleep(ch === '.' || ch === ',' || ch === '?' ? perChar * 4 : perChar); }
 }
 export const holdFor = t => clamp(1200 + t.length * 30, 1900, 5400) * TEXT.hold;
 

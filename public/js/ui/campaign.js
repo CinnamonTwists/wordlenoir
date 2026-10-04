@@ -62,7 +62,7 @@ async function playInterlude(n) {
   if (sc) {
     await play([{ id: sc.id, src: sc.s }], { vars: chapterVars(n), flags: {}, story: structuredClone(campaign().storyFlags) },
       { skip: id => skipPolicy(id, isSeen), onSegment: id => store.update(d => markSeen(d, [id])) });
-    AU.setMusic('calm');
+    AU.music('calm');
   }
   store.update(d => { d.campaign.pendingInterlude = null; });
 }
@@ -83,7 +83,7 @@ async function runEnding(ending, results, story) {
   const scenes = endingScenes(ending, threadTiers(results));
   await play(scenes.map(x => ({ id: x.id, src: x.s })), { vars: endingVars(ending, results), flags: {}, story },
     { skip: id => skipPolicy(id, isSeen), onSegment: id => store.update(d => markSeen(d, [id])) });
-  AU.setMusic('calm');
+  AU.music('calm');
 }
 
 // Chapter Select: replay an ending you've found, with the life of the run that found it if that's the current run, else a middling one.

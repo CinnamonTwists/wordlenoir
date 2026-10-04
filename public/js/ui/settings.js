@@ -103,7 +103,7 @@ export function buildSettings() {
     else if (el.type === 'radio' && el.checked) setSetting(k, el.value);
   });
   // a little sound when a volume slider is let go, so the level can be judged
-  form.addEventListener('change', e => { const k = e.target.dataset?.k; if (k === 'sfx' || k === 'master') AU.stamp(); });
+  form.addEventListener('change', e => { const k = e.target.dataset?.k; if (k === 'sfx' || k === 'master') AU.play('stamp'); });
   $('#clearBtn').onclick = () => { $('#clearConfirm').hidden = false; $('#clearType').value = ''; $('#clearGo').disabled = true; $('#clearType').focus(); };
   $('#clearCancel').onclick = () => { $('#clearConfirm').hidden = true; $('#clearBtn').focus(); };
   $('#clearType').oninput = e => { $('#clearGo').disabled = e.target.value.trim().toUpperCase() !== 'DESTROY'; };

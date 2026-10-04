@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { parseScript } from '../public/js/script/parser.js';
 import { SETS } from '../public/js/art/sets/index.js';
 import { MOOD_MUSIC } from '../public/js/cinema/moods.js';
-import { AU, STINGS } from '../public/js/audio/audio.js';
+import { CUES, STINGS } from '../public/js/audio/audio.js';
 import { CAST } from '../public/js/content/cast.js';
 import { parseWordList } from '../public/js/game/words.js';
 import { loadPack, packId, scenesOf } from '../public/js/content/registry.js';
@@ -186,7 +186,7 @@ for (const { where, src, scope, pack, slot } of allScripts) {
       const [, cmd, arg] = m;
       if (!TILDE.has(cmd)) err(at, `unknown command ~${cmd}`);
       if (cmd === 'story' && !story) err(at, '~story is for story chapters only (Random Case has no campaign)');
-      if (cmd === 'sfx' && typeof AU[arg] !== 'function') err(at, `unknown sound "${arg}"`);
+      if (cmd === 'sfx' && !CUES[arg]) err(at, `unknown sound "${arg}"`);
       if (cmd === 'rain' && !RAIN.has(arg)) err(at, `rain must be one of ${[...RAIN].join('|')}`);
       if (cmd === 'paper' && !arg.includes('|')) err(at, '~paper needs LABEL|TEXT');
     }
