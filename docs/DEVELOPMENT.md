@@ -659,6 +659,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
+| 2026-10-04 | **1.0 release** | `main` | Steps 1–10 pushed to `main` and deployed to wordlenoir.com, tagged `v1.0`. Remaining work is the to-do list in §2.6. |
 | 2026-10-04 | 10: T9 | `step-10-audio` | Audio expansion. Every sound by name (`AU.play/music/amb`); `audio/` split into synth, foley, SFX, stings, beds, music. Ambience beds for every set (and the board, whose clock comes up for the last suspect). A procedural jazz band scheduled on AudioContext time: calm/tense/hope/dread loops, the bar's jukebox, the apartment's radio, the station's big band, a title theme, four ending themes; crossfades and ducking. Sting library (`word`, `hope`, `stamp`) and `~sting`/`~music`/`~amb`. New SFX (the phone, a typewriter for `~paper`, handcuffs on a win, foley cues). `npm run levels` measures everything offline. 40 unit tests, 20 e2e scenarios. Approved by ear. **This completes the roadmap (T1–T10, F1–F4).** |
 | 2026-10-04 | 9: T8 + T7 | `step-9-content` | The whole story. Chapters 3–10 written at the full T8 budget and chapters 1–2 grown to it (153 scenes each; 150 for chapter 10), every interlude, the real endings (six case endings + the egg, twelve codas, the close) replacing the placeholders, ending replays in Chapter Select. 16 new characters, 11 new sets. Chapter dates follow the bible's "tomorrow" hooks. The checker validates endings and catches a stray `NAME?` line. 40 unit tests, 19 e2e scenarios including two full campaigns. |
 | 2026-10-04 | 8: T6 + T7 (logic) + T2 (rest) | `step-8-campaign-slice` | The campaign: New Game, Continue, chapter attempts with D1 rollback and retry variety, `~story` flags, outro beats, interludes (kept/late/missed), the "Strike that" retelling, Chapter Select replays (D2), the Dossier, ending logic with placeholder endings, save v2. Chapters 1 "Stop the Presses" and 2 "Last Call" written at 2 scenes per slot (82 scenes each), with their interludes; new sets hearing, pressroom, hospital, restaurant, gangway. Bible amendment recorded (escape consequences move to the near miss). The title screen's stale "scenes can't be skipped" fine print is replaced by a fan-game disclaimer (not affiliated with The New York Times). 38 unit tests, 17 e2e scenarios. |
@@ -677,7 +678,7 @@ What each roadmap step changed, newest first. Details live in the sections above
 # Part 2: Roadmap
 
 Requested items are **T1–T10** (in the order they were given). **F1–F4** are foundations several of them need.
-**All of them are done (steps 1–10, 2026-10-03 to 2026-10-04).** What's left is the backlog (§2.5) and T9's "future: recorded audio files" (D4).
+**All of them are done (steps 1–10, 2026-10-03 to 2026-10-04) and released as 1.0.** What's left is the to-do list in §2.6.
 Each item has: goal, design notes, tasks, dependencies. The recommended order is in §2.3 and open decisions are in §2.4.
 
 ## 2.1 Foundations
@@ -1172,5 +1173,19 @@ No open decisions right now. Add new ones here as they come up.
   repetition across a single playthrough, and pacing, and a playtest of a few real runs (not forced) to feel the interludes land. The checker
   catches structure, not prose.
 - **B5. Dossier extras** (T2's optional tabs, not built): an allies page, and the Editor's page, redacted until an ending has been found.
-- **B6. Release.** `main` holds steps 1–10 locally; production (wordlenoir.com) still runs the pre-roadmap build. Pushing `main` deploys
-  everything at once. The owner decides when; a playtest (B4) first is the cautious path.
+- **B6. Release.** Done: **1.0** (steps 1–10) was pushed to `main` and deployed to wordlenoir.com on 2026-10-04, tagged `v1.0`. The owner chose
+  to release before the B4 playtest, so B4 now happens on the live game.
+
+## 2.6 To-do after 1.0
+
+Open items, roughly in order of value. Each still follows the usual workflow: its own branch, verified, the owner's OK before merging, and
+pushing `main` deploys. When one lands, tick it here and add a change-log row.
+
+- [ ] **1. Playtest and read-through (B4).** Read the story for voice, repetition within one playthrough and pacing, and play a few real runs
+      (not forced) to feel the interludes and endings land. Fixes are content edits: never renumber or reuse scene IDs (§1.5).
+- [ ] **2. Dossier extras (B5).** An allies page, and the Editor's page, redacted until an ending has been found (T2's optional tabs).
+- [ ] **3. Recorded audio (D4, T9's last box).** Replace synthesized voices with recorded files behind the existing names (`AU.play`, `AU.music`,
+      `AU.amb`): `.wav` masters outside `public/`, `.m4a`/`.ogg` under `public/audio/`, loaded per chapter. Measure with `npm run levels`.
+- [ ] **4. Difficulty tiers (B1).** Word rarity and repeated letters, as a Random Case setting and a per-chapter ramp.
+- [ ] **5. Generated scenes (B2).** A generator that writes plain JS packs in the F2 format (no build step).
+- [ ] **6. Server features (B3).** Cloud saves, a daily case, leaderboards: a Worker script (`main` in `wrangler.jsonc`) plus KV/D1.
