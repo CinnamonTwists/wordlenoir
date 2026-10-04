@@ -23,3 +23,15 @@ export function stats(answers, guesses, fb) {
 
 // Which scene pool a guess falls into. 0: no hits · 1: 1-2 hits · 2: 3-4 hits · 3: five hits, wrong order
 export const bucketOf = fb => { const h = fb.filter(x => x > 0).length; return h === 0 ? 0 : h <= 2 ? 1 : h <= 4 ? 2 : 3; };
+
+// Hard mode: every revealed hint must be used. Greens stay put, and each letter shown green or yellow must come back at least as
+// many times as it was revealed in that row. Returns the first broken rule ({ kind: 'green', i, L } | { kind: 'gang', L }) or null.
+export function hardModeMiss(guess, guesses, fbs) {
+  for (let r = 0; r < guesses.length; r++) {
+    const p = guesses[r], f = fbs[r], need = {};
+    for (let i = 0; i < 5; i++) if (f[i] === 2 && guess[i] !== p[i]) return { kind: 'green', i, L: p[i] };
+    for (let i = 0; i < 5; i++) if (f[i] > 0) need[p[i]] = (need[p[i]] || 0) + 1;
+    for (const [L, n] of Object.entries(need)) if ([...guess].filter(c => c === L).length < n) return { kind: 'gang', L };
+  }
+  return null;
+}

@@ -70,6 +70,4 @@
 .legend .tile{--tile:clamp(56px,9vw,96px)}
 .legend label{font-family:var(--f-type);font-size:clamp(11px,1.4vw,15px);letter-spacing:.12em;color:#e3dccb;line-height:1.4;min-height:2.8em;text-shadow:0 2px 6px #000}
 
-@media (prefers-reduced-motion: reduce){
-  .ci-band::before{animation:none}
-}
+/* reduced motion: see prefs.css */

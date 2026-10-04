@@ -1,5 +1,6 @@
 // Procedural audio: every sound is synthesized with Web Audio, no files. init() must run from a user gesture.
 // Scripts trigger effects with `~sfx <method>` (ring, hangup, thunder, whistle, siren, telegraph, foghorn, ...).
+// Buses (each under master, scaled by the Settings sliders): sfx, ui (keys, typewriter ticks; follows the sfx slider), mus, amb (rain).
 
 // Cut-in stings: low brass hits. A sub sine settling onto its note, detuned sawtooth pairs (±6 cents) through a lowpass that
 // closes over the tail, and a timpani thump under a slow attack. No noise, no bright partials. The saws (62–131 Hz) and their
@@ -16,16 +17,16 @@ const LOW = ['brass', 'minor', 'sag'];
 const COOLDOWN = 8;   // s: a sting this soon after another plays `soft`, and a third plays nothing
 
 export const AU = {
-  ctx: null, on: true, lastSting: -1e9, lastSoft: false, lastLow: null,
+  ctx: null, on: true, vol: { master: 1, music: 1, sfx: 1, ambience: 1 }, lastSting: -1e9, lastSoft: false, lastLow: null,
   init() {
     if (this.ctx) { this.ctx.resume && this.ctx.resume(); return; }
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
     try { this.ctx = new C(); } catch (e) { return; }
     const c = this.ctx;
-    this.master = c.createGain(); this.master.gain.value = this.on ? .85 : 0; this.master.connect(c.destination);
+    this.master = c.createGain(); this.master.connect(c.destination);
     this.comp = c.createDynamicsCompressor(); this.comp.connect(this.master);
-    this.sfx = c.createGain(); this.sfx.gain.value = .8; this.sfx.connect(this.comp);
-    this.mus = c.createGain(); this.mus.gain.value = .55; this.mus.connect(this.comp);
+    for (const k of ['sfx', 'ui', 'mus', 'amb']) { this[k] = c.createGain(); this[k].connect(this.comp); }
+    this.applyVolumes(true);
     const len = c.sampleRate * 2, b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
     let last = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + .02 * w) / 1.02; d[i] = w * .6 + last * 3; }
     this.noise = b;
@@ -34,7 +35,7 @@ export const AU = {
     const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = .45;
     this.rainLP = c.createBiquadFilter(); this.rainLP.type = 'lowpass'; this.rainLP.frequency.value = 6000;
     this.rainG = c.createGain(); this.rainG.gain.value = 0;
-    rs.connect(bp); bp.connect(this.rainLP); this.rainLP.connect(this.rainG); this.rainG.connect(this.comp); rs.start();
+    rs.connect(bp); bp.connect(this.rainLP); this.rainLP.connect(this.rainG); this.rainG.connect(this.amb); rs.start();
     // drone
     this.dr = {};
     const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; lp.Q.value = 4;
@@ -47,7 +48,16 @@ export const AU = {
     this.setMusic('calm');
   },
   now() { return this.ctx ? this.ctx.currentTime : 0; },
-  toggle() { this.on = !this.on; if (this.master) this.master.gain.setTargetAtTime(this.on ? .85 : 0, this.now(), .1); return this.on; },
+  toggle() { return this.setVolumes({ on: !this.on }); },
+  // Settings → bus gains. v: { master, music, sfx, ambience } (0–1) and/or { on }. Safe before init (applied on init). Returns `on`.
+  setVolumes(v) { if ('on' in v) this.on = !!v.on; for (const k of Object.keys(this.vol)) if (k in v) this.vol[k] = Math.max(0, Math.min(1, +v[k] || 0)); this.applyVolumes(); return this.on; },
+  applyVolumes(now) {
+    if (!this.ctx) return; const t = this.now(), V = this.vol;
+    const set = (node, g) => now ? (node.gain.value = g) : node.gain.setTargetAtTime(g, t, .05);
+    set(this.master, this.on ? .85 * V.master : 0); set(this.sfx, .8 * V.sfx); set(this.ui, .8 * V.sfx); set(this.mus, .55 * V.music); set(this.amb, V.ambience);
+  },
+  // Settings → "Mute when the tab is hidden": suspends the whole context while the page isn't visible.
+  setHidden(hidden, mute) { if (!this.ctx) return; if (hidden && mute) this.ctx.suspend(); else this.ctx.resume(); },
   setRain(level, indoor) {
     if (!this.ctx) return;
     const v = { off: .015, window: .05, light: .07, heavy: .14 }[level] ?? .04;
@@ -63,18 +73,18 @@ export const AU = {
     else { S(d.c.g.gain, 0); S(d.b.g.gain, .12); S(d.out.gain, .45); }
   },
   env(g, t, a, peak, dec) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + dec); },
-  tone(fq, dur, type = 'sine', vol = .2, at = 0, slideTo) {
+  tone(fq, dur, type = 'sine', vol = .2, at = 0, slideTo, bus = this.sfx) {
     if (!this.ctx) return; const c = this.ctx, t = this.now() + at, o = c.createOscillator(), g = c.createGain();
     o.type = type; o.frequency.setValueAtTime(fq, t); if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
-    this.env(g, t, .006, vol, dur); o.connect(g); g.connect(this.sfx); o.start(t); o.stop(t + dur + .05);
+    this.env(g, t, .006, vol, dur); o.connect(g); g.connect(bus); o.start(t); o.stop(t + dur + .05);
   },
-  burst(dur, type, fq, vol, at = 0, q = .7) {
+  burst(dur, type, fq, vol, at = 0, q = .7, bus = this.sfx) {
     if (!this.ctx) return; const c = this.ctx, t = this.now() + at, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
     s.buffer = this.noise; f.type = type; f.frequency.value = fq; f.Q.value = q; this.env(g, t, .004, vol, dur);
-    s.connect(f); f.connect(g); g.connect(this.sfx); s.start(t, Math.random()); s.stop(t + dur + .05);
+    s.connect(f); f.connect(g); g.connect(bus); s.start(t, Math.random()); s.stop(t + dur + .05);
   },
-  tick() { this.burst(.03, 'highpass', 3200, .05); this.tone(1700, .02, 'square', .012); },
-  key() { this.burst(.05, 'bandpass', 2200, .12, 0, 2); this.tone(180, .05, 'sine', .08); },
+  tick() { this.burst(.03, 'highpass', 3200, .05, 0, .7, this.ui); this.tone(1700, .02, 'square', .012, 0, undefined, this.ui); },
+  key() { this.burst(.05, 'bandpass', 2200, .12, 0, 2, this.ui); this.tone(180, .05, 'sine', .08, 0, undefined, this.ui); },
   thud() { this.tone(80, .35, 'sine', .45, 0, 40); this.burst(.12, 'lowpass', 300, .25); },
   boom() { this.tone(62, 1.4, 'sine', .7, 0, 28); this.burst(1.2, 'lowpass', 180, .5); this.tone(124, .6, 'triangle', .12, 0, 60); },
   heart() { [0, .26].forEach((a, i) => { this.tone(i ? 50 : 58, .2, 'sine', i ? .55 : .75, a, 32); this.burst(.07, 'lowpass', 120, .3, a); }); },

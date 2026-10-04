@@ -65,7 +65,4 @@
   .dbox{padding:24px 18px 16px 34px}
   .nameplate{left:28px}
 }
-@media (prefers-reduced-motion: reduce){
-  .bg.kb1 svg,.bg.kb2 svg,.bg.push svg{animation:none}
-  #cam.shake{animation:none}
-}
+/* reduced motion: see prefs.css (driven by the Settings toggle, which defaults to the OS preference) */

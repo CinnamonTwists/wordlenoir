@@ -16,7 +16,7 @@ Related docs: [README.md](../README.md) (quick start), [scene-scripts.md](scene-
 
 | | |
 |---|---|
-| What it is | Single-mode Wordle variant: one five-letter answer, six guesses, a noir cutscene after every guess. |
+| What it is | Wordle variant: one five-letter answer, six guesses, a noir cutscene after every guess. A main menu leads to **Random Case** (the only playable mode so far, with a win record) and **Settings**. Story mode, chapters and dossier are stamped "coming soon". |
 | Stack | Vanilla JS (native ES modules), CSS, inline SVG art, Web Audio synthesis. No framework, no dependencies, **no build step**. |
 | Hosting | Cloudflare Workers Builds, Worker `raspy-term-4561`, domain wordlenoir.com. Push to `main` deploys. |
 | Persistence | One localStorage key, `wordlenoir.save` (§1.12): the case in progress (reopens after a reload), seen scenes, and the schema for settings, campaign and dossier. |
@@ -38,17 +38,23 @@ npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on fi
 - **URL `#speedN`** (e.g. `#speed20`) scales every scripted delay. `#speed400` plays a full case in about a second.
 - **Console hook `window.NOIR`**: `S` (state), `speed`, `forceAnswer`, `forceInf` (true = informant every round, false = never),
   `press(key)`, `play(src, ctx)`, `score`, `stats()`, `parseScript`, `ANSWERS`, `ALLOWED`, `VT` (virtual ms played), `MISSING` (unfilled `{vars}`),
-  `pack` (the loaded Random Case pack), `scene(id)` (any loaded scene), `save` (the store: `NOIR.save.get()` is the save document, `NOIR.save.reset()` wipes it). Audition one with `NOIR.play(NOIR.scene('rnd.core.1-0.02').s, { vars: {}, flags: {} })`.
-- **End-to-end test (`npm run e2e`, about 17 s)**: zero dependencies. It starts the dev server on a free port and launches local Chrome or Edge
+  `pack` (the loaded Random Case pack), `scene(id)` (any loaded scene), `save` (the store: `NOIR.save.get()` is the save document, `NOIR.save.reset()` wipes it),
+  `setting(key, value)` (saves and applies a setting like the Settings screen does), `screen` (the visible screen: title, menu, settings or game). Audition one with `NOIR.play(NOIR.scene('rnd.core.1-0.02').s, { vars: {}, flags: {} })`.
+- **End-to-end test (`npm run e2e`, about 20 s)**: zero dependencies. It starts the dev server on a free port and launches local Chrome or Edge
   headless (`CHROME=/path` overrides the browser) with `--remote-debugging-port=0` and a throwaway profile. It drives the page over the
   DevTools Protocol at `#speed400` with real clicks and key presses, using `NOIR` to force answers and informants and to read state.
-  - Scenarios: title → first case (an invalid word is refused, then a first-guess win), a loss with an informant every round, a win on guess 3,
+  - Scenarios: title → menu (fresh menu state, a stamped story entry) → first case (an invalid word is refused, then a first-guess win, stats recorded),
+    a loss with an informant every round (streak reset), a win on guess 3; an in-game menu round trip (Esc opens/closes it, Main menu → Continue)
+    and dropping an open case from the menu (counted as a loss, answer revealed); settings (four changed on the Settings screen, kept across a reload,
+    applied to `<html>` and the tile colours, and hard mode refusing a guess that ignores a green); clear all data (type DESTROY → everything reset);
     and three save scenarios: reopen after a reload (rows repainted, answer not readable in the save, seen marks written, finished case cleared),
     reload in the middle of a cutscene (the guess survives and the interrupted scene counts as seen), and blocked storage (the warning toast shows and the game still plays).
+    Reopening goes through the menu's Continue, which must name the right suspect.
     `--cases N` adds N random cases (random answer, random win guess or loss, random informant setting) for scene coverage.
-  - Every scenario asserts the report (verdict, answer tiles, one table row per guess), no exceptions, no `console.error`, no failed same-origin requests,
+  - Every scenario asserts the report (verdict, answer tiles, one table row per guess, the record panel, the Main menu button), no exceptions, no `console.error`, no failed same-origin requests,
     and an empty `NOIR.MISSING`. The first failure stops the run.
   - Google Fonts and the analytics beacon are blocked, so it runs offline. `--headed` shows the browser and `--speed N` slows it down.
+  - `click(sel)` scrolls the element into view first (the Settings form is taller than the 1280×800 window).
   - When a new mode or screen lands, add a scenario here (F4's second item).
 - **Deploy**: `wrangler.jsonc` publishes only `public/`. `name` must stay `raspy-term-4561` or Workers Builds fails.
   The dashboard deploy command must be the default `npx wrangler deploy`.
@@ -58,12 +64,12 @@ npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on fi
 
 ```
 public/js/
-  main.js                 Boot: starts rain/grain, title backdrop, button wiring, window.NOIR
+  main.js                 Boot (load save, apply settings, set the mode), screen wiring, in-game menu, Esc, window.NOIR
   core/
     util.js               R, pick, clamp, cap, nounN, NUMW, ORD, fmtTime, pickUnused        [DOM-free]
-    timing.js             SPEED/setSpeed, sleep(ms), VT, REDUCED (prefers-reduced-motion)
+    timing.js             SPEED/setSpeed, sleep(ms), VT; live preference knobs MOTION, FLASH, TEXT (+ TEXT_SPEEDS, OS_REDUCED)
     dom.js                $()
-  audio/audio.js          AU: the whole Web Audio synth (sfx, drone music, rain bed), STINGS [DOM-free at import]
+  audio/audio.js          AU: the whole Web Audio synth (buses, sfx, drone music, rain bed), STINGS [DOM-free at import]
   fx/rain.js              RAIN canvas (attach/set/frame), startRain(), startGrain()
   art/
     svg.js                rng(seed), DEFS (gradients/filters), svg(inner), f()               [DOM-free]
@@ -83,32 +89,37 @@ public/js/
     cast.js               CAST: key → { name, color, bust, sting? }
     names.js              NAMES_M, NAMES_F (for {victim}/{singer})
     registry.js           packId, loadPack(ch) (lazy import, cached), getPack(ch), sceneById(id), scenesOf(pack)
+    random/               the Random Case pack (chapter 0): index (assembles the pack), intros, tail, openers,
+                          cores/suspect-1..5, informants, win, loss, closers
+    chapters/cNN/         story chapter packs, same shape (none yet; written fresh from step 8)
   save/                   Persistence (§1.12)                                               [DOM-free]
     store.js              createStore(), store: load, get(path), update(fn), flush, reset, status, onStatus
     schema.js             VERSION, defaults(), migrate(doc)
     codec.js              hide(word) / reveal(str): answer obfuscation (D6)
-    progress.js           markSeen, isSeen; campaign: newCampaign, beginAttempt, winAttempt, loseAttempt, avoidFor (D1/D7)
-    random/               the Random Case pack (chapter 0): index (assembles the pack), intros, tail, openers,
-                          cores/suspect-1..5, informants, win, loss, closers
-    chapters/cNN/         story chapter packs, same shape (none yet; written fresh from step 8)
+    progress.js           markSeen, isSeen, recordRandom; campaign: newCampaign, beginAttempt, winAttempt, loseAttempt, avoidFor (D1/D7)
+  ui/                     Screens around the game (§1.13)
+    screens.js            show(name), back(), screen(), onShow(name, fn): one visible screen, a back trail, focus
+    menu.js               initMenu(handlers), refreshMenu(stats): the case-file main menu
+    settings.js           SPEC, applySettings(), setSetting(k, v), onChange, buildSettings/syncSettings (the form), shouldMuteHidden
   game/
-    state.js              S (live binding) + setState, pack() (the active scene pack), used (no-repeat sets), DEBUG
+    state.js              S (live binding) + setState, mode/setMode (the active mode), pack() (its scene pack), used (no-repeat sets), DEBUG
     words.js              WORDS {answers, allowed}, loadWords() (fetch), parseWordList        [DOM-free at import]
-    scoring.js            score, candidates, stats, bucketOf                                [DOM-free]
+    scoring.js            score, candidates, stats, bucketOf, hardModeMiss                  [DOM-free]
     board.js              grid/keyboard/clock/cigarettes/memo/toast, revealRow, paintRows (restore), verdictLine
     snapshot.js           snapshot(S) / restore(snap): case state ⇄ save data                [DOM-free]
     case.js               genTimes, genCase, baseVars, guessVars
     informant.js          informant(g, bucket, ctx): maybe returns an informant scene object + sets ctx.clue
-    report.js             showReport(onNewCase), share text
-    game.js               press, attachKeyboard, submit, newCase, resumeCase, playScene (play + restore music), checkpoints
-public/css/               base, title, board, cinema, effects, overlays, ambient (link order = cascade order)
+    report.js             showReport(onNewCase, { onMenu, stats }): verdict, table, record panel, share text (high-contrast emoji)
+    game.js               the session runner: press, attachKeyboard, submit, newCase, resumeCase, dropSaved, savedSummary, hooks, checkpoints
+    modes/random.js       RandomMode: the Random Case mode object (scene picks, saving to random.active, stats)
+public/css/               base, title, menu, board, cinema, effects, overlays, ambient, prefs (link order = cascade order)
 public/data/words/        answers.txt, allowed.txt (one word per line, # comments allowed)
 tools/                    dev-server.mjs, check-scenes.mjs, e2e.mjs, migrate-scenes.mjs (one-off, already run)
 tests/                    *.test.mjs unit tests for DOM-free modules (npm test)
 ```
 
-**Dependency direction:** `main → game → cinema → (art, audio, fx, script, content) → core`. Nothing imports `game/` except `main.js`
-(and other `game/` modules). Callbacks avoid cycles: `buildKB(onKey)`, `showReport(onNewCase)`.
+**Dependency direction:** `main → ui → game → cinema → (art, audio, fx, script, content, save) → core`. Only `main.js`, `ui/` and other `game/`
+modules import `game/`. Callbacks avoid cycles: `buildKB(onKey)`, `showReport(onNewCase, { onMenu })`, `hooks.toMenu` (set by main.js).
 
 **DOM-free rule:** anything `tools/check-scenes.mjs` imports must not touch `document`/`window` at import time. Keep it that way for all
 `content/`, `script/`, `art/`, and pure `game/` logic. New Node tools depend on it.
@@ -116,25 +127,32 @@ tests/                    *.test.mjs unit tests for DOM-free modules (npm test)
 ## 1.4 Runtime flow
 
 ```
-page load ─ main.js: store.load(), loadWords() + loadPack('random') (async), startRain/Grain, keyboard listener, street backdrop, heavy rain
-   │         (a saved case in progress renames the button "Reopen the case file")
+page load ─ main.js: store.load(), applySettings(), setMode(RandomMode), loadWords() + RandomMode.load() (async), rain/grain, keyboard,
+   │         settings form built, street backdrop, heavy rain
    │
-"Open the case file" click ─ AU.init() (needs this user gesture), riff, await words + pack, fade title, office backdrop,
-   │         toast if saves aren't being kept; resumeCase() if random.active holds up, else newCase()
+"Open the case file" click ─ AU.init() (needs this user gesture), applySettings() (volumes), riff, fade title → show('menu'),
+   │         toast if saves aren't being kept
+   │
+menu ─ Continue (enabled when random.active holds up) → enterGame(resumeCase)
+   │   Random Case → enterGame(newCase); an open case with a guess in it asks "Drop this case?" first (Drop: dropSaved() = a loss)
+   │   Settings → show('settings') (Back/Esc returns); New Game / Chapter Select / Dossier → "not yet" toast
+   │   enterGame() awaits words + pack, then show('game') (office backdrop, light rain)
+   │
+board ─ Menu button / Esc (when no scene is playing) → in-game menu: Back to the case, Settings, Sound, Main menu (the case is already saved)
    │
 resumeCase() ─ restore(snapshot) → paint the board → back to typing (or straight to the report if that case had ended)
-newCase()  ─ genCase() picks from pack().intros (no repeat until all 12 used) + vars; setState({...}); build grid/kb
-   │         play(intro.s + pack().tail.s)       ← tail = rules legend + "SIX SUSPECTS" + first title card
+newCase()  ─ mode.newCase() (genCase: pack().intros, no repeat until all 12 used) + vars; setState({..., hard: settings.hardMode}); build grid/kb
+   │         play(mode.introScript().src)       ← intro + tail (rules legend + "SIX SUSPECTS" + first title card)
    │         ✓ seen: intro + tail · ✓ checkpoint
    ▼
 board: player types ─ press() ─ submit()
-   │   invalid length/word → shake + toast (the row keeps its letters)
-   │   guess recorded → ✓ checkpoint (reloading can't take a guess back)
+   │   invalid length/word, or (hard case) a revealed clue ignored → shake + toast (the row keeps its letters)
+   │   guess recorded → final guess? result recorded once (mode.onComplete → random.stats) → ✓ checkpoint (reloading can't take a guess back)
    │   revealRow (interrogation flip) → S.counts.push(candidates) → memo verdict
    │   scenes picked → S.pending = their IDs → ✓ checkpoint
-   ├─ win  → riff, play(win.climax + win.epi[g]) → report
-   ├─ g==6 → play(loss.climax + loss.epi[bucket]) → piano → report
-   └─ else → play(cores['g-b'] with opener + maybe informant + "## {nextTime} | closer")
+   ├─ win  → riff, play(mode.endScript(): win.climax + win.epi[g]) → report (with the record panel and Main menu)
+   ├─ g==6 → play(mode.endScript(): loss.climax + loss.epi[bucket]) → piano → report
+   └─ else → play(mode.roundScript(): cores['g-b'] with opener + maybe informant + "## {nextTime} | closer")
               → ✓ seen: pending · ✓ checkpoint → back to board, memo "Suspect g+1 of 6"
    (win and loss: ✓ seen: climax + epilogue, then random.active is cleared before the report)
 ```
@@ -165,6 +183,8 @@ board: player types ─ press() ─ submit()
 | `infUsed` (Set), `infLog[]`, `lastInf` | informant bookkeeping |
 | `title` | case title |
 | `pending[]` | IDs of the round's scenes while they play; marked seen when they finish (or when an interrupted case is reopened) |
+| `recorded` | the result has gone into the mode's record (set when the final guess is scored, so it's counted exactly once) |
+| `hard` | a hard case (Settings → Hard mode, fixed when the case starts) |
 
 `used.intro` / `used.core` hold scene IDs and live outside `S`, so no-repeat works across cases in one session. They are not persisted.
 `busy` and `cur` are transient; every other field is saved by `snapshot()` (game/snapshot.js `KEEP` list).
@@ -233,9 +253,13 @@ literally in the text and recorded in `NOIR.MISSING`.
   vignette, letterbox bars, `#narr`, `#dlg`, `#fx` 8, `#black` 20, `#flash` 21) → overlays 30 → `#toast` 40 → `#grain` 60.
 - **One `RAIN` instance**, re-attached between `#rain` (board) and `#crain` (cinema).
 - **Every delay goes through `sleep()`**, and CSS transitions set in JS divide by `SPEED`. New effects must do both or `#speedN` testing breaks.
-- `typeInto` has a fast path when `SPEED > 20` (prints text whole).
+- `typeInto` has a fast path when `SPEED > 20` or text speed is Instant (prints text whole).
+- **Player preference knobs** (core/timing.js, set by ui/settings.js, separate from `SPEED`): `TEXT.type` scales typing per character
+  (slow 1.6 · normal 1 · fast 0.5 · instant 0) and `TEXT.hold` scales how long dialogue, narration, cards and papers stay up (1.35 / 1 / 0.8 / 0.7).
+  `TEXT.blips` gates typewriter ticks. `MOTION.reduced` disables `shake()` and thins rain and grain. `FLASH.reduced` makes `flashFx()` a no-op
+  (so cut-in flashes and lightning flashes go). Their CSS halves live in css/prefs.css, keyed on `html[data-motion]`, `html[data-flashes]` and `html[data-hc]`.
 - Fixed beat durations (at speed 1): cut-in about 3.1 s, heavy line 2.2 s + per-word, versus about 4.8 s, card 1.6 s + typing + 2.4 s, stamp about 3 s,
-  paper 0.6 s + typing + 2.4 s, clue 5.2 s, legend about 10 s. Dialogue holds `clamp(1200 + 30·len, 1900, 5400)` ms after typing.
+  paper 0.6 s + typing + 2.4 s, clue 5.2 s, legend about 10 s. Dialogue holds `clamp(1200 + 30·len, 1900, 5400) × TEXT.hold` ms after typing.
 - `@set` while black swaps instantly; while lit it hides text and cross-fades (900 ms).
 - **Moods** (`@mood`): CSS filter on `.bgs` plus `#moodlay` colour blend plus vignette (css/cinema.css), and the drone mode from `MOOD_MUSIC`.
   noir/warm/blue → calm, gold → hope, red → dread, sick/violet → tense.
@@ -243,7 +267,18 @@ literally in the text and recorded in `NOIR.MISSING`.
 
 ## 1.8 Audio (audio/audio.js)
 
-Graph: `sfx` (0.8) and `mus` (0.55) and `rainG` → `DynamicsCompressor` → `master` (0.85, or 0 when muted) → speakers.
+Graph: four buses → `DynamicsCompressor` → `master` → speakers. Each bus gain is its base level × its Settings slider (T9 bus restructure):
+
+| Bus | Base | Slider | Carries |
+|---|---|---|---|
+| `sfx` | 0.8 | Sound effects | every one-shot, stings, flips, booms |
+| `ui` | 0.8 | Sound effects | key presses and typewriter ticks (`tone`/`burst` take a bus argument) |
+| `mus` | 0.55 | Music | the drone, the riff |
+| `amb` | 1 | Ambience | the rain bed (`rainG` → `amb`); location beds will join it (T9) |
+| `master` | 0.85 | Master | everything; 0 when Sound is off |
+
+`AU.setVolumes({ master, music, sfx, ambience, on })` stores values (safe before `init()`, which applies them) and ramps gains over ~50 ms.
+`AU.setHidden(hidden, mute)` suspends the context while the tab is hidden if "Mute when the tab is hidden" is on.
 A 2 s noise buffer is shared by rain, bursts and thunder. `AU.init()` must run inside a user gesture. Every method no-ops before init.
 
 | Method | Sound | Triggered by |
@@ -309,7 +344,11 @@ below may carry into the story, but no existing scene text will.
 - `S` is an `export let` live binding. Never reassign it outside `setState`, and never cache `S` in a local across awaits.
 - `play()` takes one concatenated script string. Win/loss concatenate climax + epilogue, and rounds concatenate core + informant + closer.
   This will need to change for skip-seen (Part 2, T3).
-- CSS `<link>` order in index.html is the cascade order (base → title → board → cinema → effects → overlays → ambient).
+- CSS `<link>` order in index.html is the cascade order (base → title → menu → board → cinema → effects → overlays → ambient → prefs).
+- Settings that CSS needs go on `<html>` as data attributes (`data-hc`, `data-motion`, `data-flashes`). `<body>`'s class is owned by the stakes
+  vignette (`updateStatus` overwrites it), so never put settings there.
+- A new setting needs three things: a default in save/schema.js `defaults()`, an entry in ui/settings.js `SPEC` (the form is generated from it),
+  and handling in `applySettings()`. Hard mode is the exception: it's read when a case starts (`S.hard`).
 - Git is `core.autocrlf=true`. Word-list and script parsing trim lines, so CRLF is harmless. Keep it that way.
 - Typing `~sfx` with an unknown name silently does nothing in-game. `npm run check` is what catches it.
 - Pickers (`pickUnused`) reset a pool once it is exhausted. With bigger pools, repeats get rarer for free.
@@ -318,6 +357,8 @@ below may carry into the story, but no existing scene text will.
 - Change persisted state only through `store.update(fn)`, never by editing `store.get()` results. A new `S` field must join `KEEP` in game/snapshot.js
   to survive a reload. Any change to the save's shape means bumping `VERSION` and adding a `MIGRATIONS` step in save/schema.js.
 - Reset local saves while testing with `NOIR.save.reset()` (or clear site data). The e2e test always starts from a fresh browser profile.
+- Game code talks to the active **mode** (`mode` in game/state.js), never to a specific pack or save slot. A new mode implements the
+  interface in §1.13 and is selected with `setMode()` before `newCase()`/`resumeCase()`.
 
 ## 1.12 Save system (save/)
 
@@ -346,6 +387,9 @@ below may carry into the story, but no existing scene text will.
 - **Snapshots** (`game/snapshot.js`): `S` minus `busy`/`cur`, Sets as arrays, answer hidden. `restore()` rejects a snapshot whose answer doesn't
   decode, whose guesses aren't five-letter dictionary words, or that continues after a win. It **recomputes feedback and the end state** from the
   answer instead of trusting the save.
+- **Random Case record** (`random.stats`, `recordRandom`): a win adds to `won`, `dist[guesses-1]` and the streak (`best` follows);
+  a loss ends the streak. Dropping an open case from the menu counts as a loss once a suspect has been questioned (the answer is revealed),
+  while a case dropped before any guess isn't counted.
 - **Checkpoints** (game.js, Random Case): after the intro, the moment a guess is scored, when that round's scenes are picked, and when they finish.
   Reopening resumes on the board after the last checkpoint. Interrupted scenes count as seen, and missing candidate counts are recomputed.
   A case that had ended goes straight to its report. Finishing a case clears `random.active`.
@@ -357,12 +401,49 @@ below may carry into the story, but no existing scene text will.
   - `loseAttempt` restores `storyFlags` from `startFlags`, adds the attempt's scenes to `usedScenes[chapter]`, discards its marks, and starts attempt n+1.
   - `avoidFor` gives the retry picker its avoid-set.
 
-## 1.13 Change log
+## 1.13 Screens, modes and settings (ui/, game/modes/)
+
+**Screens** (`ui/screens.js`): `title` → `menu` → `game` (the board) or `settings`. One is visible at a time. `show()` keeps a back trail (the menu
+resets it), focuses the screen's `[data-focus]` element or first button, and runs its `onShow` hook (main.js: the menu refreshes and switches to the
+street backdrop with heavy rain; the game switches to the office). `#pause` (in-game menu), `#modal` ("Drop this case?") and `#report` are overlays.
+**Esc** closes the top layer (dialog, in-game menu, Settings). On the board it opens the in-game menu, but only between scenes (T3 will use Esc for skipping).
+
+**Main menu** (`ui/menu.js`, a manila case folder): Continue (the saved case's number, title and suspect; disabled when none), Random Case (with a
+one-line record), Settings. New Game, Chapter Select and Dossier are rubber-stamped *Coming soon* / *Classified* and answer with a toast.
+
+**Modes** (`game/modes/random.js`). The session runner (game.js) gets everything mode-specific from `mode`:
+
+| Member | Random Case |
+|---|---|
+| `id`, `label`, `load()`, `pack()` | `'random'`, the `rnd` pack |
+| `pickAnswer()` | `DEBUG.forceAnswer` or a random answer |
+| `newCase()` | `genCase()` → `{ intro, vars }` |
+| `introScript(cs)`, `roundScript(g, b, ctx)`, `endScript(won, g, b, ctx)` | `{ ids, src }`: intro + tail; core + opener + maybe informant + closer; climax + epilogue |
+| `saved()`, `onCheckpoint(snap)`, `clear()` | `random.active` |
+| `seen(ids)` | commits seen marks immediately |
+| `onComplete({ won, guesses })`, `stats()` | `recordRandom` → `random.stats`, shown on the report and in the menu |
+
+**Settings** (`ui/settings.js`, saved in `settings`, applied live by `applySettings()`):
+
+| Setting | Effect |
+|---|---|
+| Master / Music / Sound effects / Ambience | bus gains (§1.8); letting go of the effects or master slider plays a stamp so the level can be judged |
+| Sound on | master gain (also the top-bar and in-game-menu Sound buttons) |
+| Mute when the tab is hidden | `AU.setHidden` on `visibilitychange` |
+| Typewriter blips | `TEXT.blips` |
+| Text speed | `TEXT.type` / `TEXT.hold` (§1.7) |
+| Reduce motion / Reduce flashes | Follow system (default) / Off / On → `MOTION`/`FLASH` + `html[data-motion\|data-flashes]` |
+| High-contrast tiles | `html[data-hc]`: orange/blue tiles, keys, report minis and share emoji (🟧🟦) |
+| Hard mode | every revealed clue must be reused (`hardModeMiss`): greens stay put, revealed letters come back as often as shown. Fixed per case. |
+| Clear all data | "DESTROY THE FILES?": type DESTROY → `store.reset()` → reload |
+
+## 1.14 Change log
 
 What each roadmap step changed, newest first. Details live in the sections above and in each item's **Status** note in Part 2.
 
 | Date | Step | Branch | What changed |
 |---|---|---|---|
+| 2026-10-04 | 5: F3 + T5 + T2 (part) | `step-5-menu-modes-settings` | Main menu (case-file folder), screen manager, in-game menu (Menu button, Esc), Settings screen (volumes on new audio buses, sound, mute-hidden, blips, text speed, reduce motion/flashes, high contrast, hard mode, clear data). The game loop became a mode-driven session runner, with `RandomMode` and a win record (played/won/streak/best/distribution) on the report and menu. 23 unit tests, 9 e2e scenarios. |
 | 2026-10-04 | 4: F1 | `step-4-save-system` | Save system (`save/`): one versioned localStorage document with guarded, debounced writes, migrations, answer obfuscation, snapshots, checkpoints, and resume after reload. Seen marks are recorded, and D1 chapter attempts are built as tested functions. Added `npm test` (18 unit tests) and three save e2e scenarios. |
 | 2026-10-04 | 3: F2 + T1 | `step-3-scene-registry` | All 101 scenes became `{ id, chapter, s }` objects in the Random Case pack (`content/random/`, chapter 0). Added `content/registry.js` (lazy pack loading, lookup by ID), the game reads pools only through it, the checker enforces IDs/chapters/no cross-pack reuse, and `--coverage` was added. |
 | 2026-10-03 | 2: F4 | `step-2-smoke-test` | `npm run e2e`: zero-dependency headless Chrome/Edge test that plays real cases (invalid word, loss with informants, win, `--cases N`). |
@@ -385,7 +466,7 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
 - **An extra checkpoint is taken the moment a guess is scored**, plus one when the round's scenes are picked. With only "after the scene finishes",
   reloading during the reveal or cutscene would erase the guess, letting a player see a word's feedback and then take it back.
 - **Resume UI is interim:** until the menu (step 5) has Continue, the title button becomes "Reopen the case file" and reopens `random.active`.
-  "New case" still drops it.
+  "New case" still drops it. (Replaced in step 5 by the main menu's Continue.)
 - **Settings schema** adds `sound` (the existing sound toggle) and `muteHidden` (T2's "mute when the tab is hidden"). `motion` and `flashes`
   are `'os' | 'full' | 'reduced'`, so "follow the OS" is an explicit default.
 - `results[]` entries also record `at` (a timestamp, for a future "fastest run"). `attempt` gains `n`, its attempt number in the chapter, which feeds
@@ -456,9 +537,18 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
 ### F3. Screens and game modes
 **Needed by:** T2, T5, T6.
 
-- [ ] `public/js/ui/screens.js`: a tiny screen manager (`show('menu' | 'settings' | 'dossier' | 'chapters' | 'game')`) handling hidden/visible state,
+**Status: done (step 5).** Implementation in §1.13. Deviations from the plan:
+- Screens today are `title`, `menu`, `settings` and `game`. `dossier` and `chapters` get added when they have content (T2/T6); for now their menu
+  entries are stamped and answer with a toast. The menu resets the back trail.
+- The mode interface grew to what the runner actually needs: `load()`, `pack()`, `newCase()` (replaces `vars()`), plus storage members
+  (`saved()`, `clear()`, `seen(ids)`, `stats()`). Every `*Script()` returns `{ ids, src }` so the runner can mark scenes seen.
+  Modes live in `game/modes/` (not a top-level `modes/`) because they're game logic.
+- The in-game menu keeps a Sound toggle *and* the top bar keeps its Sound button (quick access). Esc opens and closes the in-game menu between scenes.
+- `body.className` belongs to the stakes vignette, so settings are exposed to CSS as `<html>` data attributes.
+
+- [x] `public/js/ui/screens.js`: a tiny screen manager (`show('menu' | 'settings' | 'dossier' | 'chapters' | 'game')`) handling hidden/visible state,
       focus, and Esc/back. The title section becomes the first screen.
-- [ ] Refactor `game/game.js` into a **session runner** parameterized by a **mode** object:
+- [x] Refactor `game/game.js` into a **session runner** parameterized by a **mode** object:
   ```js
   mode = {
     id: 'random' | 'story',
@@ -467,7 +557,7 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
   }
   ```
   The current behavior becomes `modes/random.js`, and story chapters become `modes/story.js`. Board, reveal and report stay shared.
-- [ ] Replace the in-game "New case" button with a **Menu** button (resume, settings, sound, quit to main menu with a save).
+- [x] Replace the in-game "New case" button with a **Menu** button (resume, settings, sound, quit to main menu with a save).
 
 ### F4. Automated smoke test
 **Why first:** this roadmap rewrites most of `game/`. A one-command regression check pays for itself immediately.
@@ -483,6 +573,7 @@ Each item has: goal, design notes, tasks, dependencies. The recommended order is
       `--remote-debugging-port`, then plays a win and a loss at `#speed400` via `NOIR`. It asserts the report, no console errors, and no `NOIR.MISSING`.
       Add the script `npm run e2e`.
 - [ ] Extend as modes land: random mode, a full campaign at speed with forced answers (to reach every ending, including the easter egg), ~~save/resume~~ (done in step 4), import/export round-trip.
+      ~~random mode~~, menu, in-game menu and settings scenarios landed in step 5.
 
 ## 2.2 Requested items
 
@@ -507,15 +598,22 @@ All existing scenes go to the Random Case pool from the start (D3). The story st
 ### T2. Main menu and settings
 **Goal:** Main menu with New Game, Continue, Chapter Select, Random Case, Dossier, Settings.
 
-- [ ] Menu screen styled like a case-file folder on the desk, with the title logo above it. "Open the case file" becomes the gesture that inits audio and opens the menu.
+**Status: partly done (step 5): menu shell, Continue (Random Case), Random Case, and most of Settings.** The rest lands with the features it needs:
+New Game / Chapter Select / Dossier with the campaign (step 8), Skip seen scenes and Replay tutorial with T3, Export/Import with T4 (both step 6).
+Deviations: Clear all data confirms by **typing DESTROY** (accessible from a keyboard, unlike holding). Settings also has **Sound on** (the existing toggle)
+and per-setting hints. Reduce motion/flashes are three-way (Follow system / Off / On) so players on a reduced-motion OS can still opt back in.
+**Hard mode is fixed when a case starts**, as in Wordle, so it can't be toggled mid-case to dodge a clue. Changes apply from the next case.
+
+- [x] Menu screen styled like a case-file folder on the desk, with the title logo above it. "Open the case file" becomes the gesture that inits audio and opens the menu.
 - [ ] **New Game**: starts the campaign at chapter 1. If a campaign exists, confirm before overwriting.
 - [ ] **Continue**: disabled when there's no `campaign.active` (or no `random.active`; show whichever exists, campaign first).
+      (Random Case half done in step 5: the label names the case and suspect. The campaign half comes with T6.)
 - [ ] **Chapter Select**: 10 case folders. Locked chapters are shown stamped "CLASSIFIED". Unlocked = reached in any run. Each shows its best result. Replay rules: decision D2.
-- [ ] **Random Case**: T5.
+- [x] **Random Case**: T5.
 - [ ] **Dossier**: one page per culprit (mugshot via `bust()`, name, alias, crime, M.O., "why six guesses", known associates, a quote,
       and status AT LARGE / APPREHENDED (n guesses) / ESCAPED). Locked entries show a redacted page. Optional extra tabs: allies, and the crime lord
       (who stays redacted until the finale).
-- [ ] **Settings** (persisted in F1, applied live):
+- [ ] **Settings** (persisted in F1, applied live). Done in step 5: every line below except Skip seen scenes, Export/Import and Replay tutorial.
   - Volume sliders: **Master, Music, Sound effects, Ambience** (rain + location beds). These map to gain nodes, and ambience needs its own bus.
   - **Text speed** (slow / normal / fast / instant) as a multiplier on typing and hold times only (separate from `SPEED`).
   - **Skip seen scenes**: Ask (show a skip button) / Always / Never. See T3.
@@ -555,10 +653,15 @@ All existing scenes go to the Random Case pool from the start (D3). The story st
 ### T5. Random Case mode
 **Goal:** today's game as its own standalone mode: one random answer, random intro, performance-driven scenes.
 
-- [ ] `modes/random.js` wraps the current flow (F3) and uses the `rnd` pack (today's scenes, see D3).
-- [ ] Track stats (played, won, guess distribution, streaks) in `random.stats` and show them on the report and in a small stats panel.
-- [ ] Resumable via `random.active` checkpoint. (Checkpointing and resume work since step 4 via the title button. T5 adds Continue to the menu.)
-- [ ] Keeps the share report ("WORDLE NOIR · Case No. ####").
+**Status: done (step 5).** Deviations: the "small stats panel" is a one-line record under Random Case in the menu, plus a full panel (cases, % closed,
+streak, best, guess distribution with this case's bar highlighted) on the report. **Dropping an open case counts as a loss** once a suspect has been
+questioned, because the answer is revealed and the streak shouldn't be dodgeable. A case dropped before the first guess isn't counted.
+Results are recorded when the final guess is scored, so reloading during the ending can't skip or double-count it.
+
+- [x] `modes/random.js` wraps the current flow (F3) and uses the `rnd` pack (today's scenes, see D3).
+- [x] Track stats (played, won, guess distribution, streaks) in `random.stats` and show them on the report and in a small stats panel.
+- [x] Resumable via `random.active` checkpoint (menu → Continue).
+- [x] Keeps the share report ("WORDLE NOIR · Case No. ####"), now marked "Hard case" when it was one.
 
 ### T6. Ten-chapter story with an overarching plot
 **Goal:** 10 chapters, each with a different culprit from the same organization fleeing a different crime, each with its own reason the culprit
@@ -639,7 +742,7 @@ or from the Random Case pool. All of it should be noir, funny, and consistent wi
 ### T9. More audio
 **Goal:** unique stings, jazzy loops, and more sounds that make the world feel alive.
 
-- [ ] **Bus restructure:** `music`, `sfx`, `ambience` (rain + beds), `ui` (keys, ticks), each with its own gain under master, wired to the T2 sliders.
+- [x] **Bus restructure** (step 5; `ui` follows the Sound effects slider, see §1.8): `music`, `sfx`, `ambience` (rain + beds), `ui` (keys, ticks), each with its own gain under master, wired to the T2 sliders.
 - [ ] **Music scheduler** (lookahead clock pattern) for procedural jazz loops: walking bass (filtered triangle pluck), brushed snare (filtered noise swishes),
       ride cymbal (high-passed noise ticks), Rhodes/vibraphone chords (sine + light FM), and muted-trumpet licks (the existing `riff` voice). Loops per mood:
   - calm: slow smoky ballad, ii–V–I in D minor, brushes only
@@ -700,7 +803,7 @@ structure that holds it is settled.
 | 2 ✓ | **Smoke test in repo** | F4 | Safety net before the big refactors. |
 | 3 ✓ | **Scene registry + chapter tags** | F2, T1 | Every later feature keys off stable scene IDs and packs. |
 | 4 ✓ | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |
-| 5 | **Screens + modes refactor, Random Case mode, main menu shell, settings** | F3, T5, T2 (partial) | Today's game becomes "Random Case" behind a real menu. Story entries show as "coming soon". Settings land with audio buses (start of T9). |
+| 5 ✓ | **Screens + modes refactor, Random Case mode, main menu shell, settings** | F3, T5, T2 (partial) | Today's game becomes "Random Case" behind a real menu. Story entries show as "coming soon". Settings land with audio buses (start of T9). |
 | 6 | **Skip seen scenes + case notes, export/import** | T3, T4 | Both are small once F1/F2 exist, and they make testing long content faster. |
 | 7 | **Story bible** (needs your sign-off) | T6 | Can be drafted in parallel from step 3 on. It must be approved before campaign code hard-codes chapter facts. |
 | 8 | **Campaign framework + vertical slice** | T6, T7, T2 (rest) | Chapter flow, attempts and loss rollback, retry scene variety, story flags, continue, chapter select, dossier, endings logic with placeholder endings. Chapters 1–2 get fresh minimum coverage (2 scenes per slot, so retries can differ) to prove the whole loop end to end. |

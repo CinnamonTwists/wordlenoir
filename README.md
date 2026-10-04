@@ -18,9 +18,16 @@ npm run preview  # optional: run under Cloudflare's real runtime via wrangler
 
 Opening `public/index.html` straight from disk won't work, because browsers block ES modules on `file://`.
 
+## Playing
+
+"Open the case file" leads to the main menu: **Continue** (a case in progress), **Random Case**, and **Settings** (volumes, text speed,
+reduce motion/flashes, high-contrast tiles, hard mode, clear data). The story entries are stamped *coming soon*. During a case, **Menu** or **Esc**
+opens the in-game menu.
+
 ## Saves
 
-Progress lives in the browser (`localStorage`, key `wordlenoir.save`). A case in progress reopens after a reload or a closed tab.
+Progress lives in the browser (`localStorage`, key `wordlenoir.save`): the case in progress, your Random Case record, settings and seen scenes.
+A case in progress reopens from Continue after a reload or a closed tab.
 If the browser won't store anything (some private modes), the game says so and keeps playing without saving.
 
 ## Deploying
@@ -33,7 +40,7 @@ publishes only the `public/` folder. Everything outside `public/` stays private.
 ```
 public/                     ← everything that gets deployed
   index.html                  page markup
-  css/                        one stylesheet per layer (base, title, board, cinema, effects, overlays, ambient)
+  css/                        one stylesheet per layer (base, title, menu, board, cinema, effects, overlays, ambient, prefs)
   data/words/                 answers.txt and allowed.txt, one word per line
   images/                     favicon and social preview
   js/
@@ -49,6 +56,8 @@ public/                     ← everything that gets deployed
       random/                 Random Case pack: intros, tail, rounds (cores/), informants, win/loss endings, openers, closers
       chapters/               story chapter packs (coming)
     game/                     rules and flow: state, scoring, board UI, case generation, informants, report, snapshots
+      modes/                  game modes (random.js: Random Case)
+    ui/                       screens around the game: screen manager, main menu, settings
     save/                     browser saves: one versioned localStorage document, migrations, progress rules
 tools/                      dev server, scene validator, e2e test (not deployed)
 tests/                      unit tests (not deployed)
@@ -82,4 +91,5 @@ NOIR.S                      // current case state
 NOIR.MISSING                // {vars} a script referenced but nothing supplied
 NOIR.scene('rnd.tail')      // any loaded scene by ID; NOIR.pack is the Random Case pack
 NOIR.save.get()             // the save document; NOIR.save.reset() wipes it
+NOIR.setting('hardMode', true) // change a setting as the Settings screen would
 ```

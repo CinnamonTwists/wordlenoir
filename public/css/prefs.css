@@ -1,0 +1,18 @@
+/* Player settings (ui/settings.js sets these attributes on <html>). Loaded last so it overrides everything else. */
+
+/* High-contrast tiles: orange (in the gang) and blue (right place), the standard Wordle accessibility colours */
+html[data-hc]{--t-yellow:#f5793a;--t-green:#85c0f9}
+html[data-hc] .tile[data-s="yellow"]{border-color:#c4561d;box-shadow:0 0 18px rgba(245,121,58,.35)}
+html[data-hc] .tile[data-s="green"]{border-color:#4f8fcf;color:#0b1a2b;box-shadow:0 0 22px rgba(133,192,249,.45)}
+html[data-hc] .key[data-s="yellow"]{border-color:#ff9a5c}
+html[data-hc] .key[data-s="green"]{border-color:#b5d8fb;color:#0b1a2b}
+html[data-hc] .file .ans .tile[data-s="green"],html[data-hc] .file .record .bar.now i{color:#0b1a2b}
+
+/* Reduce motion: no camera shake or slow pans (the JS side also thins rain and grain) */
+html[data-motion="reduced"] .bg.kb1 svg,html[data-motion="reduced"] .bg.kb2 svg,html[data-motion="reduced"] .bg.push svg{animation:none}
+html[data-motion="reduced"] #cam.shake{animation:none}
+html[data-motion="reduced"] .ci-band::before{animation:none}
+html[data-motion="reduced"] .logo .n{animation:none}
+
+/* Reduce flashes: no flickering neon (the JS side drops white flashes and lightning) */
+html[data-flashes="reduced"] .flicker{animation:none}

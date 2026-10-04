@@ -1,5 +1,5 @@
 import { clamp } from '../core/util.js';
-import { SPEED, sleep } from '../core/timing.js';
+import { SPEED, TEXT, sleep } from '../core/timing.js';
 import { AU } from '../audio/audio.js';
 import { bust } from '../art/portraits.js';
 import { CAST } from '../content/cast.js';
@@ -12,11 +12,12 @@ export function emParse(t) { const out = []; const re = /_([^_\s][^_]*?)_/g; let
 export async function typeInto(el, text, perChar, ticks) {
   el.innerHTML = '';
   const segs = emParse(text).map(([t, em]) => { const sp = document.createElement(em ? 'em' : 'span'); el.appendChild(sp); return [sp, t]; });
-  if (SPEED > 20) { segs.forEach(([sp, t]) => sp.textContent = t); await sleep(text.length * perChar); return; }
+  if (SPEED > 20 || !TEXT.type) { segs.forEach(([sp, t]) => sp.textContent = t); await sleep(text.length * perChar * TEXT.type); return; }
+  perChar *= TEXT.type;
   let k = 0;
-  for (const [sp, t] of segs) for (const ch of t) { sp.textContent += ch; if (ticks && ch !== ' ' && (k++ % 2 === 0)) AU.tick(); await sleep(ch === '.' || ch === ',' || ch === '?' ? perChar * 4 : perChar); }
+  for (const [sp, t] of segs) for (const ch of t) { sp.textContent += ch; if (ticks && TEXT.blips && ch !== ' ' && (k++ % 2 === 0)) AU.tick(); await sleep(ch === '.' || ch === ',' || ch === '?' ? perChar * 4 : perChar); }
 }
-export const holdFor = t => clamp(1200 + t.length * 30, 1900, 5400);
+export const holdFor = t => clamp(1200 + t.length * 30, 1900, 5400) * TEXT.hold;
 
 export async function narrate(text) {
   await lit(); C.dlg.classList.remove('on'); C.speaker = null;

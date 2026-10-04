@@ -32,11 +32,13 @@
 
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/title.css">
+<link rel="stylesheet" href="css/menu.css">
 <link rel="stylesheet" href="css/board.css">
 <link rel="stylesheet" href="css/cinema.css">
 <link rel="stylesheet" href="css/effects.css">
 <link rel="stylesheet" href="css/overlays.css">
 <link rel="stylesheet" href="css/ambient.css">
+<link rel="stylesheet" href="css/prefs.css">
 <script type="module" src="js/main.js"></script>
 </head>
 <body>
@@ -51,13 +53,38 @@
   <p class="fine">Best with sound on. Scenes play out in full and can't be skipped. A case runs about five to eight minutes.</p>
 </section>
 
+<section id="menu" class="screen" hidden aria-labelledby="menuH">
+  <div class="logo small" aria-hidden="true"><span class="w">WORDLE</span><span class="n">NOIR</span></div>
+  <div class="folder">
+    <div class="tab">Case files</div>
+    <h2 id="menuH" class="sr">Main menu</h2>
+    <nav class="items" aria-labelledby="menuH">
+      <button class="item" id="mContinue" disabled><span class="t">Continue</span><span class="s" id="mContinueSub">No case open.</span></button>
+      <button class="item locked" id="mNewGame" aria-disabled="true"><span class="t">New Game</span><span class="s">The story. Ten words on the run, one night at a time.</span><span class="stamp">Coming soon</span></button>
+      <button class="item locked" id="mChapters" aria-disabled="true"><span class="t">Chapter Select</span><span class="s">Replay any chapter you've reached.</span><span class="stamp">Classified</span></button>
+      <button class="item" id="mRandom"><span class="t">Random Case</span><span class="s" id="mRandomSub">One word. Six suspects. Any night.</span></button>
+      <button class="item locked" id="mDossier" aria-disabled="true"><span class="t">Dossier</span><span class="s">The faces behind the words.</span><span class="stamp">Classified</span></button>
+      <button class="item" id="mSettings"><span class="t">Settings</span><span class="s">Sound, text speed, accessibility, data.</span></button>
+    </nav>
+  </div>
+</section>
+
+<section id="settings" class="screen" hidden aria-labelledby="setH">
+  <div class="folder wide">
+    <div class="tab">Settings</div>
+    <h2 id="setH" class="sr">Settings</h2>
+    <form id="setForm" onsubmit="return false"></form>
+    <div class="foot"><button type="button" id="setBack" class="primary">Back</button></div>
+  </div>
+</section>
+
 <section id="board" hidden>
   <header class="bar">
     <div class="brand">WORDLE<b>NOIR</b></div>
     <div class="casebox"><div class="caseno" id="caseNo">CASE No. ----</div><div class="casetitle" id="caseTitle">—</div></div>
     <div class="tools">
       <button class="tbtn" id="sndBtn" aria-pressed="true">Sound on</button>
-      <button class="tbtn" id="newBtn">New case</button>
+      <button class="tbtn" id="menuBtn" aria-haspopup="dialog">Menu</button>
     </div>
   </header>
   <div class="status">
@@ -86,10 +113,18 @@
 
 <div id="toast" role="status"></div>
 
-<div class="overlay" id="modal" hidden>
+<div class="overlay" id="pause" hidden role="dialog" aria-modal="true" aria-labelledby="pauseH">
+  <div class="file narrow">
+    <h3 id="pauseH">Case on hold</h3>
+    <div class="meta" id="pauseMeta"></div>
+    <div class="acts col"><button id="pResume" class="primary">Back to the case</button><button id="pSettings">Settings</button><button id="pSound" aria-pressed="true">Sound: on</button><button id="pMenu">Main menu</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalH">
   <div class="file">
-    <h3>Drop this case?</h3>
-    <div class="meta">The word walks free. Nobody will ever know what it was. Except you.</div>
+    <h3 id="modalH">Drop this case?</h3>
+    <div class="meta">The word walks free. Nobody will ever know what it was. Except you. It goes in the books as a cold case.</div>
     <div class="acts"><button id="mKeep" class="primary">Keep digging</button><button id="mDrop">Drop it</button></div>
   </div>
 </div>

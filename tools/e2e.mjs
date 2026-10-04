@@ -58,11 +58,12 @@ async function until(expr, what, ms = WAIT) {
   throw new Error(`timed out waiting for ${what}`);
 }
 async function click(sel) {
-  const r = await ev(`(() => { const b = document.querySelector(${JSON.stringify(sel)})?.getBoundingClientRect(); return b && b.width ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null; })()`);
+  const r = await ev(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); el?.scrollIntoView({ block: 'center', inline: 'center' });
+    const b = el?.getBoundingClientRect(); return b && b.width ? { x: b.x + b.width / 2, y: b.y + b.height / 2 } : null; })()`);
   if (!r) throw new Error(`${sel} is not visible`);
   for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, x: r.x, y: r.y, button: 'left', clickCount: 1 });
 }
-const KEYS = { Enter: [13, '\r'], Backspace: [8, ''] };
+const KEYS = { Enter: [13, '\r'], Backspace: [8, ''], Escape: [27, ''] };
 async function key(k) {
   const [vk, text] = KEYS[k] || [k.toUpperCase().charCodeAt(0), k];
   const code = KEYS[k] ? k : 'Key' + k.toUpperCase();
@@ -72,7 +73,7 @@ async function key(k) {
 const type = async word => { for (const ch of word) await key(ch); };
 
 // ---------- game helpers ----------
-const READY = `!NOIR.S.busy && !NOIR.S.over && !document.querySelector('#board').hidden && document.querySelector('#modal').hidden`;
+const READY = `!NOIR.S.busy && !NOIR.S.over && !document.querySelector('#board').hidden && document.querySelector('#modal').hidden && document.querySelector('#pause').hidden`;
 const REPORT = `NOIR.S.over && !document.querySelector('#report').hidden`;
 async function guess(word) {
   const n = await ev('NOIR.S.guesses.length');
@@ -84,7 +85,8 @@ async function checkReport(answer, won, n) {
   await until(REPORT, 'the case report');
   const r = await ev(`(() => { const f = document.querySelector('#reportFile');
     return { verdict: f.querySelector('.verdict')?.className, ans: [...f.querySelectorAll('.ans .tile')].map(t => t.textContent).join(''),
-      rows: f.querySelectorAll('tr').length, won: NOIR.S.won, n: NOIR.S.guesses.length, newBtn: !!f.querySelector('#rNew') }; })()`);
+      rows: f.querySelectorAll('tr').length, won: NOIR.S.won, n: NOIR.S.guesses.length, newBtn: !!f.querySelector('#rNew'),
+      menuBtn: !!f.querySelector('#rMenu'), record: !!f.querySelector('.record .dist') }; })()`);
   const bad = [];
   if (r.won !== won) bad.push(`S.won is ${r.won}`);
   if (r.n !== n) bad.push(`${r.n} guesses recorded, expected ${n}`);
@@ -92,12 +94,25 @@ async function checkReport(answer, won, n) {
   if (r.ans !== answer) bad.push(`report shows answer "${r.ans}", expected "${answer}"`);
   if (r.rows !== n) bad.push(`report table has ${r.rows} rows, expected ${n}`);
   if (!r.newBtn) bad.push('no "Open a new case" button');
+  if (!r.menuBtn) bad.push('no "Main menu" button');
+  if (!r.record) bad.push('no Random Case record on the report');
   if (bad.length) throw new Error('report: ' + bad.join('; '));
 }
-// Starts a case (from the title screen or the report) with a forced answer.
+// Goes from wherever we are (title, menu, report) to the main menu.
+async function toMenu() {
+  if (await ev(`NOIR.screen === 'title'`)) { await click('#startBtn'); await until(`NOIR.screen === 'menu'`, 'the main menu'); return; }
+  if (await ev(`!document.querySelector('#report').hidden`)) await click('#rMenu');
+  else if (await ev(`NOIR.screen === 'game'`)) { await key('Escape'); await until(`!document.querySelector('#pause').hidden`, 'the in-game menu'); await click('#pMenu'); }
+  await until(`NOIR.screen === 'menu'`, 'the main menu');
+}
+// Starts a Random Case with a forced answer: from the report's "Open a new case", or through the menu (dropping an open case).
 async function openCase(answer, forceInf) {
   await ev(`NOIR.forceAnswer = ${JSON.stringify(answer)}; NOIR.forceInf = ${forceInf === undefined ? 'undefined' : forceInf}`);
-  await click(await ev(`!document.querySelector('#title').hidden`) ? '#startBtn' : '#rNew');
+  if (await ev(`NOIR.screen === 'game' && !document.querySelector('#report').hidden`)) await click('#rNew');
+  else {
+    await toMenu(); await click('#mRandom');
+    await wait(50); if (await ev(`!document.querySelector('#modal').hidden`)) await click('#mDrop');
+  }
   await until(`NOIR.S.answer === ${JSON.stringify(answer)} && NOIR.S.guesses.length === 0`, 'a new case');
 }
 // Reloads the page and waits for the new one to boot (a marker on the old window tells them apart).
@@ -107,27 +122,42 @@ async function reload() {
   while (Date.now() - t < WAIT) { try { if (await ev('!window.__oldPage && !!(window.NOIR && NOIR.pack && NOIR.ANSWERS.length)')) return; } catch { /* mid-navigation */ } await wait(50); }
   throw new Error('timed out waiting for the page to reload');
 }
+// After a reload: title → menu → Continue.
+async function continueCase(n) {
+  await toMenu();
+  if (await ev(`document.querySelector('#mContinue').disabled`)) throw new Error('Continue is disabled with a case open');
+  const sub = await ev(`document.querySelector('#mContinueSub').textContent`);
+  if (!sub.includes(`suspect ${n + 1} of 6`)) throw new Error(`Continue label is "${sub}"`);
+  await click('#mContinue');
+  await until(`NOIR.S.guesses?.length === ${n} && ${READY}`, 'the case to reopen');
+}
 const saved = () => ev(`(NOIR.save.flush(), JSON.parse(localStorage.getItem('wordlenoir.save')))`);
 const randomWords = async (n, not) => ev(`(() => { const out = []; while (out.length < ${n}) { const w = NOIR.ANSWERS[Math.floor(Math.random() * NOIR.ANSWERS.length)]; if (w !== ${JSON.stringify(not)} && !out.includes(w)) out.push(w); } return out; })()`);
+const toastSays = re => until(`${re}.test(document.querySelector('#toast').textContent)`, `a toast matching ${re}`);
 
 // ---------- scenarios ----------
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
 
-test('title → first case, invalid word is refused', async () => {
+test('title → menu → first case, invalid word is refused', async () => {
   await until('window.NOIR && NOIR.ANSWERS.length > 0 && NOIR.pack', 'the word lists and the Random Case pack to load');
   if (!await ev(`NOIR.pack.id === 'rnd' && NOIR.scene('rnd.tail') === NOIR.pack.tail`)) throw new Error('scene registry: rnd pack or id lookup is wrong');
+  await toMenu();
+  const m = await ev(`({ cont: document.querySelector('#mContinue').disabled, locked: [...document.querySelectorAll('.item.locked')].length })`);
+  if (!m.cont || m.locked !== 3) throw new Error(`fresh menu looks wrong: ${JSON.stringify(m)}`);
+  await click('#mNewGame'); await toastSays('/typist/');   // story entries are stamped, not broken
   const answer = (await randomWords(1, ''))[0];
   await openCase(answer);
   await until(READY, 'the intro to finish');
   await type('zzzzz'); await key('Enter');
-  await until(`document.querySelector('#toast').textContent.trim().length > 0`, 'the "not a word" toast');
+  await toastSays('/No record of ZZZZZ/');
   const s = await ev(`({ n: NOIR.S.guesses.length, cur: NOIR.S.cur, busy: NOIR.S.busy })`);
   if (s.n !== 0 || s.cur !== 'zzzzz' || s.busy) throw new Error(`invalid word was not refused cleanly: ${JSON.stringify(s)}`);
   for (let i = 0; i < 5; i++) await key('Backspace');
   if (await ev('NOIR.S.cur') !== '') throw new Error('Backspace did not clear the row');
-  // finish this case as a quick first-guess win so the report flow is exercised from the title-screen case too
   await guess(answer); await checkReport(answer, true, 1);
+  const st = (await saved()).random.stats;
+  if (st.played !== 1 || st.won !== 1 || st.dist[0] !== 1 || st.streak !== 1) throw new Error(`stats not recorded: ${JSON.stringify(st)}`);
   return answer;
 });
 test('loss, informant every round', async () => {
@@ -137,6 +167,7 @@ test('loss, informant every round', async () => {
   await checkReport(answer, false, 6);
   const inf = await ev('NOIR.S.infLog.length');
   if (inf < 1) throw new Error('forceInf was on but no informant appeared');
+  if ((await saved()).random.stats.streak !== 0) throw new Error('a loss did not end the streak');
   return `${answer}, ${inf} informants`;
 });
 test('win on guess 3', async () => {
@@ -156,9 +187,7 @@ test('save: reopen a case after reload', async () => {
   if (JSON.stringify(doc).includes(`"${answer}"`)) throw new Error('the answer is readable in the save');
   if (!doc.seen['rnd.tail'] || Object.keys(doc.seen).filter(k => k.startsWith('rnd.core.')).length < 2) throw new Error(`seen marks missing: ${Object.keys(doc.seen)}`);
   await reload();
-  if (await ev(`document.querySelector('#startBtn').textContent`) !== 'Reopen the case file') throw new Error('title button does not offer to reopen');
-  await click('#startBtn');
-  await until(`NOIR.S.guesses?.length === 2 && ${READY}`, 'the case to reopen');
+  await continueCase(2);
   const s = await ev(`({ painted: document.querySelectorAll('#grid .tile[data-s]').length, memo: document.querySelector('#memo').textContent, answer: NOIR.S.answer, counts: NOIR.S.counts.length })`);
   if (s.painted !== 10 || !/reopened/i.test(s.memo) || s.answer !== answer || s.counts !== 2) throw new Error(`bad resume: ${JSON.stringify(s)}`);
   await guess(answer); await checkReport(answer, true, 3);
@@ -174,24 +203,90 @@ test('save: reload mid-scene keeps the guess', async () => {
   await until('NOIR.S.pending?.length > 0', 'the round scene to start', 20000);
   const pending = await ev('[...NOIR.S.pending]');
   await reload();
-  await click('#startBtn');
-  await until(`NOIR.S.guesses?.length === 1 && ${READY}`, 'the case to reopen after the guess');
+  await continueCase(1);
   const doc = await saved();
   if (!pending.every(id => doc.seen[id])) throw new Error(`interrupted scene not marked seen: ${pending}`);
   if (doc.random.active.pending.length) throw new Error('pending scenes left in the checkpoint');
   await guess(wrong[1]); await guess(answer); await checkReport(answer, true, 3);
   return `${answer}, interrupted ${pending.join(' + ')}`;
 });
+test('menu: in-game menu → main menu → Continue, then dropping the case counts as a loss', async () => {
+  const [answer, other, ...wrong] = await randomWords(4, '');
+  await openCase(answer, false);
+  await guess(wrong[0]);
+  await until(READY, 'the round to finish');
+  await key('Escape');
+  await until(`!document.querySelector('#pause').hidden`, 'Esc to open the in-game menu');
+  if (!/SUSPECT 2 OF 6/.test(await ev(`document.querySelector('#pauseMeta').textContent`))) throw new Error('in-game menu shows the wrong suspect');
+  await key('Escape');
+  await until(`document.querySelector('#pause').hidden && NOIR.screen === 'game'`, 'Esc to close the in-game menu');
+  await click('#menuBtn'); await click('#pMenu');
+  await until(`NOIR.screen === 'menu'`, 'the main menu');
+  await continueCase(1);
+  const before = (await saved()).random.stats;
+  await toMenu(); await click('#mRandom');
+  await until(`!document.querySelector('#modal').hidden`, 'the "drop this case?" dialog');
+  await ev(`NOIR.forceAnswer = ${JSON.stringify(other)}`);
+  await click('#mDrop');
+  await toastSays(`/It was ${answer.toUpperCase()}/`);
+  await until(`NOIR.S.answer === ${JSON.stringify(other)}`, 'a new case after dropping');
+  const after = (await saved()).random.stats;
+  if (after.played !== before.played + 1 || after.won !== before.won || after.streak !== 0) throw new Error(`drop not recorded as a loss: ${JSON.stringify({ before, after })}`);
+  await guess(other); await checkReport(other, true, 1);
+  return `${answer} dropped`;
+});
+test('settings: saved, applied, and survive a reload; hard mode enforces clues', async () => {
+  await toMenu(); await click('#mSettings');
+  await until(`NOIR.screen === 'settings'`, 'the settings screen');
+  await click('#set-highContrast'); await click('#set-hardMode');
+  await click('input[name="set-textSpeed"][value="fast"]');
+  await click('input[name="set-motion"][value="reduced"]');
+  await key('Escape');
+  await until(`NOIR.screen === 'menu'`, 'Esc to leave settings');
+  await reload();
+  const p = await ev(`({ s: NOIR.save.get('settings'), hc: document.documentElement.hasAttribute('data-hc'), motion: document.documentElement.dataset.motion,
+    green: getComputedStyle(document.documentElement).getPropertyValue('--t-green').trim() })`);
+  if (!p.s.highContrast || !p.s.hardMode || p.s.textSpeed !== 'fast' || p.s.motion !== 'reduced' || !p.hc || p.motion !== 'reduced' || p.green !== '#85c0f9')
+    throw new Error(`settings not kept or applied: ${JSON.stringify(p)}`);
+  // hard mode: find a first guess sharing a letter with the answer, then break the rule
+  const answer = (await randomWords(1, ''))[0];
+  const first = await ev(`NOIR.ANSWERS.find(w => w !== ${JSON.stringify(answer)} && NOIR.score(w, ${JSON.stringify(answer)}).some(v => v === 2))`);
+  const bad = await ev(`(() => { const fb = NOIR.score(${JSON.stringify(first)}, ${JSON.stringify(answer)}); const i = fb.indexOf(2);
+    return NOIR.ANSWERS.find(w => w[i] !== ${JSON.stringify(first)}[i] && w !== ${JSON.stringify(answer)}); })()`);
+  await openCase(answer, false);
+  if (!await ev(`NOIR.S.hard && /HARD/.test(document.querySelector('#caseNo').textContent)`)) throw new Error('hard mode not on for the new case');
+  await guess(first);
+  await until(READY, 'the round to finish');
+  await type(bad); await key('Enter');
+  await toastSays('/Hard case/');
+  if (await ev('NOIR.S.guesses.length') !== 1) throw new Error('hard mode let a rule-breaking guess through');
+  for (let i = 0; i < 5; i++) await key('Backspace');
+  await guess(answer); await checkReport(answer, true, 2);
+  return `${answer} (${first} then refused ${bad})`;
+});
+test('settings: clear all data', async () => {
+  await toMenu(); await click('#mSettings');
+  await click('#clearBtn');
+  if (!await ev(`document.querySelector('#clearGo').disabled`)) throw new Error('"Burn them" enabled before typing DESTROY');
+  await click('#clearType'); await type('destroy');
+  if (await ev(`document.querySelector('#clearGo').disabled`)) throw new Error('"Burn them" still disabled after typing DESTROY');
+  await ev('window.__oldPage = 1');
+  await click('#clearGo');
+  const t = Date.now();
+  while (Date.now() - t < WAIT) { try { if (await ev('!window.__oldPage && !!(window.NOIR && NOIR.ANSWERS.length)')) break; } catch { /* reloading */ } await wait(50); }
+  const doc = await saved();
+  if (doc.random.stats.played !== 0 || Object.keys(doc.seen).length || doc.settings.highContrast || doc.settings.hardMode) throw new Error(`data not cleared: ${JSON.stringify(doc).slice(0, 200)}`);
+  if (await ev(`document.documentElement.hasAttribute('data-hc')`)) throw new Error('high contrast still applied after clearing');
+});
 test('save: blocked storage warns and still plays', async () => {
   const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('denied', 'SecurityError'); } });` });
   try {
     await reload();
     if (await ev('NOIR.save.status.reason') !== 'blocked') throw new Error('store did not notice storage is blocked');
+    await toMenu();
+    await toastSays(`/isn't keeping/`);
     const answer = (await randomWords(1, ''))[0];
-    await ev(`NOIR.forceAnswer = ${JSON.stringify(answer)}`);
-    await click('#startBtn');
-    await until(`/isn't keeping/.test(document.querySelector('#toast').textContent)`, 'the "progress won\'t be kept" warning');
-    await until(`NOIR.S.answer === ${JSON.stringify(answer)}`, 'a new case');
+    await openCase(answer);
     await guess(answer); await checkReport(answer, true, 1);
   } finally {
     await send('Page.removeScriptToEvaluateOnNewDocument', { identifier }); await reload();

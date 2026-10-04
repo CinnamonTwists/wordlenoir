@@ -1,5 +1,5 @@
 import { pick, clamp } from '../core/util.js';
-import { SPEED, sleep } from '../core/timing.js';
+import { SPEED, TEXT, sleep } from '../core/timing.js';
 import { AU } from '../audio/audio.js';
 import { bust, eyes } from '../art/portraits.js';
 import { CAST } from '../content/cast.js';
@@ -43,7 +43,7 @@ export async function card(arg) {
   hideText(); const el = document.createElement('div'); el.className = 'card';
   el.innerHTML = `<h2></h2><div class="rule"></div><p></p>`; el.querySelector('h2').textContent = title;
   C.fx.appendChild(el); await sleep(30); el.classList.add('on'); AU.piano([pick([196, 174.61, 220])], 0); await sleep(1600);
-  await typeInto(el.querySelector('p'), sub, 34, true); await sleep(2400 + sub.length * 12);
+  await typeInto(el.querySelector('p'), sub, 34, true); await sleep((2400 + sub.length * 12) * TEXT.hold);
   el.classList.remove('on'); await sleep(750); el.remove();
 }
 export async function stamp(text, green) {
@@ -55,7 +55,7 @@ export async function paper(arg) {
   const [label, text] = arg.split('|'); await lit(); hideText();
   const el = document.createElement('div'); el.className = 'paper'; el.innerHTML = `<div class="lbl"></div><div class="txt"></div>`;
   el.querySelector('.lbl').textContent = label; C.fx.appendChild(el); await sleep(30); el.classList.add('on'); AU.burst(.25, 'bandpass', 1200, .15); await sleep(600);
-  await typeInto(el.querySelector('.txt'), text, 42, true); await sleep(2400 + text.length * 20);
+  await typeInto(el.querySelector('.txt'), text, 42, true); await sleep((2400 + text.length * 20) * TEXT.hold);
   el.classList.remove('on'); await sleep(450); el.remove();
 }
 export async function clue(ctx) {

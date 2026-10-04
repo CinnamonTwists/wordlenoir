@@ -17,6 +17,17 @@ export function markSeen(doc, ids, { story = false } = {}) {
 }
 export const isSeen = (doc, id) => !!doc.seen[id];
 
+// ---------- Random Case record (roadmap T5) ----------
+
+// One finished (or dropped) case: a win adds to the guess distribution and the streak; anything else ends the streak.
+export function recordRandom(doc, { won, guesses }) {
+  const st = doc.random.stats;
+  st.played++;
+  if (won) { st.won++; st.dist[Math.min(Math.max(guesses, 1), 6) - 1]++; st.streak++; st.best = Math.max(st.best, st.streak); }
+  else st.streak = 0;
+  return doc;
+}
+
 // ---------- campaign (wired into gameplay by the story mode, roadmap T6) ----------
 
 export function newCampaign(doc, now = Date.now()) {
