@@ -160,6 +160,7 @@ for (const { where, src, scope, pack, slot } of allScripts) {
     for (const c of conds) if (!FLAGS.has(c.key) && !vars.has(c.key) && !(story && STORY.has(c.key))) err(at, `condition on unknown flag/var "${c.key}"`);
     if (slot === 'inter' && /^(!!|%%|\*\*|~clue)/.test(line)) err(at, 'interludes are quiet: no cut-ins, versus, heavy lines or clues');
     if (line.startsWith('?')) err(at, `malformed condition: ${line}`);
+    if (/^[A-Z]{2,}\??$/.test(line)) err(at, `"${line}" on its own line looks like an unfinished dialogue line (it would show as narration)`);
     for (const [, k] of line.matchAll(/\{(\w+)\}/g)) if (!vars.has(k)) err(at, `{${k}} is not available in ${scope} scenes`);
     let m;
     if ((m = line.match(/^@set\s+(\w+)/))) { if (!SETS[m[1]]) err(at, `unknown set "${m[1]}"`); }

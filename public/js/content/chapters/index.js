@@ -27,7 +27,7 @@ export const CHAPTERS = [
     deadline: 'the six o\'clock news goes on the air', why: 'At 6:00 the news script carries the phrase that sets a Lexicon courier moving.',
     associates: 'The Lexicon (an Entry). Radio station WKRN.', quote: 'Stay tuned, Detective. You always do.',
     bust: { hair: 'long', cig: true, color: '#e07a8f' } },
-  { n: 5, title: 'Express', date: 'October 21, 1948', written: false,
+  { n: 5, title: 'Express', date: 'October 21, 1948', written: true,
     culprit: 'Tomas Brandt', alias: 'the Courier', crime: 'the murder of a Pullman porter',
     mo: 'Never the same suitcase, never the same name on the ticket.',
     deadline: 'the 6:00 train leaves Union Station', why: 'At 6:00 the Courier leaves town carrying half of the Lexicon\'s Index.',
