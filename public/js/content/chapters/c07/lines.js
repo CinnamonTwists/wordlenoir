@@ -18,7 +18,7 @@ export const OPENERS = {
     '> {time}. A forged deed under the desk lamp, with a magnifying glass and Mags\'s fingerprints all over it.'],
   alley: ['> The alley behind First Municipal Trust, where the president\'s chauffeur sleeps in a car worth more than my apartment.',
     '> The alley behind the bank. Even the trash cans looked like they had accounts.'],
-  phonebooth: ['> A phone booth on Exchange Street, with a view of the bank\'s one lit window.',
+  phonebooth: ['> A phone booth across from First Municipal Trust, with a little watercolour of itself taped to the glass.', '> A phone booth on Exchange Street, with a view of the bank\'s one lit window.',
     '> The booth outside the Federal Reserve. Somebody had scratched "SOLD" into the glass.'],
   rooftop: ['> The roof of the bank across the street. From up here, the whole financial district looked like a ledger.']
 };

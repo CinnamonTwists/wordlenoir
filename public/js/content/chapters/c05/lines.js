@@ -20,7 +20,7 @@ export const OPENERS = {
     '> {time}. The desk lamp, the porter\'s pages, and a headache with a name.'],
   rooftop: ['> The roof of Union Station. Twelve tracks fanned out below me into the dark, every one of them a way out.',
     '> Up on the station roof, the wind came off the river carrying soot and the smell of the yards.'],
-  phonebooth: ['> The phone booths in the station concourse, a row of them, like confessionals for travellers.']
+  phonebooth: ['> A phone booth by the left-luggage window, where a man can call anywhere in the country for the price of a goodbye.', '> The phone booths in the station concourse, a row of them, like confessionals for travellers.']
 };
 
 export const CLOSERS = {

@@ -14,12 +14,12 @@ export const OPENERS = {
     '> {time}. The desk lamp, the requisition book, and a cup of coffee I\'d forgotten to drink an hour ago.'],
   rooftop: ['> The roof across from the Hall of Records. A deck chair, a thermos, and the best seat in the city for a fire.',
     '> Up on the roof, the wind smelled of river and coal smoke and something sweeter. Birdseed.'],
-  alley: ['> The alley beside the Hall of Records. The bomb squad truck parked with its lights off, like it was ashamed.',
+  alley: ['> {time}. The alley behind the Hall of Records, where a fire truck idled with its lights off, waiting to be needed.', '> The alley beside the Hall of Records. The bomb squad truck parked with its lights off, like it was ashamed.',
     '> The coal chute alley, where you could hear the clock through the basement window if you held your breath.'],
   bar: ['> The Last Word. Sal had the radio on to the news. Every station was saying "Hall of Records."',
     '> Sal was wiping down the bar, the way he does when he\'s worried about someone and won\'t say who.'],
   apartment: ['> Home. Vera had left the hall light on. She hadn\'t done that in a long time.'],
-  phonebooth: ['> The police call box on Water Street, the only phone in three blocks that still had anyone to talk to.']
+  phonebooth: ['> The phone booth on Water Street, three blocks from a bomb, with a sign in the window that said OUT OF ORDER. It wasn\'t.','> The police call box on Water Street, the only phone in three blocks that still had anyone to talk to.']
 };
 
 export const CLOSERS = {

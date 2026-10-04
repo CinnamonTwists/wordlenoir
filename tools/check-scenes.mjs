@@ -156,7 +156,7 @@ if (COVERAGE) {
     ['loss climax', P => len(P.loss?.climax), T.climax],
     ['loss epi 0..3', P => [0, 1, 2, 3].map(k => len(P.loss?.epi?.[k])), Array(4).fill(T.lossEpi)],
     ['outro beats', P => lines(P.beats), T.beats],
-    ['interlude k/l/m', P => ['kept', 'late', 'missed'].map(k => (P.interlude?.[k] || []).length), [1, 1, 1]],
+    ['interlude k/l/m', P => (P.chapter === 10 ? 'none' : ['kept', 'late', 'missed'].map(k => (P.interlude?.[k] || []).length)), [1, 1, 1]],   // ch 10 has none (bible §6)
     ['openers (lines)', P => lines(P.openers), T.lines],
     ['closers (lines)', P => lines(P.closers), T.lines],
     ['TOTAL scenes', P => scenesOf(P).length, 146]

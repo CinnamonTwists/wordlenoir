@@ -19,7 +19,7 @@ export const OPENERS = {
   bar: ['> The Last Word. Sal had his coat on behind the bar. He\'d had it on all night.',
     '> Sal was standing at the window, looking at Front Street, like he could see the Gazette from here.'],
   docks: ['> The north wharf, where the tugboat men sleep in their cabins and see everything through the portholes.'],
-  phonebooth: ['> A phone booth on Front Street, with a clear view of the Gazette\'s sixth floor.'],
+  phonebooth: ['> The phone booth outside the Gazette, where the switchboard girls step out to smoke and gossip about the night.', '> A phone booth on Front Street, with a clear view of the Gazette\'s sixth floor.'],
   rooftop: ['> The Gazette roof. The burned-out E on the sign, still dark, like a missing tooth.']
 };
 

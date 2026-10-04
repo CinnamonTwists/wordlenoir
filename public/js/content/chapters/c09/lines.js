@@ -18,8 +18,8 @@ export const OPENERS = {
     '> Sal had the radio tuned to the count, and a fresh pot on, and the good bottle under the bar.'],
   apartment: ['> My building on Clement Street. Mrs. Kowalski\'s door was locked, and her rent book was on the hall table.',
     '> {time}. The stairs smelled of cabbage and floor wax, the way they always do.'],
-  alley: ['> The alley behind the warehouse, by the loading bay, where the milk trucks come in.'],
-  phonebooth: ['> The phone booth across from the warehouse, where an actress had been making calls all night in different voices.']
+  alley: ['> {time}. Behind the warehouse, the milk trucks idled in a row, every one of them carrying something other than milk.', '> The alley behind the warehouse, by the loading bay, where the milk trucks come in.'],
+  phonebooth: ['> A phone booth on Canal Street that smelled of gardenias, which phone booths never do.', '> The phone booth across from the warehouse, where an actress had been making calls all night in different voices.']
 };
 
 export const CLOSERS = {

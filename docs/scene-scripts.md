@@ -1,7 +1,7 @@
 # Scene script reference
 
 Every cutscene in Wordle Noir is a plain-text script in the `s` field of a scene object, `{ id, chapter, s: \`...\` }`,
-inside a **scene pack**: `public/js/content/random/` for Random Case (chapter 0), and `public/js/content/chapters/cNN/` for story chapters (`c01`, `c02` so far).
+inside a **scene pack**: `public/js/content/random/` for Random Case (chapter 0), and `public/js/content/chapters/cNN/` for story chapters (`c01`…`c10`), and `public/js/content/endings/` for the endings.
 The engine (`public/js/cinema/player.js`) runs it one line at a time.
 Blank lines and lines starting with `//` are ignored. Run `npm run check` after editing to catch typos.
 
@@ -72,6 +72,8 @@ Write `{name}` anywhere in a line. Which ones exist depends on where the script 
   and capitalized versions `{HitsN}` `{GreensN}` ...,
   `{time}` (now) `{nextTime}` `{ANSWER}`
 - **Story chapters** add to every scope: `{chapterNo}` `{chapterTitle}` `{culprit}` `{alias}` `{crime}` `{deadline}`.
+- **Endings** (`content/endings/`) get only `{total}` (the run's guesses) and, for conditions, `popTold` `popHalf` `popLetter` (how chapter 8's
+  interlude went), `veraWorst`, `endBad`, plus the run's story flags.
   **Interludes** get only those (they happen the day after, outside the case).
 - **Informants** (`informants.js`): everything above, plus
   `{n}` `{nN}` `{NWORDS}` `{FIT}` (words still possible), `{topL}` `{topPct}` (likeliest letter),

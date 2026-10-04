@@ -19,7 +19,7 @@ export const OPENERS = {
     '> A streetcar went by empty, lit up like a parlor, going nowhere anybody needed to be.'],
   bar: ['> The Last Word. Eddie\'s stool was empty, and nobody would sit on it.',
     '> Sal had turned the jukebox off. It felt wrong to play music with a man on the clock.'],
-  phonebooth: ['> A phone booth outside the penitentiary gate. The only booth in the state where nobody ever called collect.'],
+  phonebooth: ['> The phone booth on Court Street, its directory chained to the shelf and every notary in it underlined by somebody.', '> A phone booth outside the penitentiary gate. The only booth in the state where nobody ever called collect.'],
   alley: ['> The alley behind Court Street, where the lawyers\' wastebaskets end up. Paper everywhere, and none of it innocent.']
 };
 
