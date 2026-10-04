@@ -78,7 +78,8 @@ export function skipNow() {
 const endSkip = () => { P.skipping = SKIP.on = AU.quiet = false; P.skippable = false; skipBtn.hidden = true; };
 
 // Takes over the screen, plays the segments, then hands back to the board.
-// segments: a script string, or [{ id, src }] (roadmap T3). opts: { skip(id) → 'ask' | 'auto' | false, onSegment(id) after each one finishes }.
+// segments: a script string, or [{ id, src }] (roadmap T3).
+// opts: { skip(id) → 'ask' | 'auto' | false, onStart(id) before each segment plays, onSegment(id) after each one finishes }.
 export async function play(segments, ctx, opts = {}) {
   const segs = typeof segments === 'string' ? [{ id: null, src: segments }] : segments.filter(Boolean);
   C.black.style.transition = 'none'; C.black.style.opacity = 1; C.blackOn = true; hideText();
@@ -86,6 +87,7 @@ export async function play(segments, ctx, opts = {}) {
   C.el.hidden = false; RAIN.attach($('#crain')); await sleep(400);
   try {
     for (const seg of segs) {
+      opts.onStart?.(seg.id);
       const how = seg.id && opts.skip ? opts.skip(seg.id) : false;
       P.skippable = !!how; skipBtn.hidden = how !== 'ask';
       if (how === 'auto') skipNow();

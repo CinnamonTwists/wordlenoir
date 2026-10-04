@@ -15,7 +15,7 @@ export const C = {
 export async function blackIn(ms = 800) { C.black.style.transition = `opacity ${ms / SPEED}ms`; C.black.style.opacity = 1; await sleep(ms); C.blackOn = true; }
 export async function blackOut(ms = 900) { C.black.style.transition = `opacity ${ms / SPEED}ms`; C.black.style.opacity = 0; await sleep(ms); C.blackOn = false; }
 export async function lit() { if (C.blackOn) await blackOut(); }
-export function hideText() { C.narr.classList.remove('on'); C.dlg.classList.remove('on'); C.speaker = null; }
+export function hideText() { C.narr.classList.remove('on'); C.dlg.classList.remove('on'); C.speaker = null; AU.duck(false); }
 // Snaps to black at once (used when a scene is skipped): the next visible line fades back in from black.
 export function cutToBlack() { C.black.style.transition = 'none'; C.black.style.opacity = 1; C.blackOn = true; hideText(); C.fx.innerHTML = ''; }
 export function flashFx(o = .7) { if (FLASH.reduced || SKIP.on) return; C.flash.style.transition = 'none'; C.flash.style.opacity = o; requestAnimationFrame(() => { C.flash.style.transition = `opacity ${500 / SPEED}ms`; C.flash.style.opacity = 0; }); }

@@ -22,7 +22,7 @@ export const holdFor = t => clamp(1200 + t.length * 30, 1900, 5400) * TEXT.hold;
 export async function narrate(text) {
   await lit(); C.dlg.classList.remove('on'); C.speaker = null;
   if (C.narr.classList.contains('on')) { C.narr.classList.remove('on'); await sleep(260); }
-  C.narr.innerHTML = ''; C.narr.classList.add('on');
+  C.narr.innerHTML = ''; C.narr.classList.add('on'); AU.duck(true);
   await typeInto(C.narr, text, 27, false); await sleep(holdFor(text));
 }
 export async function say(key, text) {
@@ -33,7 +33,7 @@ export async function say(key, text) {
     C.dlg.style.setProperty('--c', who.color);
     C.portrait.innerHTML = bust(Object.assign({ color: who.color }, who.bust));
     C.dname.textContent = who.name; C.dtext.innerHTML = '';
-    void C.dlg.offsetWidth; C.dlg.classList.add('on', 'enter'); C.speaker = key; await sleep(320);
+    void C.dlg.offsetWidth; C.dlg.classList.add('on', 'enter'); C.speaker = key; AU.duck(true); await sleep(320);
   }
   await typeInto(C.dtext, text, 24, true); await sleep(holdFor(text));
 }

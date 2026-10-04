@@ -14,10 +14,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findBrowser, freePort } from './browser.mjs';
 import { BEDS } from '../public/js/audio/beds.js';
+import { LOOPS } from '../public/js/audio/music.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const filters = process.argv.slice(2).filter(a => !a.startsWith('--'));
 const JSON_OUT = process.argv.includes('--json');
+// --parts <loop>: measure each part (instrument) of one music loop alone, to balance the band
+const PARTS = process.argv.includes('--parts') ? process.argv[process.argv.indexOf('--parts') + 1] : null;
 if (typeof WebSocket === 'undefined') { console.error('levels needs Node 22 or newer (global WebSocket).'); process.exit(1); }
 
 // ---------- what to measure ----------
@@ -34,14 +37,14 @@ const ITEMS = [
   sfx('siren', `AU.play('siren')`, 7.5), sfx('thunder', `AU.play('thunder')`, 7), sfx('telegraph', `AU.play('telegraph')`), sfx('foghorn', `AU.play('foghorn')`),
   sfx('card', `AU.play('card')`), sfx('lament', `AU.play('lament')`, 7),
   { group: 'music', name: 'riff', code: `AU.play('riff')`, dur: 9, mute: ['ambience'], pre: `AU.music('off')` },
-  ...['calm', 'tense', 'hope', 'dread'].map(m => ({ group: 'music', name: `music ${m}`, code: `AU.music('${m}'); AU.pump?.(30)`, dur: 30, from: 8, mute: ['sfx', 'ambience'] })),
+  ...Object.keys(LOOPS).map(m => ({ group: 'music', name: `music ${m}`, code: `AU.music('${m}'); AU.pump(40)`, dur: 40, from: 6, mute: ['sfx', 'ambience'] })),
   ...Object.keys(BEDS).map(b => ({ group: 'beds', name: `bed ${b}`, code: `AU.amb('${b}'); AU.pump(40)`, dur: 40, from: 5, mute: ['sfx', 'music'], pre: `AU.setRain('none'); AU.rainG.gain.value = 0` })),
   ...['off', 'window', 'light', 'heavy'].flatMap(r => [0, 1].map(i => ({ group: 'amb', name: `rain ${r}${i ? ' indoor' : ''}`, code: `AU.setRain('${r}', ${i})`, dur: 12, from: 6, mute: ['sfx', 'music'] })))
 ];
 
 // ---------- in the page ----------
 async function measure(items) {
-  const { AU } = await import('/js/audio/audio.js');
+  const { AU } = await import('/js/audio/audio.js'), M = await import('/js/audio/music.js');
   const RATE = 48000, out = [];
   // RBJ highpass at 1 kHz, for the >1k column
   const hp = (x, fc = 1000) => {
@@ -61,10 +64,11 @@ async function measure(items) {
     AU.quiet = false; AU.on = true; AU.vol = { master: 1, music: 1, sfx: 1, ambience: 1 };
     for (const k of it.mute || []) AU.vol[k] = 0;
     AU.init(ctx);
-    if (it.pre) new Function('AU', it.pre)(AU);
+    if (it.pre) new Function('AU', 'M', it.pre)(AU, M);
     let failed = null;   // a cue that throws must still let the render finish, or startRendering() never resolves
-    ctx.suspend(at).then(() => { try { new Function('AU', it.code)(AU); } catch (e) { failed = e; } ctx.resume(); });
+    ctx.suspend(at).then(() => { try { new Function('AU', 'M', it.code)(AU, M); } catch (e) { failed = e; } ctx.resume(); });
     const buf = await ctx.startRendering();
+    if (it.after) new Function('AU', 'M', it.after)(AU, M);
     if (failed) throw failed;
     const from = Math.floor(RATE * (it.from ?? at)), L = buf.getChannelData(0).subarray(from), R = buf.getChannelData(1).subarray(from);
     const mono = new Float32Array(L.length); for (let i = 0; i < L.length; i++) mono[i] = (L[i] + R[i]) / 2;
@@ -85,7 +89,12 @@ async function measure(items) {
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const browser = findBrowser();
 if (!browser) { console.error('No Chrome, Edge or Chromium found. Set CHROME=/path/to/browser.'); process.exit(1); }
-const items = ITEMS.filter(it => !filters.length || filters.some(f => it.name.includes(f) || it.group === f));
+const LOOP_PARTS = PARTS ? LOOPS[PARTS].parts.length : 0;
+const items = PARTS
+  ? [...Array(LOOP_PARTS).keys()].map(i => ({ group: `parts of ${PARTS}`, name: `part ${i}`, dur: 40, from: 6, mute: ['sfx', 'ambience'],
+      pre: `M.LOOPS.${PARTS}._all ??= M.LOOPS.${PARTS}.parts; M.LOOPS.${PARTS}.parts = [M.LOOPS.${PARTS}._all[${i}]]`, code: `AU.music('${PARTS}'); AU.pump(40)`,
+      after: `M.LOOPS.${PARTS}.parts = M.LOOPS.${PARTS}._all` }))
+  : ITEMS.filter(it => !filters.length || filters.some(f => it.name.includes(f) || it.group === f));
 const port = await freePort(), base = `http://localhost:${port}`;
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'wordlenoir-levels-'));
 const server = spawn(process.execPath, [path.join(ROOT, 'tools/dev-server.mjs')], { env: { ...process.env, PORT: port }, stdio: 'ignore' });

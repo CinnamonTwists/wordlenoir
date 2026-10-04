@@ -52,7 +52,7 @@ function setBackdrop(name) {
   $('#backdrop').innerHTML = SETS[name].draw({}); $('#backdrop').className = name === 'office' ? 'dim' : 'title';
 }
 const overlaysOff = () => { answer(false); for (const id of ['#pause', '#report', '#notes']) $(id).hidden = true; };
-onShow('menu', () => { overlaysOff(); setBackdrop('street'); RAIN.set('heavy'); AU.setRain('heavy', 0); AU.amb('street'); AU.music('calm'); document.body.className = ''; refreshMenu(RandomMode.stats()); });
+onShow('menu', () => { overlaysOff(); setBackdrop('street'); RAIN.set('heavy'); AU.setRain('heavy', 0); AU.amb('street'); AU.music('title'); document.body.className = ''; refreshMenu(RandomMode.stats()); });
 onShow('settings', () => syncSettings());
 onShow('game', () => { setBackdrop('office'); RAIN.set('light'); AU.setRain('window', 1); AU.amb('board'); });
 
@@ -154,7 +154,7 @@ addEventListener('keydown', e => {
 // ---------- console/testing hook ----------
 // e.g. NOIR.speed = 20; NOIR.forceAnswer = 'crane'; NOIR.forceInf = true;
 window.NOIR = {
-  get S() { return S; }, VT, MISSING,
+  get S() { return S; }, VT, MISSING, AU,                       // AU: the audio engine (AU.loop.name, AU.bedName: what's playing)
   set speed(v) { setSpeed(v); }, get speed() { return SPEED; },
   get forceAnswer() { return DEBUG.forceAnswer; }, set forceAnswer(v) { DEBUG.forceAnswer = v; },
   get forceInf() { return DEBUG.forceInf; }, set forceInf(v) { DEBUG.forceInf = v; },

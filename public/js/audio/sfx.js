@@ -1,7 +1,7 @@
 // One-shot sound effects, each a function (au, arg) → void. DOM-free.
 // They are reached only through AU.play(name), which no-ops before init and while a scene is skipped (AU.quiet).
 // Scripts play them by name with `~sfx name`; `npm run check` validates the name against CUES in audio.js.
-import { tone, burst } from './synth.js';
+import { tone, burst, midi } from './synth.js';
 import { sting, versusHit } from './stings.js';
 
 const pick = a => a[Math.floor(Math.random() * a.length)];
@@ -56,8 +56,8 @@ export const SFX = {
   // ---------- music cues (one-shot phrases on the music bus) ----------
   // piano: { notes: [Hz], gap: s }
   piano: (au, { notes, gap = .45 } = {}) => { (notes || []).forEach((fq, i) => { tone(au, fq, 2.4, 'triangle', .12, i * gap); tone(au, fq * 2, 1.2, 'sine', .03, i * gap); }); },
-  // a title card's single low piano note
-  card: au => SFX.piano(au, { notes: [pick([196, 174.61, 220])], gap: 0 }),
+  // a title card's single low piano note: the root of the chord the music is on (C3–B3), else one of three
+  card: au => { const ch = au.chordNow?.(); SFX.piano(au, { notes: [ch ? midi(48 + ((ch.b % 12) + 12) % 12) : pick([196, 174.61, 220])], gap: 0 }); },
   // a lost case: four notes falling
   lament: au => SFX.piano(au, { notes: [311.13, 293.66, 261.63, 196], gap: .7 }),
   // 8-note sawtooth "muted trumpet" phrase (G minor): the start button and a win
