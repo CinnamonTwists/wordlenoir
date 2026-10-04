@@ -1,9 +1,10 @@
 // Speaking characters. Keys are what scripts use (`DASH: line`, `!!@DASH TEXT`).
 // bust: options for ART portraits (hat, hair, build, coat, cig, glasses, eyes).
+// sting (optional): a STINGS variant in audio/audio.js for this character's cut-ins. Without it, cut-ins pick a random low one.
 
 export const CAST = {
   DASH:   { name: 'DASH LEXINGTON', color: '#d9a441', bust: { hat: 'fedora', cig: true, coat: true } },
-  BRIGGS: { name: 'CAPTAIN BRIGGS', color: '#7f9cc7', bust: { hair: 'bald', build: 1.18, coat: true } },
+  BRIGGS: { name: 'CAPTAIN BRIGGS', color: '#7f9cc7', bust: { hair: 'bald', build: 1.18, coat: true }, sting: 'brass' },
   VERA:   { name: 'VERA LEXINGTON', color: '#d97a90', bust: { hat: 'wide', hair: 'long' } },
   DOOLEY: { name: 'SGT. DOOLEY', color: '#7fb08a', bust: { hat: 'cap', build: 1.08 } },
   SAL:    { name: 'SAL', color: '#e0b25a', bust: { hair: 'bald', build: 1.25 } },

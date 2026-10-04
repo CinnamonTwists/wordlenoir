@@ -1,8 +1,22 @@
 // Procedural audio: every sound is synthesized with Web Audio, no files. init() must run from a user gesture.
 // Scripts trigger effects with `~sfx <method>` (ring, hangup, thunder, whistle, siren, telegraph, foghorn, ...).
 
+// Cut-in stings: low brass hits. A sub sine settling onto its note, detuned sawtooth pairs (±6 cents) through a lowpass that
+// closes over the tail, and a timpani thump under a slow attack. No noise, no bright partials. The saws (62–131 Hz) and their
+// low harmonics carry the hit on phone speakers that can't reproduce the sub. `slide` bends the whole chord down to that ratio.
+// lp: [start, end] Hz · atk: s · dec: tail time constant (s) · vol: peak · thump: [from, to] Hz or null.
+export const STINGS = {
+  brass:  { sub: 41.2, saws: [82.41, 123.47], lp: [700, 200], atk: .045, dec: .55, vol: .12, thump: [70, 45] },   // E root + fifth
+  minor:  { sub: 41.2, saws: [82.41, 98], lp: [620, 190], atk: .05, dec: .62, vol: .135, thump: [66, 44] },        // E + G, darker
+  sag:    { sub: 43.65, saws: [87.31, 130.81], slide: .9439, lp: [760, 210], atk: .04, dec: .5, vol: .115, thump: [72, 46] }, // F sinking to E
+  soft:   { sub: 41.2, saws: [82.41], lp: [480, 170], atk: .06, dec: .45, vol: .09, thump: null },              // cooldown repeat
+  versus: { sub: 41.2, saws: [61.74, 82.41, 123.47], lp: [900, 160], atk: .035, dec: .8, vol: .16, thump: [74, 42], roll: true } // heavier, own hit
+};
+const LOW = ['brass', 'minor', 'sag'];
+const COOLDOWN = 8;   // s: a sting this soon after another plays `soft`, and a third plays nothing
+
 export const AU = {
-  ctx: null, on: true,
+  ctx: null, on: true, lastSting: -1e9, lastSoft: false, lastLow: null,
   init() {
     if (this.ctx) { this.ctx.resume && this.ctx.resume(); return; }
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
@@ -64,12 +78,39 @@ export const AU = {
   thud() { this.tone(80, .35, 'sine', .45, 0, 40); this.burst(.12, 'lowpass', 300, .25); },
   boom() { this.tone(62, 1.4, 'sine', .7, 0, 28); this.burst(1.2, 'lowpass', 180, .5); this.tone(124, .6, 'triangle', .12, 0, 60); },
   heart() { [0, .26].forEach((a, i) => { this.tone(i ? 50 : 58, .2, 'sine', i ? .55 : .75, a, 32); this.burst(.07, 'lowpass', 120, .3, a); }); },
-  sting() {
-    if (!this.ctx) return; const c = this.ctx, t = this.now(), f = c.createBiquadFilter(), g = c.createGain();
-    f.type = 'lowpass'; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(500, t + 1.3);
-    this.env(g, t, .015, .16, 1.5); f.connect(g); g.connect(this.sfx);
-    [110, 155.56, 233.08, 329.63, 466.16].forEach(fq => { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fq; o.connect(f); o.start(t); o.stop(t + 1.6); });
-    this.burst(.3, 'highpass', 1800, .18);
+  // Cut-in sting. `name` picks a STINGS variant (e.g. from CAST[key].sting); otherwise a random low one, never the same twice running.
+  sting(name) {
+    if (!this.ctx) return; const t = this.now(), recent = t - this.lastSting < COOLDOWN;
+    if (recent && this.lastSoft) return;
+    if (!recent && !STINGS[name]) { const opts = LOW.filter(k => k !== this.lastLow); name = opts[Math.floor(Math.random() * opts.length)]; }
+    if (!recent && LOW.includes(name)) this.lastLow = name;
+    this.lastSting = t; this.lastSoft = recent;
+    this.hit(STINGS[recent ? 'soft' : name]);
+  },
+  // The versus screen's heavier hit. Always plays, and restarts the cooldown so a cut-in right after it comes in soft.
+  versusHit() { if (!this.ctx) return; this.lastSting = this.now(); this.lastSoft = false; this.hit(STINGS.versus); },
+  hit(v) {
+    if (!this.ctx || !v) return; const c = this.ctx, t = this.now(), end = t + v.atk + v.dec * 5, f = c.createBiquadFilter(), g = c.createGain();
+    f.type = 'lowpass'; f.Q.value = .7; f.frequency.setValueAtTime(v.lp[0], t); f.frequency.exponentialRampToValueAtTime(v.lp[1], t + v.atk + v.dec * 3);
+    // slow attack, a quick settle to ~45% (the "hit"), then a long soft tail
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v.vol, t + v.atk);
+    g.gain.setTargetAtTime(v.vol * .45, t + v.atk, .12); g.gain.setTargetAtTime(0, t + v.atk + .35, v.dec);
+    f.connect(g); g.connect(this.sfx);
+    const saw = (fq, detune) => {
+      const o = c.createOscillator(), og = c.createGain(); o.type = 'sawtooth'; o.detune.value = detune; og.gain.value = .32;
+      o.frequency.setValueAtTime(fq, t); if (v.slide) o.frequency.setTargetAtTime(fq * v.slide, t + .08, .15);
+      o.connect(og); og.connect(f); o.start(t); o.stop(end);
+    };
+    // sub starts about a whole tone sharp and settles
+    const so = c.createOscillator(), sg = c.createGain(); so.frequency.setValueAtTime(v.sub * 1.12, t); so.frequency.setTargetAtTime(v.sub * (v.slide || 1), t, .12);
+    sg.gain.value = .45; so.connect(sg); sg.connect(f); so.start(t); so.stop(end);
+    v.saws.forEach(fq => { saw(fq, -6); saw(fq, 6); });
+    if (v.thump) (v.roll ? [0, .16] : [0]).forEach((a, i) => {
+      const o = c.createOscillator(), og = c.createGain(), at = t + a, [hi, lo] = v.thump;
+      o.frequency.setValueAtTime(hi * (i ? .9 : 1), at); o.frequency.exponentialRampToValueAtTime(lo, at + .45);
+      og.gain.setValueAtTime(0, at); og.gain.linearRampToValueAtTime(v.vol * (i ? .8 : 1), at + .012); og.gain.exponentialRampToValueAtTime(.0001, at + .7);
+      o.connect(og); og.connect(this.sfx); o.start(at); o.stop(at + .75);
+    });
   },
   flip(v) {
     if (v === 0) { this.tone(130, .18, 'triangle', .22, 0, 90); this.burst(.06, 'lowpass', 500, .2); }

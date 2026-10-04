@@ -14,7 +14,7 @@ export async function cutin(arg) {
   const el = document.createElement('div'); el.className = 'cutin';
   el.innerHTML = (who ? `<div class="ci-eyes" style="--c:${who.color}">${eyes(who.color, key === 'WORD')}</div>` : '') + `<div class="ci-band"><span></span></div>`;
   el.querySelector('span').textContent = text; C.fx.appendChild(el);
-  await sleep(40); el.classList.add('in'); AU.sting(); flashFx(.5); shake();
+  await sleep(40); el.classList.add('in'); AU.sting(who && who.sting); flashFx(.5); shake();
   await sleep(2700); el.classList.add('out'); await sleep(380); el.remove();
 }
 export async function heavy(text) {
@@ -35,7 +35,7 @@ export async function versus(arg) {
   el.innerHTML = `<div class="vs-half vs-l">${bust(Object.assign({ color: '#7fb2ff' }, CAST.DASH.bust))}<div class="vs-name"><span class="vs-tag">THE DETECTIVE</span></div></div>
     <div class="vs-half vs-r">${bust(Object.assign({ color: '#ff2a35' }, CAST.WORD.bust))}<div class="vs-name"><span class="vs-tag">THE WORD</span></div></div><svg class="vs-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="58" y1="-2" x2="42" y2="102" stroke="#fff" stroke-width="5" vector-effect="non-scaling-stroke"/></svg>`;
   el.querySelector('.vs-l .vs-name').append(l); el.querySelector('.vs-r .vs-name').append(r);
-  C.fx.appendChild(el); await sleep(40); el.classList.add('in'); AU.sting(); await sleep(500); flashFx(.8); AU.thunder(); shake();
+  C.fx.appendChild(el); await sleep(40); el.classList.add('in'); AU.versusHit(); await sleep(500); flashFx(.8); AU.thunder(); shake();
   await sleep(3800); el.style.transition = `opacity ${500 / SPEED}ms`; el.style.opacity = 0; await sleep(500); el.remove();
 }
 export async function card(arg) {

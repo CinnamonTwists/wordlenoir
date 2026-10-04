@@ -10,10 +10,10 @@ Blank lines and lines starting with `//` are ignored. Run `npm run check` after 
 |---|---|
 | `> text` | Narration caption (Dash's voice-over). Any unrecognized line is also treated as narration. |
 | `NAME: text` | Dialogue. `NAME` must be a key in `content/cast.js` (e.g. `DASH`, `BRIGGS`, `WORD`). |
-| `!!@NAME TEXT` | Anime-style cut-in with that character's eyes. `!!TEXT` without a name shows the band only. |
+| `!!@NAME TEXT` | Anime-style cut-in with that character's eyes. `!!TEXT` without a name shows the band only. Plays a low sting (the character's `sting` in `cast.js`, else a random one). A second cut-in within 8 s comes in softer and a third is silent. Budget: at most one per scene, in about 20% of scenes (`npm run check` warns). |
 | `** text` | Heavy line: words slam onto the screen one at a time. |
 | `## TITLE \| subtitle` | Full-screen title card. |
-| `%%LEFT \| RIGHT` | Versus screen: the detective vs. the word. |
+| `%%LEFT \| RIGHT` | Versus screen: the detective vs. the word. It has its own heavier hit, so a cut-in right after it plays soft. |
 | `_word_` | Emphasis inside narration or dialogue. |
 
 ## Directives
@@ -31,7 +31,7 @@ Blank lines and lines starting with `//` are ignored. Run `npm run check` after 
 | `~fade` / `~black` | Fade to black (the next visible line fades back in). |
 | `~shake` `~flash` `~lightning` `~heart` | Camera shake, white flash, lightning + thunder, heartbeat + red pulse. |
 | `~rain heavy\|light\|window\|off` | Override the set's rain. |
-| `~sfx name` | Play a sound: `ring` `hangup` `thunder` `whistle` `siren` `telegraph` `foghorn` `sting` `boom` `stamp` ... (any method on `AU` in `audio/audio.js`). |
+| `~sfx name` | Play a sound: `ring` `hangup` `thunder` `whistle` `siren` `telegraph` `foghorn` `sting` `versusHit` `boom` `stamp` ... (any method on `AU` in `audio/audio.js`). |
 | `~wait ms` | Pause. |
 | `~flag name` | Set a story flag for the rest of the case. |
 | `~stamp TEXT` / `~gstamp TEXT` | Red / green rubber stamp. |

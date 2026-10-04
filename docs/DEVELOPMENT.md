@@ -27,7 +27,7 @@ Related docs: [README.md](../README.md) (quick start), [scene-scripts.md](scene-
 
 ```sh
 npm run dev      # zero-dep static server for public/ on :8788 (tools/dev-server.mjs)
-npm run check    # validates all scenes + word lists (tools/check-scenes.mjs), exit 1 on errors
+npm run check    # validates all scenes, cast stings, cut-in budget + word lists (tools/check-scenes.mjs), exit 1 on errors
 npm run preview  # wrangler dev (Cloudflare's runtime), downloads wrangler on first run
 ```
 
@@ -51,7 +51,7 @@ public/js/
     util.js               R, pick, clamp, cap, nounN, NUMW, ORD, fmtTime, pickUnused        [DOM-free]
     timing.js             SPEED/setSpeed, sleep(ms), VT, REDUCED (prefers-reduced-motion)
     dom.js                $()
-  audio/audio.js          AU: the whole Web Audio synth (sfx, drone music, rain bed)        [DOM-free at import]
+  audio/audio.js          AU: the whole Web Audio synth (sfx, drone music, rain bed), STINGS [DOM-free at import]
   fx/rain.js              RAIN canvas (attach/set/frame), startRain(), startGrain()
   art/
     svg.js                rng(seed), DEFS (gradients/filters), svg(inner), f()               [DOM-free]
@@ -68,7 +68,7 @@ public/js/
     player.js             runLine (dispatch), play(src, ctx)
   script/parser.js        parseScript, condOK, fill, MISSING                                 [DOM-free]
   content/                The story                                                          [DOM-free]
-    cast.js               CAST: key → { name, color, bust }
+    cast.js               CAST: key → { name, color, bust, sting? }
     names.js              NAMES_M, NAMES_F (for {victim}/{singer})
     scenes/               intros, intro-tail, openers, cores/suspect-1..5, informants, win, loss, closers, index
   game/
@@ -195,15 +195,29 @@ A 2 s noise buffer is shared by rain, bursts and thunder. `AU.init()` must run i
 | `setRain(level, indoor)` | filtered noise bed; indoor = 900 Hz lowpass | `@set`, `~rain` |
 | `riff()` | 8-note sawtooth "muted trumpet" phrase (G minor) | start button, win |
 | `piano(notes, gap)` | triangle+sine notes | every title card (1 note), loss (4-note fall) |
-| **`sting()`** | **5 sawtooth oscillators 110–466 Hz, lowpass 3.2 kHz→500 Hz over 1.3 s, plus a 1.8 kHz highpass noise burst** | **every `!!` cut-in (11 in scripts) and every `%%` versus (5)** |
+| `sting(name?)` | low brass hit, one of the `STINGS` variants (below), with a cooldown | every `!!` cut-in (11 in scripts), `~sfx sting` |
+| `versusHit()` | the heavier `versus` variant (adds a B1 saw and a two-stroke timpani roll); always plays and restarts the sting cooldown | every `%%` versus (5) |
+| `hit(variant)` | the shared synth behind both (no-op without an argument) | internal |
 | `boom`, `thud` | low sine drops + noise | heavy lines |
 | `heart` | double low thump | `~heart`, reveal |
 | `flip(0/1/2)` | gray thunk / yellow dyad / green arpeggio | tile reveals, legend |
 | `tick`, `key` | typewriter tick, key press | typing, keyboard |
 | `stamp`, `ring`, `hangup`, `whistle`, `siren`, `thunder`, `telegraph`, `foghorn` | one-shots | `~stamp`, `~sfx` |
 
-The sting's harshness comes from the bright sawtooth partials starting at 3.2 kHz and the high-passed noise.
-Its overuse comes from being tied to every cut-in and versus with no variety and no cooldown.
+**Stings (T10).** `STINGS` in audio.js is a table of variants: `brass` (E root + fifth), `minor` (E + G), `sag` (F chord sinking to E),
+`soft` (the cooldown repeat), and `versus`. Each is a sub sine around E1 (41 Hz) that starts about a whole tone sharp and settles,
+detuned sawtooth pairs (±6 cents) at 62–131 Hz through a lowpass that closes from ~700 Hz to ~200 Hz over ~1.5–1.9 s, a 35–60 ms attack,
+a timpani thump (about 70→45 Hz) under the attack, and a long soft tail. There is no noise and nothing bright. The 120–200 Hz saw body is what still
+reads on phone speakers that drop the sub.
+- **Choice:** `sting(name)` plays `name` if it's a variant (cut-ins pass `CAST[key].sting`; today only `BRIGGS: 'brass'`), otherwise a random one of
+  `brass`/`minor`/`sag`, never the same as the last.
+- **Cooldown** (`COOLDOWN` = 8 s of real AudioContext time, so `#speedN` doesn't change it): a sting within 8 s of the previous one plays `soft`,
+  and a third plays nothing. `versusHit()` counts as a sting, so the cut-in right after a versus (intro tail "SIX SUSPECTS", win "GOT YOU.") is soft.
+- **Levels** (measured offline through the real sfx → compressor → master chain, with the compressor settled): old sting peak 0.47 (−6.6 dBFS);
+  `brass`/`minor`/`sag` 0.23–0.25 (about half); `soft` 0.09; `versus` 0.30. Energy above 1 kHz is about 25 dB lower than the old sting.
+  The 120–200 Hz body is about 6 dB lower, which is the cost of halving the peak.
+- `npm run check` validates `CAST[key].sting` names and warns when a scene has more than one `!!` or when more than ~20% of scenes have one
+  (it prints the current density: 11 of 101 scenes, 11%).
 
 ## 1.9 Visual conventions
 
@@ -465,7 +479,8 @@ or from the Random Case pool. All of it should be noir, funny, and consistent wi
   - **Cut-in budget:** at most 1 `!!` per scene and in about 20% of scenes (ties into T10). At most 1 `**` heavy line per scene.
   - Recurring cast stays in character. New characters get `CAST` entries and portraits.
   - New locations are welcome. Each is one file in `art/sets/`, plus openers.
-- [ ] Checker additions: per-chapter coverage report, cut-in density warning, cross-chapter duplicate detection, and story-flag validation.
+- [ ] Checker additions: per-chapter coverage report, ~~cut-in density warning~~ (done in T10, currently over all scenes; make it per chapter
+      once packs exist), cross-chapter duplicate detection, and story-flag validation.
 
 ### T9. More audio
 **Goal:** unique stings, jazzy loops, and more sounds that make the world feel alive.
@@ -498,15 +513,27 @@ or from the Random Case pool. All of it should be noir, funny, and consistent wi
 ### T10. Deeper, less frequent intense-moment sting
 **Goal:** playtesters find the cut-in sting too sharp and overused. Make it lower and deeper.
 
-- [ ] Replace `AU.sting()` with a low brass-hit design:
+**Status: built (step 1, branch `step-1-deeper-sting`), pending the by-ear check.** Implementation in §1.8. Deviations from the plan:
+- "Peak roughly half today's level" is measured at the master output, after the compressor, with the compressor already settled. A render at t=0
+  reads about 4 dB low because Chrome's compressor starts in gain reduction. On that measure the cut-in variants peak at 0.23–0.25 vs the old 0.47.
+- Halving the peak also lowered the 120–200 Hz phone-speaker body by about 6 dB. If the hit gets lost on phones, raise the saw level in `hit()`
+  (`og.gain` 0.32 per saw) rather than `vol`, since the sub and thump are what drive the peak.
+- The cooldown's "softer variant or none" became: the 2nd sting within 8 s plays `soft`, the 3rd plays nothing.
+- The versus thunder (`AU.thunder()`, which has a 900 Hz highpassed burst) is unchanged. It's thunder, not the sting, and T9 owns new SFX.
+- The cut-in budget check from T8's checker list landed here (warning only).
+
+- [x] Replace `AU.sting()` with a low brass-hit design:
   - sub sine around E1 (41 Hz) with a slow pitch settle, plus 2–3 detuned sawtooths at 82/123 Hz (±6 cents)
   - lowpass starting about 700 Hz and closing to about 200 Hz over 1.5–2 s; 30–60 ms attack (no click); peak roughly half today's level
   - low timpani-style thump (tone 70→45 Hz) under the attack, and **no high-passed noise**
   - a long, soft tail instead of a bright snap
-- [ ] **Variety and restraint:** 2–3 low variants chosen at random; a cooldown (a second sting within ~8 s plays a softer variant or none);
+- [x] **Variety and restraint:** 2–3 low variants chosen at random; a cooldown (a second sting within ~8 s plays a softer variant or none);
       the versus screen gets its own heavier hit instead of reusing the sting; per-character choice via an optional `CAST[key].sting`.
-- [ ] Audit current scripts for cut-in density (11 cut-ins + 5 versus across 101 scenes) and keep T8's cut-in budget.
+- [x] Audit current scripts for cut-in density (11 cut-ins + 5 versus across 101 scenes) and keep T8's cut-in budget.
+      Result: 11 of 101 scenes (11%), none with more than one `!!`. The two back-to-back cases (intro tail and win climax 2: versus, then cut-in)
+      are handled by the cooldown. `npm run check` now enforces the budget.
 - [ ] Verify by ear at several volumes and on phone speakers (where low frequencies vanish, so keep a 120–200 Hz body so the hit still reads).
+      Measured offline (§1.8), but the by-ear and phone-speaker checks are still outstanding.
 
 ## 2.3 Recommended build order
 
@@ -515,7 +542,7 @@ structure that holds it is settled.
 
 | # | Step | Items | Why here |
 |---|---|---|---|
-| 1 | **Deeper sting + cut-in cooldown** | T10 | Small, isolated, and directly fixes playtester feedback. Ships alone. |
+| 1 ✓ | **Deeper sting + cut-in cooldown** (built, awaiting ear check) | T10 | Small, isolated, and directly fixes playtester feedback. Ships alone. |
 | 2 | **Smoke test in repo** | F4 | Safety net before the big refactors. |
 | 3 | **Scene registry + chapter tags** | F2, T1 | Every later feature keys off stable scene IDs and packs. |
 | 4 | **Save system** | F1 | Continue, settings, skip-seen, export/import, and the campaign all need it. |

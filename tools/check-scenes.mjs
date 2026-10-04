@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { parseScript } from '../public/js/script/parser.js';
 import { SETS } from '../public/js/art/sets/index.js';
 import { MOOD_MUSIC } from '../public/js/cinema/moods.js';
-import { AU } from '../public/js/audio/audio.js';
+import { AU, STINGS } from '../public/js/audio/audio.js';
 import { CAST } from '../public/js/content/cast.js';
 import { parseWordList } from '../public/js/game/words.js';
 import * as SC from '../public/js/content/scenes/index.js';
@@ -63,6 +63,19 @@ for (let n = 1; n <= 5; n++) if (!SC.CLOSERS[n]?.length) err(`CLOSERS[${n}]`, 'm
 
 for (const { src } of allScripts) for (const { line } of parseScript(src)) { const m = line.match(/^~flag\s+(\w+)/); if (m) FLAGS.add(m[1]); }
 
+for (const [k, v] of Object.entries(CAST)) if (v.sting !== undefined && !STINGS[v.sting]) err(`CAST.${k}`, `unknown sting "${v.sting}"`);
+
+// ---------- cut-in budget (roadmap T8/T10): at most one !! per scene, and !! in at most ~20% of scenes ----------
+const scenes = allScripts.filter(x => !x.where.startsWith('OPENERS'));
+let withCutin = 0;
+for (const { where, src } of scenes) {
+  const n = parseScript(src).filter(({ line }) => line.startsWith('!!')).length;
+  if (n) withCutin++;
+  if (n > 1) warnings.push(`${where}: ${n} cut-ins (budget is 1 per scene)`);
+}
+const cutinPct = Math.round(100 * withCutin / scenes.length);
+if (cutinPct > 20) warnings.push(`cut-ins in ${cutinPct}% of scenes (budget is about 20%)`);
+
 // ---------- validate each line ----------
 for (const { where, src, scope } of allScripts) {
   const vars = SCOPE[scope];
@@ -104,6 +117,7 @@ if (overlap) warnings.push(`allowed.txt repeats ${overlap} word(s) already in an
 // ---------- report ----------
 warnings.forEach(w => console.warn('warn ', w));
 errors.forEach(e => console.error('error', e));
-console.log(`\nChecked ${allScripts.length} scripts, ${Object.keys(SETS).length} sets, ${Object.keys(CAST).length} characters, ${words.answers.length} answers, ${words.allowed.length} extra guesses.`);
+console.log(`\nCut-ins in ${withCutin}/${scenes.length} scenes (${cutinPct}%).`);
+console.log(`Checked ${allScripts.length} scripts, ${Object.keys(SETS).length} sets, ${Object.keys(CAST).length} characters, ${words.answers.length} answers, ${words.allowed.length} extra guesses.`);
 if (errors.length) { console.error(`${errors.length} error(s).`); process.exit(1); }
 console.log('All good.');
